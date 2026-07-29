@@ -1,0 +1,12 @@
+# Node.js/Next.js project
+# No Python dependencies
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+requirements.txt
+Pipfile
+Pipfile.lock
+setup.py

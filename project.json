@@ -1,0 +1,9 @@
+{
+  "name": "burhan-store",
+  "version": "1.0.0",
+  "description": "Burhan eCommerce - Premium consumer electronics platform",
+  "type": "nextjs",
+  "framework": "next",
+  "buildpack": "nodejs",
+  "runtime": "nodejs18"
+}
