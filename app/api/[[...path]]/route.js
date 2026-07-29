@@ -77,8 +77,21 @@ export async function GET(request) {
           sortOption = { createdAt: -1 };
       }
 
-      const products = await productsCol.find(filter).sort(sortOption).toArray();
-      return NextResponse.json({ products, count: products.length });
+      // Add pagination
+      const page = parseInt(searchParams.get('page')) || 1;
+      const limit = parseInt(searchParams.get('limit')) || 100;
+      const skip = (page - 1) * limit;
+
+      const products = await productsCol.find(filter).sort(sortOption).skip(skip).limit(limit).toArray();
+      const total = await productsCol.countDocuments(filter);
+      
+      return NextResponse.json({ 
+        products, 
+        count: products.length,
+        total,
+        page,
+        pages: Math.ceil(total / limit)
+      });
     }
 
     if (path === 'products/featured') {
