@@ -150,6 +150,13 @@ export async function GET(request) {
       return successResponse({ categories });
     }
 
+    // Get settings
+    if (path === 'settings') {
+      const settingsCol = await getCollection('settings');
+      const settings = await settingsCol.findOne({ _id: 'site_settings' });
+      return successResponse({ settings: settings || {} });
+    }
+
     return errorResponse('Endpoint not found', 404);
   } catch (error) {
     console.error('Admin API Error:', error);
@@ -318,6 +325,25 @@ export async function POST(request) {
 
       await categoriesCol.insertOne(category);
       return successResponse({ category }, 201);
+    }
+
+    // Save settings
+    if (path === 'settings') {
+      const roleCheck = await requireRole(request, 'admin');
+      if (!roleCheck.authorized) {
+        return errorResponse('Insufficient permissions', 403);
+      }
+
+      const body = await request.json();
+      const settingsCol = await getCollection('settings');
+
+      await settingsCol.updateOne(
+        { _id: 'site_settings' },
+        { $set: { ...body, updatedAt: new Date() } },
+        { upsert: true }
+      );
+
+      return successResponse({ message: 'Settings saved successfully' });
     }
 
     // Seed admin user
