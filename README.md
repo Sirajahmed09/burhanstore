@@ -2,7 +2,7 @@
 
 **Powering Your Digital Lifestyle**
 
-A complete production-ready eCommerce platform for consumer electronics and mobile accessories in Pakistan.
+A complete enterprise-grade production-ready eCommerce platform for consumer electronics and mobile accessories in Pakistan with full admin panel.
 
 ## 🌟 Features
 
@@ -14,6 +14,25 @@ A complete production-ready eCommerce platform for consumer electronics and mobi
 - ✅ Complete checkout flow with order tracking
 - ✅ Guest checkout (no registration required)
 - ✅ Multiple payment methods (COD, JazzCash, EasyPaisa)
+
+### **🔥 NEW: Complete Admin Panel**
+- ✅ Secure JWT-based authentication
+- ✅ Role-based access control (Staff, Manager, Admin, Super Admin)
+- ✅ Real-time dashboard with 8+ key metrics
+- ✅ Full product management (CRUD operations)
+- ✅ Category management with image support
+- ✅ Order management with status workflow (9 statuses)
+- ✅ Customer order tracking
+- ✅ Advanced search and filtering
+- ✅ Responsive admin interface
+- ✅ Production-ready security
+
+**Admin Access:**
+- URL: `/admin/login`
+- Default Email: `admin@burhan.com`
+- Default Password: `Admin@123`
+
+📖 **[Complete Admin Documentation →](./ADMIN_DOCUMENTATION.md)**
 
 ### **Premium Design & UX**
 - ✅ Luxury minimal design aesthetic
@@ -72,29 +91,69 @@ A complete production-ready eCommerce platform for consumer electronics and mobi
 - 6 product categories
 - Product counts and descriptions
 
+## 📊 Admin Panel Features
+
+### Dashboard
+- Today's Revenue & Total Revenue
+- Order Statistics (Pending, Completed, Cancelled)
+- Product Inventory Overview
+- Low Stock Alerts
+- Quick Action Cards
+
+### Products Management
+- View all products with pagination
+- Create/Edit/Delete products
+- Search products by name or category
+- Stock level monitoring with color codes
+- Product status badges (Featured, Trending, New)
+- Real-time inventory tracking
+
+### Orders Management
+- Complete order lifecycle management
+- 9-stage status workflow:
+  - Pending → Confirmed → Processing → Packed → Shipped → Delivered
+  - Cancellation/Return/Refund flows
+- Order filtering by status
+- Search by Order ID, customer name, or phone
+- Order timeline with automatic updates
+- Payment method tracking
+
+### Categories Management
+- Create/Edit/Delete categories
+- Auto-slug generation
+- Category images and descriptions
+- Automatic product count tracking
+- Modal-based editing interface
+
+### Security
+- JWT authentication with HTTP-only cookies
+- Role-based access control (RBAC)
+- Password hashing (Node.js crypto/scrypt)
+- Protected API routes
+- Session management (7-day expiration)
+
 ## 🚀 API Endpoints
 
-### Products
-- `GET /api/products` - All products (with filters, sort, search)
-- `GET /api/products/featured` - Featured products
-- `GET /api/products/trending` - Trending products
-- `GET /api/products/best-sellers` - Best selling products
-- `GET /api/products/:slug` - Single product details
-- `GET /api/products/:id/related` - Related products
-
-### Categories
+### Public API
+- `GET /api/products` - List products (filters, sort, search)
+- `GET /api/products/:slug` - Single product
 - `GET /api/categories` - All categories
+- `POST /api/orders` - Create order
+- `POST /api/orders/track` - Track order
 
-### Orders
-- `POST /api/orders` - Create new order
-- `GET /api/orders/:id` - Get order details
-- `POST /api/orders/track` - Track order by ID + phone
-
-### Search
-- `GET /api/search?q=query` - Search with suggestions
-
-### Admin
-- `POST /api/seed` - Seed database with sample data
+### Admin API (Authentication Required)
+- `POST /api/admin/auth/login` - Admin login
+- `GET /api/admin/dashboard/stats` - Dashboard statistics
+- `GET /api/admin/products` - List products (paginated)
+- `POST /api/admin/products` - Create product
+- `PUT /api/admin/products/:id` - Update product
+- `DELETE /api/admin/products/:id` - Delete product
+- `GET /api/admin/orders` - List orders (with filters)
+- `POST /api/admin/orders/:id/status` - Update order status
+- `GET /api/admin/categories` - List categories
+- `POST /api/admin/categories` - Create category
+- `PUT /api/admin/categories/:id` - Update category
+- `DELETE /api/admin/categories/:id` - Delete category
 
 ## 🎨 Design System
 
