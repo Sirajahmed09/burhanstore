@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/db/mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { hashPassword, verifyPassword, createToken } from '@/lib/admin/auth';
-import { requireAuth, requireRole } from '@/lib/admin/middleware';
+import { requireAuth, requireRole, checkRateLimit, clearRateLimit } from '@/lib/admin/middleware';
 
 function errorResponse(message, status = 500) {
   return NextResponse.json({ error: message }, { status });
@@ -24,8 +24,13 @@ export async function GET(request) {
       return errorResponse('Unauthorized', 401);
     }
 
-    // Dashboard stats
+    // Dashboard stats - Requires at least manager role for PII access
     if (path === 'dashboard/stats') {
+      const roleCheck = await requireRole(request, 'manager');
+      if (!roleCheck.authorized) {
+        return errorResponse('Insufficient permissions - Manager role required', 403);
+      }
+      
       const productsCol = await getCollection('products');
       const ordersCol = await getCollection('orders');
       const categoriesCol = await getCollection('categories');
@@ -101,8 +106,13 @@ export async function GET(request) {
       return successResponse({ product });
     }
 
-    // Get all orders for admin
+    // Get all orders for admin - Requires manager role (contains customer PII)
     if (path === 'orders') {
+      const roleCheck = await requireRole(request, 'manager');
+      if (!roleCheck.authorized) {
+        return errorResponse('Insufficient permissions - Manager role required', 403);
+      }
+      
       const ordersCol = await getCollection('orders');
       const status = searchParams.get('status');
       const page = parseInt(searchParams.get('page')) || 1;
@@ -130,8 +140,13 @@ export async function GET(request) {
       });
     }
 
-    // Get single order
+    // Get single order - Requires manager role (contains customer PII)
     if (path.startsWith('orders/') && path.split('/').length === 2) {
+      const roleCheck = await requireRole(request, 'manager');
+      if (!roleCheck.authorized) {
+        return errorResponse('Insufficient permissions - Manager role required', 403);
+      }
+      
       const id = path.split('/')[1];
       const ordersCol = await getCollection('orders');
       const order = await ordersCol.findOne({ _id: id });
@@ -170,12 +185,22 @@ export async function POST(request) {
   const path = pathname.replace('/api/admin/', '');
 
   try {
-    // Login endpoint (no auth required)
+    // Login endpoint (no auth required) - WITH RATE LIMITING
     if (path === 'auth/login') {
       const { email, password } = await request.json();
 
       if (!email || !password) {
         return errorResponse('Email and password are required', 400);
+      }
+
+      // SECURITY: Rate limit login attempts by email
+      const rateLimit = checkRateLimit(email);
+      if (!rateLimit.allowed) {
+        const minutesLeft = Math.ceil(rateLimit.resetIn / 60000);
+        return errorResponse(
+          `Too many login attempts. Please try again in ${minutesLeft} minutes.`, 
+          429
+        );
       }
 
       const adminsCol = await getCollection('admins');
@@ -189,6 +214,9 @@ export async function POST(request) {
       if (!isValid) {
         return errorResponse('Invalid credentials', 401);
       }
+
+      // SECURITY: Clear rate limit on successful login
+      clearRateLimit(email);
 
       const token = await createToken({
         id: admin._id,
@@ -216,35 +244,8 @@ export async function POST(request) {
       return response;
     }
 
-    // Seed admin user (no auth required for first setup)
-    if (path === 'seed-admin') {
-      const adminsCol = await getCollection('admins');
-      
-      // Check if admin already exists
-      const existingAdmin = await adminsCol.findOne({ email: 'admin@burhan.com' });
-      if (existingAdmin) {
-        return successResponse({ message: 'Admin user already exists' });
-      }
-
-      const hashedPassword = await hashPassword('Admin@123');
-      const admin = {
-        _id: uuidv4(),
-        name: 'Super Admin',
-        email: 'admin@burhan.com',
-        password: hashedPassword,
-        role: 'superadmin',
-        createdAt: new Date()
-      };
-
-      await adminsCol.insertOne(admin);
-      return successResponse({ 
-        message: 'Admin user created successfully',
-        credentials: {
-          email: 'admin@burhan.com',
-          password: 'Admin@123'
-        }
-      });
-    }
+    // SECURITY FIX: Removed public seed-admin endpoint
+    // Admin users must be created through secure server-side scripts only
 
     // All other routes require authentication
     const auth = await requireAuth(request);
@@ -280,8 +281,13 @@ export async function POST(request) {
       return successResponse({ product }, 201);
     }
 
-    // Update order status
+    // Update order status - Requires manager role
     if (path.startsWith('orders/') && path.endsWith('/status')) {
+      const roleCheck = await requireRole(request, 'manager');
+      if (!roleCheck.authorized) {
+        return errorResponse('Insufficient permissions - Manager role required', 403);
+      }
+      
       const orderId = path.split('/')[1];
       const { status, message } = await request.json();
 

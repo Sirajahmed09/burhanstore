@@ -226,21 +226,73 @@ export async function POST(request) {
   const path = pathname.replace('/api/', '');
 
   try {
-    // Create order
+    // Create order - WITH SERVER-SIDE PRICE VALIDATION
     if (path === 'orders') {
       const ordersCol = await getCollection('orders');
+      const productsCol = await getCollection('products');
       const body = await request.json();
+      
+      // SECURITY: Validate and recalculate prices server-side
+      if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
+        return errorResponse('Order must contain at least one item', 400);
+      }
+      
+      if (!body.customer || !body.customer.name || !body.customer.phone || !body.customer.address) {
+        return errorResponse('Customer information is required', 400);
+      }
+      
+      // Recalculate subtotal from actual product prices
+      let calculatedSubtotal = 0;
+      const validatedItems = [];
+      
+      for (const item of body.items) {
+        if (!item.productId || !item.quantity || item.quantity < 1) {
+          return errorResponse('Invalid item in order', 400);
+        }
+        
+        // Fetch actual product price from database
+        const product = await productsCol.findOne({ _id: item.productId });
+        if (!product) {
+          return errorResponse(`Product not found: ${item.productId}`, 404);
+        }
+        
+        if (product.stock < item.quantity) {
+          return errorResponse(`Insufficient stock for ${product.name}`, 400);
+        }
+        
+        // Use server-side price, not client-provided price
+        const itemTotal = product.price * item.quantity;
+        calculatedSubtotal += itemTotal;
+        
+        validatedItems.push({
+          productId: product._id,
+          name: product.name,
+          price: product.price, // Server-side price
+          quantity: item.quantity,
+          image: product.image || item.image
+        });
+      }
+      
+      const shipping = 200; // Fixed shipping cost
+      const calculatedTotal = calculatedSubtotal + shipping;
       
       const order = {
         _id: uuidv4(),
-        items: body.items,
-        customer: body.customer,
-        subtotal: body.subtotal,
-        shipping: body.shipping || 200, // Default shipping PKR 200
-        total: body.total,
-        paymentMethod: body.paymentMethod,
+        items: validatedItems,
+        customer: {
+          name: String(body.customer.name).trim(),
+          email: body.customer.email ? String(body.customer.email).trim() : '',
+          phone: String(body.customer.phone).trim(),
+          address: String(body.customer.address).trim(),
+          city: body.customer.city ? String(body.customer.city).trim() : '',
+          postalCode: body.customer.postalCode ? String(body.customer.postalCode).trim() : ''
+        },
+        subtotal: calculatedSubtotal,
+        shipping: shipping,
+        total: calculatedTotal,
+        paymentMethod: body.paymentMethod || 'cod',
         status: 'pending',
-        notes: body.notes || '',
+        notes: body.notes ? String(body.notes).trim() : '',
         createdAt: new Date(),
         timeline: [
           { status: 'pending', timestamp: new Date(), message: 'Order placed successfully' }
@@ -251,7 +303,7 @@ export async function POST(request) {
       return NextResponse.json({ order, success: true }, { status: 201 });
     }
 
-    // Track order
+    // Track order - WITH INPUT SANITIZATION
     if (path === 'orders/track') {
       const { orderId, phone } = await request.json();
       
@@ -259,10 +311,23 @@ export async function POST(request) {
         return errorResponse('Order ID and phone number are required', 400);
       }
 
+      // SECURITY: Sanitize inputs to prevent NoSQL injection
+      if (typeof orderId !== 'string' || typeof phone !== 'string') {
+        return errorResponse('Invalid input format', 400);
+      }
+      
+      // Remove any special characters that could be query operators
+      const sanitizedOrderId = String(orderId).trim();
+      const sanitizedPhone = String(phone).trim().replace(/[^0-9+\-\s]/g, '');
+      
+      if (sanitizedOrderId.length === 0 || sanitizedPhone.length === 0) {
+        return errorResponse('Invalid Order ID or phone number', 400);
+      }
+
       const ordersCol = await getCollection('orders');
       const order = await ordersCol.findOne({ 
-        _id: orderId, 
-        'customer.phone': phone 
+        _id: sanitizedOrderId, 
+        'customer.phone': sanitizedPhone
       });
       
       if (!order) {
@@ -272,11 +337,8 @@ export async function POST(request) {
       return NextResponse.json({ order });
     }
 
-    // Seed database
-    if (path === 'seed') {
-      await seedDatabase();
-      return NextResponse.json({ message: 'Database seeded successfully' });
-    }
+    // SECURITY FIX: Removed public seed endpoint
+    // Seeding must only be done through secure server-side scripts
 
     return errorResponse('Endpoint not found', 404);
   } catch (error) {
