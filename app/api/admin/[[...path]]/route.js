@@ -187,7 +187,16 @@ export async function POST(request) {
   try {
     // Login endpoint (no auth required) - WITH RATE LIMITING
     if (path === 'auth/login') {
-      const { email, password } = await request.json();
+      let email, password;
+      
+      try {
+        const body = await request.json();
+        email = body.email;
+        password = body.password;
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        return errorResponse('Invalid request body', 400);
+      }
 
       if (!email || !password) {
         return errorResponse('Email and password are required', 400);

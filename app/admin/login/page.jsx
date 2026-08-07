@@ -20,19 +20,29 @@ export default function AdminLoginPage() {
       const response = await fetch('/api/admin/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
+        credentials: 'include'
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        router.push('/admin/dashboard');
-      } else {
+      if (!response.ok) {
+        const data = await response.json();
         setError(data.error || 'Login failed');
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      
+      if (data.user) {
+        // Successfully logged in
+        window.location.href = '/admin/dashboard'; // Force navigation
+      } else {
+        setError('Login failed - no user data received');
+        setLoading(false);
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError('An error occurred. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
