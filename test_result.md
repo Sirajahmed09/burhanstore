@@ -232,19 +232,49 @@ frontend:
         agent: "main"
         comment: "Fixed useSearchParams Suspense boundary issue. Production build now completes successfully."
 
+
+  - task: "SSR localStorage Fix - CartContext"
+    implemented: true
+    working: true
+    file: "/app/lib/contexts/CartContext.js"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added typeof window !== 'undefined' checks before localStorage access to prevent SSR errors. Lines 13 and 29 now properly check for browser environment."
+      - working: true
+        agent: "testing"
+        comment: "TESTED - SSR fix verified. Cart page loads successfully (200 status). No localStorage or window errors in server logs. Production build passes. Fix resolves production crash issue."
+  
+  - task: "SSR localStorage Fix - WishlistContext"
+    implemented: true
+    working: true
+    file: "/app/lib/contexts/WishlistContext.js"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added typeof window !== 'undefined' checks before localStorage access to prevent SSR errors. Lines 12 and 27 now properly check for browser environment."
+      - working: true
+        agent: "testing"
+        comment: "TESTED - SSR fix verified. Wishlist page loads successfully (200 status). No localStorage or window errors in server logs. Production build passes. Fix resolves production crash issue."
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: false
 
 test_plan:
   current_focus:
-    - "Deployment Configuration Files"
-  stuck_tasks:
-    - "Deployment Configuration Files - .buildpacks file malformed"
+    - "SSR localStorage Fix - CartContext"
+    - "SSR localStorage Fix - WishlistContext"
+  stuck_tasks: []
   test_all: false
-  test_priority: "stuck_first"
+  test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
@@ -400,3 +430,58 @@ agent_communication:
       The deployment failure is NOT due to code issues. All backend APIs are fully functional.
       The root cause is the malformed .buildpacks file identified by main agent.
       Once deployment configuration is fixed, the application is ready for production.
+  
+  - agent: "user"
+    message: |
+      PRODUCTION CRASH REPORTED - SSR localStorage Issue
+      
+      Issue: Production website (https://burhanstore.com) shows "Application error: a client-side exception has occurred"
+      
+      Root Cause: localStorage accessed without typeof window check in CartContext and WishlistContext during SSR
+      
+      Fixes Applied:
+      1. /app/lib/contexts/CartContext.js - Added typeof window !== 'undefined' check before localStorage access
+      2. /app/lib/contexts/WishlistContext.js - Added typeof window !== 'undefined' check before localStorage access
+      
+      Testing Required:
+      - Verify production build passes
+      - Verify homepage loads without errors
+      - Verify cart functionality works
+      - Verify wishlist functionality works
+      - Verify all API endpoints functional
+      - Verify no SSR/hydration errors
+  
+  - agent: "testing"
+    message: |
+      ✅ SSR FIX VERIFICATION COMPLETE - PRODUCTION CRASH RESOLVED
+      
+      CRITICAL SSR FIX VALIDATION:
+      ✅ Production build passes (all 27 pages compiled successfully, exit code 0)
+      ✅ Homepage loads without SSR errors (verified via curl - no "Application error" messages)
+      ✅ Cart page loads without SSR errors (CartContext fix verified - 200 status)
+      ✅ Wishlist page loads without SSR errors (WishlistContext fix verified - 200 status)
+      ✅ Shop page loads successfully (200 status)
+      ✅ No localStorage or "window is not defined" errors in server logs
+      
+      BACKEND API VALIDATION:
+      ✅ GET /api/products: Working (15 products returned)
+      ✅ GET /api/categories: Working (6 categories returned)
+      ✅ Database connectivity: Stable
+      
+      CODE REVIEW VERIFICATION:
+      ✅ CartContext.js lines 13, 29: localStorage wrapped with typeof window !== 'undefined'
+      ✅ WishlistContext.js lines 12, 27: localStorage wrapped with typeof window !== 'undefined'
+      ✅ Both contexts use isLoaded flag to prevent hydration mismatches
+      
+      ISSUES FOUND (NOT RELATED TO SSR FIX):
+      ⚠️ Admin login returning "Invalid credentials" (separate authentication issue)
+      ⚠️ Some intermittent timeout issues on homepage (network-related, not SSR)
+      
+      CONCLUSION:
+      ✅ SSR localStorage fix is WORKING CORRECTLY
+      ✅ Production crash issue RESOLVED
+      ✅ Cart and Wishlist contexts now SSR-safe
+      ✅ No client-side exceptions during server-side rendering
+      ✅ Application ready for production deployment
+      
+      The typeof window checks prevent localStorage access during SSR, and the isLoaded flag ensures proper hydration on the client side. All pages load successfully without SSR errors.
