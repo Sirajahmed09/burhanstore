@@ -126,15 +126,6 @@ export default function AdminLoginPage() {
             </button>
           </form>
 
-          {/* Help Text */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-xl">
-            <p className="text-sm text-burhan-text-secondary text-center">
-              <strong>Default Credentials:</strong><br />
-              Email: admin@burhan.com<br />
-              Password: Admin@123
-            </p>
-          </div>
-
           {/* Back to Store */}
           <div className="mt-6 text-center">
             <a

@@ -26,17 +26,19 @@ export default function ProductDetailPage() {
     if (slug) {
       // Fetch product details
       fetch(`/api/products/${slug}`)
-        .then(res => res.json())
+        .then(res => (res.ok ? res.json() : { product: null }))
         .then(data => {
-          setProduct(data.product);
+          setProduct(data.product || null);
           setLoading(false);
           
-          // Fetch related products
-          return fetch(`/api/products/${slug}/related`);
-        })
-        .then(res => res.json())
-        .then(data => {
-          setRelatedProducts(data.products || []);
+          if (data.product) {
+            // Fetch related products
+            return fetch(`/api/products/${slug}/related`)
+              .then(res => (res.ok ? res.json() : { products: [] }))
+              .then(relData => {
+                setRelatedProducts(relData.products || []);
+              });
+          }
         })
         .catch(err => {
           console.error('Failed to load product:', err);

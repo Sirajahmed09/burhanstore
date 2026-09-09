@@ -96,13 +96,18 @@ export default function CheckoutPage() {
         body: JSON.stringify(orderData)
       });
 
-      const data = await response.json();
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (parseErr) {
+        throw new Error('Invalid response from server');
+      }
 
-      if (data.success) {
+      if (response.ok && data.success) {
         clearCart();
         router.push(`/success?orderId=${data.order._id}`);
       } else {
-        alert('Failed to place order. Please try again.');
+        alert(data.error || 'Failed to place order. Please try again.');
       }
     } catch (error) {
       console.error('Order error:', error);

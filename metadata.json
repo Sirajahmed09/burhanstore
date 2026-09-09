@@ -1,0 +1,6 @@
+{
+  "name": "Burhan Store",
+  "description": "Burhan eCommerce - Premium consumer electronics platform",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

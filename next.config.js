@@ -79,9 +79,6 @@ const nextConfig = {
       {
         source: "/(.*)",
         headers: [
-          // SECURITY: Prevent clickjacking for public pages
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'self';" },
           { key: "Access-Control-Allow-Origin", value: process.env.CORS_ORIGINS || "*" },
           { key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, DELETE, OPTIONS" },
           { key: "Access-Control-Allow-Headers", value: "*" },
@@ -96,11 +93,9 @@ const nextConfig = {
         ],
       },
       {
-        // SECURITY: Stricter protection for admin routes
+        // Admin routes headers
         source: "/admin/(.*)",
         headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'none';" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-XSS-Protection", value: "1; mode=block" },
           { key: "Cache-Control", value: "no-store, no-cache, must-revalidate" },

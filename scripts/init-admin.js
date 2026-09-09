@@ -3,24 +3,13 @@
  * This file can be imported and run from Next.js API route
  */
 
-import { MongoClient } from 'mongodb';
+import { getCollection } from '@/lib/db/mongodb';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function initializeAdmin() {
-  const mongoUrl = process.env.MONGO_URL;
-  const dbName = process.env.DB_NAME || 'burhan_store';
-
-  if (!mongoUrl) {
-    throw new Error('MONGO_URL environment variable is not set');
-  }
-
-  const client = new MongoClient(mongoUrl);
-
   try {
-    await client.connect();
-    const db = client.db(dbName);
-    const adminsCol = db.collection('admins');
+    const adminsCol = await getCollection('admins');
 
     // Check if admin already exists
     const existingAdmin = await adminsCol.findOne({ email: 'admin@burhan.com' });
@@ -35,7 +24,8 @@ export async function initializeAdmin() {
     }
 
     // Create new admin
-    const hashedPassword = await bcrypt.hash('Admin@123', 10);
+    const initialPassword = process.env.ADMIN_INITIAL_PASSWORD || 'Admin@123';
+    const hashedPassword = await bcrypt.hash(initialPassword, 10);
     
     const admin = {
       _id: uuidv4(),
@@ -60,7 +50,5 @@ export async function initializeAdmin() {
   } catch (error) {
     console.error('Error initializing admin:', error);
     throw error;
-  } finally {
-    await client.close();
   }
 }

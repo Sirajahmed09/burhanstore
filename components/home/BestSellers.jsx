@@ -10,9 +10,9 @@ export default function BestSellers() {
 
   useEffect(() => {
     fetch('/api/products/best-sellers')
-      .then(res => res.json())
+      .then(res => (res.ok ? res.json() : { products: [] }))
       .then(data => {
-        setProducts(data.products || []);
+        setProducts(data?.products || []);
         setLoading(false);
       })
       .catch(err => {

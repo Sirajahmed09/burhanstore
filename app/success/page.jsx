@@ -14,8 +14,8 @@ function SuccessContent() {
   useEffect(() => {
     if (orderId) {
       fetch(`/api/orders/${orderId}`)
-        .then(res => res.json())
-        .then(data => setOrder(data.order))
+        .then(res => (res.ok ? res.json() : { order: null }))
+        .then(data => setOrder(data?.order || null))
         .catch(err => console.error('Failed to load order:', err));
     }
   }, [orderId]);

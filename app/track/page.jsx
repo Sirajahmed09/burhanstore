@@ -25,7 +25,12 @@ export default function TrackOrderPage() {
         body: JSON.stringify({ orderId, phone })
       });
 
-      const data = await response.json();
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (parseErr) {
+        data = { error: 'Invalid response format' };
+      }
 
       if (response.ok) {
         setOrder(data.order);

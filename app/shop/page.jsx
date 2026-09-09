@@ -23,8 +23,8 @@ export default function ShopPage() {
   // Fetch categories
   useEffect(() => {
     fetch('/api/categories')
-      .then(res => res.json())
-      .then(data => setCategories(data.categories || []))
+      .then(res => (res.ok ? res.json() : { categories: [] }))
+      .then(data => setCategories(data?.categories || []))
       .catch(err => console.error('Failed to load categories:', err));
   }, []);
 
@@ -41,9 +41,9 @@ export default function ShopPage() {
 
     setLoading(true);
     fetch(`/api/products?${params.toString()}`)
-      .then(res => res.json())
+      .then(res => (res.ok ? res.json() : { products: [] }))
       .then(data => {
-        setProducts(data.products || []);
+        setProducts(data?.products || []);
         setLoading(false);
       })
       .catch(err => {

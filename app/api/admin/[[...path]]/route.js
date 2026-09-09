@@ -15,7 +15,7 @@ function successResponse(data, status = 200) {
 // GET handler for admin endpoints
 export async function GET(request) {
   const { pathname, searchParams } = new URL(request.url);
-  const path = pathname.replace('/api/admin/', '');
+  const path = pathname.replace(/^\/api\/admin\/?/, '').replace(/\/$/, '');
 
   try {
     // Check authentication for all admin routes
@@ -182,7 +182,7 @@ export async function GET(request) {
 // POST handler for admin endpoints
 export async function POST(request) {
   const { pathname } = new URL(request.url);
-  const path = pathname.replace('/api/admin/', '');
+  const path = pathname.replace(/^\/api\/admin\/?/, '').replace(/\/$/, '');
 
   try {
     // Login endpoint (no auth required) - WITH RATE LIMITING
@@ -371,7 +371,8 @@ export async function POST(request) {
         return successResponse({ message: 'Admin user already exists' });
       }
 
-      const hashedPassword = await hashPassword('Admin@123');
+      const initialPassword = process.env.ADMIN_INITIAL_PASSWORD || 'Admin@123';
+      const hashedPassword = await hashPassword(initialPassword);
       const admin = {
         _id: uuidv4(),
         name: 'Super Admin',
@@ -384,10 +385,7 @@ export async function POST(request) {
       await adminsCol.insertOne(admin);
       return successResponse({ 
         message: 'Admin user created successfully',
-        credentials: {
-          email: 'admin@burhan.com',
-          password: 'Admin@123'
-        }
+        email: 'admin@burhan.com'
       });
     }
 
@@ -401,7 +399,7 @@ export async function POST(request) {
 // PUT handler for updates
 export async function PUT(request) {
   const { pathname } = new URL(request.url);
-  const path = pathname.replace('/api/admin/', '');
+  const path = pathname.replace(/^\/api\/admin\/?/, '').replace(/\/$/, '');
 
   try {
     const auth = await requireAuth(request);
@@ -465,7 +463,7 @@ export async function PUT(request) {
 // DELETE handler
 export async function DELETE(request) {
   const { pathname } = new URL(request.url);
-  const path = pathname.replace('/api/admin/', '');
+  const path = pathname.replace(/^\/api\/admin\/?/, '').replace(/\/$/, '');
 
   try {
     const auth = await requireAuth(request);
