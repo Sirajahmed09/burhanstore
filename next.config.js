@@ -19,8 +19,8 @@ const nextConfig = {
   poweredByHeader: false,
   
   webpack(config, { dev, isServer }) {
-    // Production optimizations
-    if (!dev) {
+    // Production optimizations - CLIENT ONLY
+    if (!dev && !isServer) {
       config.optimization = {
         ...config.optimization,
         moduleIds: 'deterministic',

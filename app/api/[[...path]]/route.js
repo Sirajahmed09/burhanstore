@@ -37,7 +37,9 @@ export async function GET(request) {
       const rating = searchParams.get('rating');
 
       // Build filter
-      const filter = {};
+      const filter = {
+        status: { $ne: 'inactive' }
+      };
       if (category) filter.category = category;
       if (minPrice || maxPrice) {
         filter.price = {};

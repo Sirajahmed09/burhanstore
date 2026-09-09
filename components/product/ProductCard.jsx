@@ -13,8 +13,12 @@ export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
 
+  const isOutOfStock = (Number(product?.stock) || 0) <= 0;
+  const imageSrc = product?.thumbnail || product?.images?.[0] || product?.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500';
+
   const handleAddToCart = (e) => {
     e.preventDefault();
+    if (isOutOfStock) return;
     addToCart(product);
   };
 
@@ -37,28 +41,37 @@ export default function ProductCard({ product }) {
           {/* Image Container */}
           <div className="relative aspect-square overflow-hidden bg-gray-50">
             <Image
-              src={product.thumbnail}
-              alt={product.name}
+              src={imageSrc}
+              alt={product.name || 'Product'}
               fill
-              className="object-cover transition-transform duration-500 group-hover:scale-110"
+              referrerPolicy="no-referrer"
+              className={`object-cover transition-transform duration-500 group-hover:scale-110 ${isOutOfStock ? 'grayscale opacity-75' : ''}`}
             />
             
             {/* Badges */}
             <div className="absolute top-3 left-3 flex flex-col gap-2">
-              {product.isNew && (
-                <span className="bg-burhan-success text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  NEW
+              {isOutOfStock ? (
+                <span className="bg-slate-900/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">
+                  OUT OF STOCK
                 </span>
-              )}
-              {product.discount > 0 && (
-                <span className="bg-burhan-error text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  -{product.discount}%
-                </span>
-              )}
-              {product.isTrending && (
-                <span className="bg-burhan-warning text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  TRENDING
-                </span>
+              ) : (
+                <>
+                  {product.isNew && (
+                    <span className="bg-burhan-success text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      NEW
+                    </span>
+                  )}
+                  {product.discount > 0 && (
+                    <span className="bg-burhan-error text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      -{product.discount}%
+                    </span>
+                  )}
+                  {product.isTrending && (
+                    <span className="bg-burhan-warning text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      TRENDING
+                    </span>
+                  )}
+                </>
               )}
             </div>
 
@@ -84,10 +97,15 @@ export default function ProductCard({ product }) {
             >
               <button
                 onClick={handleAddToCart}
-                className="w-full bg-burhan-primary text-white py-3 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:bg-burhan-secondary transition-colors ripple"
+                disabled={isOutOfStock}
+                className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-colors ${
+                  isOutOfStock
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-burhan-primary text-white hover:bg-burhan-secondary ripple'
+                }`}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span>Add to Cart</span>
+                <span>{isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</span>
               </button>
             </motion.div>
           </div>
