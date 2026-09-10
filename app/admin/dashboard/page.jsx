@@ -53,9 +53,24 @@ export default function AdminDashboard() {
         {/* Top Header with Quick Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="font-heading text-3xl font-bold text-burhan-primary">
-              Store Dashboard
-            </h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="font-heading text-3xl font-bold text-burhan-primary">
+                Store Dashboard
+              </h1>
+              {stats?.database && (
+                stats.database.isConnected ? (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <span className="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    MongoDB Atlas Connected
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200" title="Connect MONGODB_URI in Vercel for multi-container database sync">
+                    <span className="w-2 h-2 mr-1.5 bg-amber-500 rounded-full"></span>
+                    Local Fallback Store
+                  </span>
+                )
+              )}
+            </div>
             <p className="text-sm text-gray-600 mt-1">
               Welcome back, Store Founder! Here is an overview of your electronics business performance.
             </p>

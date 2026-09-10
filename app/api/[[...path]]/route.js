@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db/mongodb';
+import { getCollection, getDatabaseStatus } from '@/lib/db/mongodb';
 import { v4 as uuidv4 } from 'uuid';
 
 // Helper function to handle errors
@@ -21,6 +21,20 @@ export async function GET(request) {
     // Root endpoint
     if (path === '' || path === 'api') {
       return NextResponse.json({ message: 'Burhan eCommerce API v1.0' });
+    }
+
+    // Health check endpoint
+    if (path === 'health') {
+      const dbStatus = getDatabaseStatus();
+      return NextResponse.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        database: {
+          configured: dbStatus.isConfigured,
+          connected: dbStatus.isConnected,
+          provider: dbStatus.provider,
+        }
+      });
     }
 
     // Products endpoints

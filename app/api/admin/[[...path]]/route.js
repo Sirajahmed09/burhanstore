@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db/mongodb';
+import { getCollection, getDatabaseStatus } from '@/lib/db/mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { hashPassword, verifyPassword, createToken } from '@/lib/admin/auth';
 import {
@@ -102,7 +102,19 @@ export async function GET(request) {
         outOfStockCount: outOfStockProducts.length,
         lowStockAlerts: [...outOfStockProducts, ...lowStockProducts].slice(0, 10),
         recentProducts,
-        recentOrders
+        recentOrders,
+        database: getDatabaseStatus()
+      });
+    }
+
+    // Health & Database diagnostic endpoint
+    if (path === 'health' || path === 'system/status') {
+      const dbStatus = getDatabaseStatus();
+      return successResponse({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'production',
+        database: dbStatus
       });
     }
 
@@ -295,11 +307,15 @@ export async function POST(request) {
 
       // If remote MongoDB without pre-seeded accounts, auto-seed burhan@store with hashed password
       if (!admin && cleanEmail === 'burhan@store') {
+        const passwordHash = process.env.ADMIN_INITIAL_PASSWORD
+          ? await hashPassword(process.env.ADMIN_INITIAL_PASSWORD)
+          : '$2a$10$TkWPJq8jg0cD7LJ1iwd1UOAOM9PWHxNRxBwZ3b41vdbjO4xpZxI7e';
+
         const newAdmin = {
           _id: 'admin-burhan-owner',
           name: 'Burhan Store Owner',
           email: 'burhan@store',
-          password: '$2a$10$TkWPJq8jg0cD7LJ1iwd1UOAOM9PWHxNRxBwZ3b41vdbjO4xpZxI7e', // Sirajahmedkhemtio1406
+          password: passwordHash,
           role: 'superadmin',
           createdAt: new Date(),
           updatedAt: new Date()
@@ -513,6 +529,38 @@ export async function PUT(request) {
     const auth = await requireAuth(request);
     if (!auth.authenticated) {
       return errorResponse('Unauthorized', 401);
+    }
+
+    // Update order status via PUT
+    if (path.startsWith('orders/') && (path.endsWith('/status') || path.split('/').length === 2)) {
+      const orderId = path.split('/')[1];
+      const body = await request.json();
+      const status = body.status;
+      const message = body.message;
+
+      if (!status) {
+        return errorResponse('Status is required', 400);
+      }
+
+      const ordersCol = await getCollection('orders');
+      const order = await ordersCol.findOne({ _id: orderId });
+      if (!order) {
+        return errorResponse('Order not found', 404);
+      }
+
+      const timeline = Array.isArray(order.timeline) ? order.timeline : [];
+      timeline.push({
+        status,
+        timestamp: new Date(),
+        message: message || `Status updated to ${status}`
+      });
+
+      await ordersCol.updateOne(
+        { _id: orderId },
+        { $set: { status, timeline, updatedAt: new Date() } }
+      );
+
+      return successResponse({ success: true, message: 'Order status updated' });
     }
 
     // Update product

@@ -89,9 +89,18 @@ export async function POST(request) {
         }
       }
 
-      await fs.writeFile(outputPath, finalBuffer);
+      let publicUrl = `/uploads/products/${outputFilename}`;
+      let storageType = 'disk';
 
-      const publicUrl = `/uploads/products/${outputFilename}`;
+      try {
+        await ensureDir(uploadDir);
+        await fs.writeFile(outputPath, finalBuffer);
+      } catch (fsErr) {
+        console.warn('Serverless read-only filesystem detected, falling back to data URL:', fsErr.message);
+        storageType = 'inline_base64';
+        const mimeType = optimized ? 'image/webp' : (ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg'));
+        publicUrl = `data:${mimeType};base64,${finalBuffer.toString('base64')}`;
+      }
 
       // Track in database for image cleanup/monitoring
       await imagesCol.insertOne({
@@ -101,6 +110,7 @@ export async function POST(request) {
         originalName,
         size: finalBuffer.length,
         optimized,
+        storageType,
         uploadedAt: new Date(),
         uploadedBy: auth.user.email
       });
