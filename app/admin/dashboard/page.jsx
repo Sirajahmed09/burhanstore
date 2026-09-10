@@ -364,31 +364,35 @@ export default function AdminDashboard() {
             ) : (
               <div className="space-y-3">
                 {recentOrders.map(order => (
-                  <div
+                  <Link
                     key={order._id}
-                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors"
+                    href={`/admin/orders/${order._id}`}
+                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors group"
                   >
                     <div>
-                      <p className="font-semibold text-sm text-gray-900">
+                      <p className="font-semibold text-sm text-gray-900 group-hover:text-burhan-secondary transition-colors">
                         {order.customer?.name || order.shippingAddress?.fullName || 'Customer'}
                       </p>
                       <p className="text-xs text-gray-500">
-                        Order #{order._id.slice(0, 8)} • PKR {Number(order.total || 0).toLocaleString()}
+                        Order #{String(order._id || '').slice(0, 8).toUpperCase()} • PKR {Number(order.total || 0).toLocaleString()}
                       </p>
                     </div>
 
-                    <span
-                      className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase ${
-                        order.status === 'delivered'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : order.status === 'pending'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {order.status || 'Pending'}
-                    </span>
-                  </div>
+                    <div className="flex items-center space-x-2">
+                      <span
+                        className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase ${
+                          order.status === 'delivered'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : order.status === 'pending'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {order.status || 'Pending'}
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-burhan-secondary group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                  </Link>
                 ))}
               </div>
             )}

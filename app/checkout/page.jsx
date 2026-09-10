@@ -40,9 +40,24 @@ export default function CheckoutPage() {
   const validateForm = () => {
     const newErrors = {};
     
+    // Normalize phone number (handle spaces, dashes, +92, 0092, 92)
+    const rawPhone = String(formData.phone || '').trim();
+    const cleanPhone = rawPhone.replace(/[\s\-\(\)]/g, '').replace(/^(\+92|0092|92)/, '0');
+
     if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
-    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-    if (!/^03\d{9}$/.test(formData.phone)) newErrors.phone = 'Invalid Pakistani phone number';
+    if (!rawPhone) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^03\d{9}$/.test(cleanPhone)) {
+      newErrors.phone = 'Please enter a valid Pakistani mobile number (e.g., 03001234567 or +92 300 1234567)';
+    }
+
+    if (formData.alternatePhone) {
+      const cleanAlt = String(formData.alternatePhone).trim().replace(/[\s\-\(\)]/g, '').replace(/^(\+92|0092|92)/, '0');
+      if (!/^03\d{9}$/.test(cleanAlt)) {
+        newErrors.alternatePhone = 'Invalid alternate phone number';
+      }
+    }
+
     if (!formData.province) newErrors.province = 'Province is required';
     if (!formData.city.trim()) newErrors.city = 'City is required';
     if (!formData.address.trim()) newErrors.address = 'Address is required';
@@ -64,28 +79,33 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
+      const cleanPhone = String(formData.phone).trim().replace(/[\s\-\(\)]/g, '').replace(/^(\+92|0092|92)/, '0');
+      const cleanAltPhone = formData.alternatePhone
+        ? String(formData.alternatePhone).trim().replace(/[\s\-\(\)]/g, '').replace(/^(\+92|0092|92)/, '0')
+        : '';
+
       const orderData = {
         items: cart.map(item => ({
           productId: item._id,
           name: item.name,
-          image: item.thumbnail,
+          image: item.thumbnail || item.image,
           price: item.price,
           quantity: item.quantity
         })),
         customer: {
-          name: formData.fullName,
-          phone: formData.phone,
-          alternatePhone: formData.alternatePhone,
-          email: formData.email,
+          name: formData.fullName.trim(),
+          phone: cleanPhone,
+          alternatePhone: cleanAltPhone,
+          email: formData.email.trim(),
           province: formData.province,
-          city: formData.city,
-          address: formData.address
+          city: formData.city.trim(),
+          address: formData.address.trim()
         },
         subtotal,
         shipping: shippingCost,
         total,
         paymentMethod: formData.paymentMethod,
-        notes: formData.notes
+        notes: formData.notes ? formData.notes.trim() : ''
       };
 
       const response = await fetch('/api/orders', {

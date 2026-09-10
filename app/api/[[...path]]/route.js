@@ -150,6 +150,42 @@ export async function GET(request) {
       return NextResponse.json({ categories });
     }
 
+    // Order tracking endpoint (GET support)
+    if (path === 'orders/track') {
+      const orderId = searchParams.get('orderId') || '';
+      const phone = searchParams.get('phone') || '';
+
+      if (!orderId) {
+        return errorResponse('Order ID is required', 400);
+      }
+
+      const sanitizedOrderId = String(orderId).trim().toLowerCase();
+      const cleanInputPhone = phone ? String(phone).replace(/[^0-9]/g, '').slice(-10) : '';
+
+      const ordersCol = await getCollection('orders');
+      const allOrders = await ordersCol.find({}).toArray();
+
+      const matchedOrder = allOrders.find(o => {
+        const idMatches = 
+          o._id.toLowerCase() === sanitizedOrderId ||
+          o._id.toLowerCase().startsWith(sanitizedOrderId) ||
+          sanitizedOrderId.startsWith(o._id.slice(0, 12).toLowerCase());
+
+        if (!cleanInputPhone) return idMatches;
+
+        const oPhone = String(o.customer?.phone || '').replace(/[^0-9]/g, '').slice(-10);
+        const oAltPhone = String(o.customer?.alternatePhone || '').replace(/[^0-9]/g, '').slice(-10);
+
+        return idMatches && (oPhone === cleanInputPhone || oAltPhone === cleanInputPhone);
+      });
+
+      if (!matchedOrder) {
+        return errorResponse('Order not found', 404);
+      }
+
+      return NextResponse.json({ order: matchedOrder });
+    }
+
     // Orders endpoint
     if (path.startsWith('orders/') && !path.includes('track')) {
       const orderId = path.split('/')[1];
@@ -271,11 +307,11 @@ export async function POST(request) {
           name: product.name,
           price: product.price, // Server-side price
           quantity: item.quantity,
-          image: product.image || item.image
+          image: product.image || product.thumbnail || item.image
         });
       }
       
-      const shipping = 200; // Fixed shipping cost
+      const shipping = body.shipping !== undefined ? Number(body.shipping) : 200; // Fixed shipping cost
       const calculatedTotal = calculatedSubtotal + shipping;
       
       const order = {
@@ -285,8 +321,10 @@ export async function POST(request) {
           name: String(body.customer.name).trim(),
           email: body.customer.email ? String(body.customer.email).trim() : '',
           phone: String(body.customer.phone).trim(),
-          address: String(body.customer.address).trim(),
+          alternatePhone: body.customer.alternatePhone ? String(body.customer.alternatePhone).trim() : '',
+          province: body.customer.province ? String(body.customer.province).trim() : '',
           city: body.customer.city ? String(body.customer.city).trim() : '',
+          address: String(body.customer.address).trim(),
           postalCode: body.customer.postalCode ? String(body.customer.postalCode).trim() : ''
         },
         subtotal: calculatedSubtotal,
@@ -295,17 +333,27 @@ export async function POST(request) {
         paymentMethod: body.paymentMethod || 'cod',
         status: 'pending',
         notes: body.notes ? String(body.notes).trim() : '',
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         timeline: [
-          { status: 'pending', timestamp: new Date(), message: 'Order placed successfully' }
+          { status: 'pending', timestamp: new Date().toISOString(), message: 'Order placed successfully by customer via website' }
         ]
       };
 
       await ordersCol.insertOne(order);
+
+      // Decrement stock for purchased items
+      for (const item of validatedItems) {
+        await productsCol.updateOne(
+          { _id: item.productId },
+          { $inc: { stock: -item.quantity } }
+        );
+      }
+
       return NextResponse.json({ order, success: true }, { status: 201 });
     }
 
-    // Track order - WITH INPUT SANITIZATION
+    // Track order - WITH INPUT SANITIZATION & FLEXIBLE MATCHING
     if (path === 'orders/track') {
       const { orderId, phone } = await request.json();
       
@@ -313,30 +361,38 @@ export async function POST(request) {
         return errorResponse('Order ID and phone number are required', 400);
       }
 
-      // SECURITY: Sanitize inputs to prevent NoSQL injection
-      if (typeof orderId !== 'string' || typeof phone !== 'string') {
-        return errorResponse('Invalid input format', 400);
-      }
-      
-      // Remove any special characters that could be query operators
+      // Sanitize inputs
       const sanitizedOrderId = String(orderId).trim();
-      const sanitizedPhone = String(phone).trim().replace(/[^0-9+\-\s]/g, '');
+      const cleanInputPhone = String(phone).replace(/[^0-9]/g, '').slice(-10);
       
-      if (sanitizedOrderId.length === 0 || sanitizedPhone.length === 0) {
+      if (sanitizedOrderId.length === 0 || cleanInputPhone.length === 0) {
         return errorResponse('Invalid Order ID or phone number', 400);
       }
 
       const ordersCol = await getCollection('orders');
-      const order = await ordersCol.findOne({ 
-        _id: sanitizedOrderId, 
-        'customer.phone': sanitizedPhone
+      const allOrders = await ordersCol.find({}).toArray();
+
+      const matchedOrder = allOrders.find(o => {
+        const idMatches = 
+          o._id.toLowerCase() === sanitizedOrderId.toLowerCase() ||
+          o._id.toLowerCase().startsWith(sanitizedOrderId.toLowerCase()) ||
+          sanitizedOrderId.toLowerCase().startsWith(o._id.slice(0, 12).toLowerCase());
+
+        const oPhone = String(o.customer?.phone || '').replace(/[^0-9]/g, '').slice(-10);
+        const oAltPhone = String(o.customer?.alternatePhone || '').replace(/[^0-9]/g, '').slice(-10);
+
+        const phoneMatches = 
+          (oPhone && oPhone === cleanInputPhone) ||
+          (oAltPhone && oAltPhone === cleanInputPhone);
+
+        return idMatches && phoneMatches;
       });
       
-      if (!order) {
+      if (!matchedOrder) {
         return errorResponse('Order not found. Please check your Order ID and phone number.', 404);
       }
       
-      return NextResponse.json({ order });
+      return NextResponse.json({ order: matchedOrder });
     }
 
     // SECURITY FIX: Removed public seed endpoint
