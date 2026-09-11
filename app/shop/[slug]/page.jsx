@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Truck, Shield, RotateCcw, Check } from 'lucide-react';
@@ -10,6 +10,7 @@ import { useWishlist } from '@/lib/contexts/WishlistContext';
 import ProductCard from '@/components/product/ProductCard';
 
 export default function ProductDetailPage() {
+  const router = useRouter();
   const params = useParams();
   const slug = params.slug;
   
@@ -56,7 +57,7 @@ export default function ProductDetailPage() {
   const handleBuyNow = () => {
     if (product) {
       addToCart(product, quantity);
-      window.location.href = '/cart';
+      router.push('/cart');
     }
   };
 
@@ -102,6 +103,11 @@ export default function ProductDetailPage() {
     );
   }
 
+  const productImages = (Array.isArray(product.images) && product.images.length > 0)
+    ? product.images
+    : (product.thumbnail ? [product.thumbnail] : (product.image ? [product.image] : ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500']));
+  const activeImage = productImages[selectedImage] || productImages[0];
+
   return (
     <div className="min-h-screen bg-burhan-background pt-24 pb-12">
       <div className="container mx-auto px-4">
@@ -114,9 +120,10 @@ export default function ProductDetailPage() {
               className="aspect-square relative overflow-hidden rounded-2xl bg-white mb-4 image-zoom-container"
             >
               <Image
-                src={product.images[selectedImage]}
+                src={activeImage}
                 alt={product.name}
                 fill
+                referrerPolicy="no-referrer"
                 className="object-cover image-zoom"
               />
               {/* Badges */}
@@ -135,26 +142,29 @@ export default function ProductDetailPage() {
             </motion.div>
 
             {/* Thumbnails */}
-            <div className="grid grid-cols-4 gap-2">
-              {product.images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`aspect-square relative overflow-hidden rounded-lg border-2 transition-all ${
-                    selectedImage === index
-                      ? 'border-burhan-secondary'
-                      : 'border-transparent hover:border-gray-300'
-                  }`}
-                >
-                  <Image
-                    src={image}
-                    alt={`${product.name} ${index + 1}`}
-                    fill
-                    className="object-cover"
-                  />
-                </button>
-              ))}
-            </div>
+            {productImages.length > 1 && (
+              <div className="grid grid-cols-4 gap-2">
+                {productImages.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`aspect-square relative overflow-hidden rounded-lg border-2 transition-all ${
+                      selectedImage === index
+                        ? 'border-burhan-secondary'
+                        : 'border-transparent hover:border-gray-300'
+                    }`}
+                  >
+                    <Image
+                      src={image}
+                      alt={`${product.name} ${index + 1}`}
+                      fill
+                      referrerPolicy="no-referrer"
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}

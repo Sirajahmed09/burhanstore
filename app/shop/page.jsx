@@ -1,24 +1,45 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import ProductCard from '@/components/product/ProductCard';
 import { Filter, Search, X } from 'lucide-react';
 
-export default function ShopPage() {
+function ShopContent() {
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get('category') || '';
+  const initialSearch = searchParams.get('search') || '';
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
-    category: '',
+    category: initialCategory,
     minPrice: '',
     maxPrice: '',
     sort: 'newest',
-    search: '',
+    search: initialSearch,
     inStock: false,
     rating: ''
   });
   const [showFilters, setShowFilters] = useState(false);
+
+  // Sync when URL search params change
+  useEffect(() => {
+    const urlCategory = searchParams.get('category') || '';
+    const urlSearch = searchParams.get('search') || '';
+    setFilters(prev => {
+      if (urlCategory !== prev.category || urlSearch !== prev.search) {
+        return {
+          ...prev,
+          category: urlCategory,
+          search: urlSearch
+        };
+      }
+      return prev;
+    });
+  }, [searchParams]);
 
   // Fetch categories
   useEffect(() => {
@@ -259,5 +280,22 @@ export default function ShopPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-burhan-background pt-24 pb-12">
+          <div className="container mx-auto px-4 text-center py-20">
+            <div className="w-12 h-12 border-4 border-burhan-secondary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-burhan-text-secondary">Loading products...</p>
+          </div>
+        </div>
+      }
+    >
+      <ShopContent />
+    </Suspense>
   );
 }

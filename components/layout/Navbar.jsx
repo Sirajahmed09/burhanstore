@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, ShoppingCart, Heart, Menu, X } from 'lucide-react';
 import { useCart } from '@/lib/contexts/CartContext';
 import { useWishlist } from '@/lib/contexts/WishlistContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Navbar() {
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { getCartCount } = useCart();
   const { wishlist } = useWishlist();
 
@@ -21,6 +24,13 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+    setSearchOpen(false);
+  };
 
   const navLinks = [
     { name: 'Home', href: '/' },
@@ -115,14 +125,25 @@ export default function Navbar() {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="pb-4">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-burhan-secondary"
-                  autoFocus
-                />
-              </div>
+              <form onSubmit={handleSearchSubmit} className="pb-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search products (e.g. Wireless Earbuds, Smart Watch)..."
+                    className="w-full pl-4 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-burhan-secondary"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-burhan-primary hover:text-burhan-secondary p-1"
+                    aria-label="Submit Search"
+                  >
+                    <Search className="w-5 h-5" />
+                  </button>
+                </div>
+              </form>
             </motion.div>
           )}
         </AnimatePresence>

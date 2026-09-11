@@ -1,0 +1,906 @@
+{
+  "categories": [
+    {
+      "_id": "4697637d-f95a-4f03-814b-8a5af78c6911",
+      "name": "Wireless Earbuds",
+      "slug": "wireless-earbuds",
+      "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500",
+      "description": "Premium wireless earbuds with superior sound quality",
+      "productCount": 3
+    },
+    {
+      "_id": "3db0599c-87fd-43cc-bb63-a7e79842024e",
+      "name": "Headphones",
+      "slug": "headphones",
+      "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500",
+      "description": "High-quality over-ear and on-ear headphones",
+      "productCount": 1
+    },
+    {
+      "_id": "96e59764-7d46-40f3-99a1-0ca57ed6aeed",
+      "name": "Chargers",
+      "slug": "chargers",
+      "image": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=500",
+      "description": "Fast charging solutions for all your devices",
+      "productCount": 4
+    },
+    {
+      "_id": "297a3635-f6b4-4f75-99ab-38526f0d34fd",
+      "name": "Power Banks",
+      "slug": "power-banks",
+      "image": "https://images.unsplash.com/photo-1609592043357-554eb9496153?w=500",
+      "description": "Portable power for life on the go",
+      "productCount": 2
+    },
+    {
+      "_id": "f87f9091-a41e-46c5-a69f-ac1bd1592259",
+      "name": "Smart Watches",
+      "slug": "smart-watches",
+      "image": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=500",
+      "description": "Stay connected with smart wearable technology",
+      "productCount": 1
+    },
+    {
+      "_id": "8da0c6c6-0b16-4a8b-90c4-e5366c60e0f5",
+      "name": "Gaming Accessories",
+      "slug": "gaming-accessories",
+      "image": "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=500",
+      "description": "Level up your gaming experience",
+      "productCount": 4
+    }
+  ],
+  "products": [
+    {
+      "_id": "fe9b99df-14e8-488c-a3ba-aa2a8afd47dd",
+      "name": "Burhan AirPods Pro Max",
+      "slug": "burhan-airpods-pro-max",
+      "category": "Wireless Earbuds",
+      "price": 8999,
+      "oldPrice": 12999,
+      "discount": 31,
+      "images": [
+        "https://images.unsplash.com/photo-1606841837239-c5a1a4a07af7?w=800",
+        "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800",
+        "https://images.unsplash.com/photo-1606220838315-056192d5e927?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1606841837239-c5a1a4a07af7?w=400",
+      "description": "Experience premium sound quality with active noise cancellation. Perfect for music lovers and professionals.",
+      "features": [
+        "Active Noise Cancellation (ANC)",
+        "Transparency Mode",
+        "Spatial Audio",
+        "Up to 6 hours battery life",
+        "IPX4 Water Resistance",
+        "Touch Controls"
+      ],
+      "specifications": {
+        "Battery Life": "6 hours (ANC on), 30 hours with case",
+        "Bluetooth": "5.3",
+        "Charging": "USB-C Fast Charging",
+        "Weight": "5.4g per earbud",
+        "Driver": "12mm Dynamic Driver",
+        "Frequency Response": "20Hz - 20kHz"
+      },
+      "inBox": [
+        "Earbuds",
+        "Charging Case",
+        "3 Ear Tips Sizes",
+        "USB-C Cable",
+        "User Manual"
+      ],
+      "stock": 45,
+      "sku": "BRH-ARP-MAX-001",
+      "rating": 4.8,
+      "reviewCount": 127,
+      "isNew": true,
+      "isTrending": true,
+      "isFeatured": true,
+      "warranty": "1 Year Official Warranty",
+      "createdAt": "2026-09-10T19:40:07.655Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "c6500bab-8198-45fe-9610-65aefbff82c6",
+      "name": "Burhan Elite Buds",
+      "slug": "burhan-elite-buds",
+      "category": "Wireless Earbuds",
+      "price": 5499,
+      "oldPrice": 7999,
+      "discount": 31,
+      "images": [
+        "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800",
+        "https://images.unsplash.com/photo-1606841837239-c5a1a4a07af7?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400",
+      "description": "Affordable excellence. Crystal clear sound with long battery life.",
+      "features": [
+        "Environmental Noise Cancellation",
+        "Gaming Mode (Low Latency)",
+        "Up to 8 hours playback",
+        "IPX5 Water Resistance",
+        "Touch Controls"
+      ],
+      "specifications": {
+        "Battery Life": "8 hours, 40 hours with case",
+        "Bluetooth": "5.2",
+        "Charging": "USB-C",
+        "Weight": "4.2g per earbud",
+        "Driver": "10mm Dynamic Driver"
+      },
+      "inBox": [
+        "Earbuds",
+        "Charging Case",
+        "Ear Tips",
+        "USB-C Cable",
+        "Manual"
+      ],
+      "stock": 67,
+      "sku": "BRH-EB-001",
+      "rating": 4.6,
+      "reviewCount": 93,
+      "isNew": false,
+      "isTrending": true,
+      "isFeatured": true,
+      "warranty": "1 Year Warranty",
+      "createdAt": "2026-09-10T19:40:07.655Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "99aa89ce-6e3a-4695-a751-7b24c9d2b879",
+      "name": "Burhan Studio Pro Headphones",
+      "slug": "burhan-studio-pro-headphones",
+      "category": "Headphones",
+      "price": 12999,
+      "oldPrice": 18999,
+      "discount": 32,
+      "images": [
+        "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800",
+        "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400",
+      "description": "Professional studio-grade headphones with exceptional sound clarity.",
+      "features": [
+        "Premium 40mm Drivers",
+        "Active Noise Cancellation",
+        "Wired & Wireless Modes",
+        "Up to 50 hours battery",
+        "Foldable Design",
+        "Premium Leather Cushions"
+      ],
+      "specifications": {
+        "Battery Life": "50 hours (Bluetooth), Unlimited (Wired)",
+        "Bluetooth": "5.3",
+        "Frequency Response": "15Hz - 30kHz",
+        "Impedance": "32 Ohms",
+        "Weight": "285g"
+      },
+      "inBox": [
+        "Headphones",
+        "3.5mm Audio Cable",
+        "USB-C Cable",
+        "Carrying Case",
+        "Manual"
+      ],
+      "stock": 23,
+      "sku": "BRH-SP-001",
+      "rating": 4.9,
+      "reviewCount": 156,
+      "isNew": true,
+      "isTrending": false,
+      "isFeatured": true,
+      "warranty": "1 Year Warranty",
+      "createdAt": "2026-09-10T19:40:07.655Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "9b0c7042-bdf1-4c0c-885f-453cdc53b16e",
+      "name": "Burhan 65W GaN Fast Charger",
+      "slug": "burhan-65w-gan-charger",
+      "category": "Chargers",
+      "price": 3499,
+      "oldPrice": 4999,
+      "discount": 30,
+      "images": [
+        "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=400",
+      "description": "Ultra-compact 65W GaN charger. Charge laptops, tablets, and phones at maximum speed.",
+      "features": [
+        "65W Power Delivery",
+        "GaN Technology",
+        "Dual USB-C Ports",
+        "Compact Design",
+        "Universal Compatibility",
+        "Multiple Safety Protections"
+      ],
+      "specifications": {
+        "Output": "65W Max (Single Port), 45W+18W (Dual Port)",
+        "Input": "100-240V 50/60Hz",
+        "Ports": "2x USB-C",
+        "Size": "6.5 x 4 x 3 cm",
+        "Weight": "120g"
+      },
+      "inBox": [
+        "Charger",
+        "User Manual"
+      ],
+      "stock": 89,
+      "sku": "BRH-65W-GAN-001",
+      "rating": 4.7,
+      "reviewCount": 234,
+      "isNew": false,
+      "isTrending": true,
+      "isFeatured": false,
+      "warranty": "1 Year Warranty",
+      "createdAt": "2026-09-10T19:40:07.655Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "beeea08c-26c7-4ae4-bf2c-d1aa183e97be",
+      "name": "Burhan 20W USB-C Fast Charger",
+      "slug": "burhan-20w-usb-c-charger",
+      "category": "Chargers",
+      "price": 1299,
+      "oldPrice": 1999,
+      "discount": 35,
+      "images": [
+        "https://images.unsplash.com/photo-1591290619762-ffe7ba26521a?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1591290619762-ffe7ba26521a?w=400",
+      "description": "Compact and efficient 20W fast charger perfect for smartphones.",
+      "features": [
+        "20W Power Delivery",
+        "USB-C Port",
+        "Compact Size",
+        "Universal Phone Compatibility",
+        "Safety Protection"
+      ],
+      "specifications": {
+        "Output": "20W Max",
+        "Input": "100-240V",
+        "Port": "1x USB-C",
+        "Weight": "45g"
+      },
+      "inBox": [
+        "Charger",
+        "Manual"
+      ],
+      "stock": 156,
+      "sku": "BRH-20W-001",
+      "rating": 4.5,
+      "reviewCount": 189,
+      "isNew": false,
+      "isTrending": false,
+      "isFeatured": false,
+      "warranty": "6 Months Warranty",
+      "createdAt": "2026-09-10T19:40:07.655Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "16f7c6d5-98a7-493f-abbf-64060a58a87b",
+      "name": "Burhan PowerMax 20000mAh",
+      "slug": "burhan-powermax-20000",
+      "category": "Power Banks",
+      "price": 4999,
+      "oldPrice": 6999,
+      "discount": 29,
+      "images": [
+        "https://images.unsplash.com/photo-1609592043357-554eb9496153?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1609592043357-554eb9496153?w=400",
+      "description": "Massive 20000mAh capacity power bank with 65W fast charging.",
+      "features": [
+        "20000mAh Capacity",
+        "65W Power Delivery",
+        "Dual USB-C + USB-A",
+        "LED Display",
+        "Fast Charging Input & Output",
+        "Charge 3 Devices Simultaneously"
+      ],
+      "specifications": {
+        "Capacity": "20000mAh",
+        "Input": "USB-C 65W",
+        "Output": "USB-C1 65W, USB-C2 30W, USB-A 22.5W",
+        "Size": "15 x 7 x 3 cm",
+        "Weight": "410g"
+      },
+      "inBox": [
+        "Power Bank",
+        "USB-C Cable",
+        "User Manual",
+        "Travel Pouch"
+      ],
+      "stock": 34,
+      "sku": "BRH-PM-20K",
+      "rating": 4.8,
+      "reviewCount": 145,
+      "isNew": true,
+      "isTrending": true,
+      "isFeatured": true,
+      "warranty": "1 Year Warranty",
+      "createdAt": "2026-09-10T19:40:07.655Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "e7e00ad5-5328-4176-b2c0-40d28e08692a",
+      "name": "Burhan Slim 10000mAh",
+      "slug": "burhan-slim-10000",
+      "category": "Power Banks",
+      "price": 2999,
+      "oldPrice": 3999,
+      "discount": 25,
+      "images": [
+        "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400",
+      "description": "Ultra-slim design power bank. Perfect for daily carry.",
+      "features": [
+        "10000mAh Capacity",
+        "Slim Design (1.5cm)",
+        "20W Fast Charging",
+        "Dual Ports",
+        "LED Indicator"
+      ],
+      "specifications": {
+        "Capacity": "10000mAh",
+        "Output": "USB-C 20W, USB-A 18W",
+        "Size": "14 x 6.8 x 1.5 cm",
+        "Weight": "195g"
+      },
+      "inBox": [
+        "Power Bank",
+        "USB-C Cable",
+        "Manual"
+      ],
+      "stock": 78,
+      "sku": "BRH-SL-10K",
+      "rating": 4.6,
+      "reviewCount": 98,
+      "isNew": false,
+      "isTrending": false,
+      "isFeatured": false,
+      "warranty": "1 Year Warranty",
+      "createdAt": "2026-09-10T19:40:07.655Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "6ad31860-0b44-47a1-80c0-a1c3142eafbd",
+      "name": "Burhan SmartWatch Ultra",
+      "slug": "burhan-smartwatch-ultra",
+      "category": "Smart Watches",
+      "price": 9999,
+      "oldPrice": 14999,
+      "discount": 33,
+      "images": [
+        "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=800",
+        "https://images.unsplash.com/photo-1434493907317-a46b5bbe7834?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=400",
+      "description": "Premium smartwatch with AMOLED display and comprehensive health tracking.",
+      "features": [
+        "1.43\" AMOLED Display",
+        "Heart Rate Monitor",
+        "SpO2 Sensor",
+        "Sleep Tracking",
+        "100+ Sports Modes",
+        "IP68 Water Resistance",
+        "7 Days Battery Life",
+        "Bluetooth Calling"
+      ],
+      "specifications": {
+        "Display": "1.43\" AMOLED 466x466",
+        "Battery": "300mAh (7 days)",
+        "Bluetooth": "5.2",
+        "Sensors": "Heart Rate, SpO2, Accelerometer, Gyroscope",
+        "Water Resistance": "IP68",
+        "Weight": "48g"
+      },
+      "inBox": [
+        "Smart Watch",
+        "Charging Cable",
+        "Extra Strap",
+        "User Manual"
+      ],
+      "stock": 28,
+      "sku": "BRH-SW-ULTRA",
+      "rating": 4.7,
+      "reviewCount": 112,
+      "isNew": true,
+      "isTrending": true,
+      "isFeatured": true,
+      "warranty": "1 Year Warranty",
+      "createdAt": "2026-09-10T19:40:07.655Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "d1145c0d-aae0-4d3d-8eab-29524d2f146f",
+      "name": "Burhan Gaming Headset Pro",
+      "slug": "burhan-gaming-headset-pro",
+      "category": "Gaming Accessories",
+      "price": 6999,
+      "oldPrice": 9999,
+      "discount": 30,
+      "images": [
+        "https://images.unsplash.com/photo-1599669454699-248893623440?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1599669454699-248893623440?w=400",
+      "description": "7.1 Surround sound gaming headset with RGB lighting and premium microphone.",
+      "features": [
+        "7.1 Virtual Surround Sound",
+        "RGB Lighting",
+        "Noise Cancelling Microphone",
+        "50mm Drivers",
+        "Memory Foam Cushions",
+        "Multi-Platform Compatible"
+      ],
+      "specifications": {
+        "Driver": "50mm Neodymium",
+        "Frequency": "20Hz - 20kHz",
+        "Impedance": "32 Ohms",
+        "Cable": "2m Braided",
+        "Weight": "320g"
+      },
+      "inBox": [
+        "Gaming Headset",
+        "USB Adapter",
+        "User Manual"
+      ],
+      "stock": 45,
+      "sku": "BRH-GH-PRO",
+      "rating": 4.8,
+      "reviewCount": 167,
+      "isNew": false,
+      "isTrending": true,
+      "isFeatured": false,
+      "warranty": "1 Year Warranty",
+      "createdAt": "2026-09-10T19:40:07.655Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "7c5438f8-2766-4d9f-8e8f-47993f73e52d",
+      "name": "Burhan RGB Gaming Mouse",
+      "slug": "burhan-rgb-gaming-mouse",
+      "category": "Gaming Accessories",
+      "price": 3499,
+      "oldPrice": 4999,
+      "discount": 30,
+      "images": [
+        "https://images.unsplash.com/photo-1527814050087-3793815479db?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1527814050087-3793815479db?w=400",
+      "description": "Precision gaming mouse with adjustable DPI and customizable RGB.",
+      "features": [
+        "Up to 12000 DPI",
+        "7 Programmable Buttons",
+        "RGB Lighting (16.8M Colors)",
+        "PMW3327 Sensor",
+        "Ergonomic Design",
+        "Braided Cable"
+      ],
+      "specifications": {
+        "DPI": "200-12000",
+        "Polling Rate": "1000Hz",
+        "Buttons": "7 Programmable",
+        "Cable": "1.8m Braided",
+        "Weight": "95g"
+      },
+      "inBox": [
+        "Gaming Mouse",
+        "User Manual"
+      ],
+      "stock": 67,
+      "sku": "BRH-GM-RGB",
+      "rating": 4.6,
+      "reviewCount": 89,
+      "isNew": false,
+      "isTrending": false,
+      "isFeatured": false,
+      "warranty": "1 Year Warranty",
+      "createdAt": "2026-09-10T19:40:07.655Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "b3a6c94d-1eb7-4b51-9ef9-7f05f4e2004d",
+      "name": "Burhan USB-C Hub 7-in-1",
+      "slug": "burhan-usb-c-hub",
+      "category": "Gaming Accessories",
+      "price": 4499,
+      "oldPrice": 5999,
+      "discount": 25,
+      "images": [
+        "https://images.unsplash.com/photo-1625948515291-69613efd103f?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1625948515291-69613efd103f?w=400",
+      "description": "Expand your connectivity with 7 ports in one compact hub.",
+      "features": [
+        "4K HDMI Output",
+        "3x USB 3.0 Ports",
+        "SD/TF Card Reader",
+        "USB-C PD Charging",
+        "Aluminum Body"
+      ],
+      "specifications": {
+        "HDMI": "4K@30Hz",
+        "USB": "3x USB 3.0 (5Gbps)",
+        "Card Reader": "SD/TF",
+        "Power Delivery": "Up to 100W",
+        "Material": "Aluminum Alloy"
+      },
+      "inBox": [
+        "USB-C Hub",
+        "User Manual"
+      ],
+      "stock": 49,
+      "sku": "BRH-HUB-7IN1",
+      "rating": 4.5,
+      "reviewCount": 67,
+      "isNew": false,
+      "isTrending": false,
+      "isFeatured": false,
+      "warranty": "1 Year Warranty",
+      "createdAt": "2026-09-10T19:40:07.656Z",
+      "status": "active",
+      "isActive": true,
+      "updatedAt": "2026-09-10T19:56:29.192Z"
+    },
+    {
+      "_id": "6aca318d-3ef3-4bf9-a299-2130e21d7fe5",
+      "name": "Burhan MagSafe Wireless Charger",
+      "slug": "burhan-magsafe-charger",
+      "category": "Chargers",
+      "price": 2999,
+      "oldPrice": 4499,
+      "discount": 33,
+      "images": [
+        "https://images.unsplash.com/photo-1621339146034-c796860f7e04?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1621339146034-c796860f7e04?w=400",
+      "description": "MagSafe compatible wireless charger with 15W fast charging.",
+      "features": [
+        "15W Wireless Charging",
+        "MagSafe Compatible",
+        "LED Indicator",
+        "Foreign Object Detection",
+        "Non-Slip Base"
+      ],
+      "specifications": {
+        "Output": "15W/10W/7.5W/5W",
+        "Input": "USB-C (20W)",
+        "Compatibility": "iPhone 12 and newer",
+        "Size": "60mm diameter",
+        "Weight": "65g"
+      },
+      "inBox": [
+        "Wireless Charger",
+        "USB-C Cable",
+        "Manual"
+      ],
+      "stock": 94,
+      "sku": "BRH-MAG-15W",
+      "rating": 4.7,
+      "reviewCount": 143,
+      "isNew": true,
+      "isTrending": false,
+      "isFeatured": false,
+      "warranty": "1 Year Warranty",
+      "createdAt": "2026-09-10T19:40:07.656Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "a4992d69-4bac-488f-a870-8e151732adc5",
+      "name": "Burhan Bluetooth Speaker Max",
+      "slug": "burhan-speaker-max",
+      "category": "Wireless Earbuds",
+      "price": 5999,
+      "oldPrice": 8999,
+      "discount": 33,
+      "images": [
+        "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400",
+      "description": "Powerful portable Bluetooth speaker with 360° sound and RGB lights.",
+      "features": [
+        "360° Surround Sound",
+        "RGB Light Show",
+        "20W Output",
+        "12 Hours Battery",
+        "IPX7 Waterproof",
+        "TWS Pairing"
+      ],
+      "specifications": {
+        "Power": "20W",
+        "Battery": "4000mAh (12 hours)",
+        "Bluetooth": "5.3",
+        "Range": "15 meters",
+        "Waterproof": "IPX7",
+        "Weight": "580g"
+      },
+      "inBox": [
+        "Bluetooth Speaker",
+        "USB-C Cable",
+        "AUX Cable",
+        "Manual"
+      ],
+      "stock": 41,
+      "sku": "BRH-SPK-MAX",
+      "rating": 4.8,
+      "reviewCount": 178,
+      "isNew": true,
+      "isTrending": true,
+      "isFeatured": true,
+      "warranty": "1 Year Warranty",
+      "createdAt": "2026-09-10T19:40:07.656Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "7d8aab85-ff23-4254-9fd8-04d88574b087",
+      "name": "Burhan Car Charger Dual Port",
+      "slug": "burhan-car-charger",
+      "category": "Chargers",
+      "price": 1499,
+      "oldPrice": 2499,
+      "discount": 40,
+      "images": [
+        "https://images.unsplash.com/photo-1613069298242-eb4c8e41b20d?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1613069298242-eb4c8e41b20d?w=400",
+      "description": "Fast charging car charger with dual USB-C ports.",
+      "features": [
+        "Dual USB-C Ports",
+        "40W Total Output",
+        "Smart Chip Protection",
+        "LED Indicator",
+        "Compact Design"
+      ],
+      "specifications": {
+        "Output": "20W per port",
+        "Input": "12-24V",
+        "Ports": "2x USB-C",
+        "Size": "4cm x 2.5cm"
+      },
+      "inBox": [
+        "Car Charger",
+        "Manual"
+      ],
+      "stock": 123,
+      "sku": "BRH-CAR-40W",
+      "rating": 4.4,
+      "reviewCount": 87,
+      "isNew": false,
+      "isTrending": false,
+      "isFeatured": false,
+      "warranty": "6 Months Warranty",
+      "createdAt": "2026-09-10T19:40:07.656Z",
+      "status": "active",
+      "isActive": true
+    },
+    {
+      "_id": "408f1ab6-9489-4eb1-b591-afef3c509633",
+      "name": "Burhan Phone Holder Magnetic",
+      "slug": "burhan-phone-holder",
+      "category": "Gaming Accessories",
+      "price": 899,
+      "oldPrice": 1499,
+      "discount": 40,
+      "images": [
+        "https://images.unsplash.com/photo-1621570074981-74fd1aa1a369?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1621570074981-74fd1aa1a369?w=400",
+      "description": "Strong magnetic car phone holder with 360° rotation.",
+      "features": [
+        "Strong Magnetic Hold",
+        "360° Rotation",
+        "Dashboard & Vent Mount",
+        "Universal Compatibility",
+        "One-Hand Operation"
+      ],
+      "specifications": {
+        "Magnet": "N52 Neodymium",
+        "Mount": "Dashboard/Air Vent",
+        "Rotation": "360°",
+        "Weight": "45g"
+      },
+      "inBox": [
+        "Magnetic Holder",
+        "2x Metal Plates",
+        "Manual"
+      ],
+      "stock": 167,
+      "sku": "BRH-PH-MAG",
+      "rating": 4.6,
+      "reviewCount": 234,
+      "isNew": false,
+      "isTrending": false,
+      "isFeatured": false,
+      "warranty": "6 Months Warranty",
+      "createdAt": "2026-09-10T19:40:07.656Z",
+      "status": "active",
+      "isActive": true
+    }
+  ],
+  "admins": [
+    {
+      "_id": "admin-burhan-owner",
+      "name": "Burhan Store Owner",
+      "email": "burhan@store",
+      "password": "$2a$10$TkWPJq8jg0cD7LJ1iwd1UOAOM9PWHxNRxBwZ3b41vdbjO4xpZxI7e",
+      "role": "superadmin",
+      "createdAt": "2026-09-10T19:40:07.656Z",
+      "updatedAt": "2026-09-10T19:40:07.656Z"
+    },
+    {
+      "_id": "admin-superadmin",
+      "name": "Super Admin",
+      "email": "admin@burhan.com",
+      "password": "$2a$10$E66okjRht1PObVKE8mgZd.eBZaQaHSvUMRxfYhEuXSu0Zi2nprgcC",
+      "role": "superadmin",
+      "createdAt": "2026-09-10T19:40:07.656Z",
+      "updatedAt": "2026-09-10T19:40:07.656Z"
+    }
+  ],
+  "settings": [
+    {
+      "_id": "e47a3d82-522a-47bc-a978-5e55398c1cf6",
+      "type": "general",
+      "storeName": "Burhan Store",
+      "email": "support@burhanstore.com",
+      "phone": "+92 300 1234567",
+      "currency": "PKR",
+      "currencySymbol": "Rs.",
+      "freeShippingThreshold": 5000,
+      "shippingFee": 200,
+      "updatedAt": "2026-09-10T19:40:07.656Z"
+    }
+  ],
+  "reviews": [
+    {
+      "_id": "522ce001-e943-49ed-b70b-07e1aa06bdab",
+      "productId": "fe9b99df-14e8-488c-a3ba-aa2a8afd47dd",
+      "name": "Ahmed Khan",
+      "rating": 5,
+      "comment": "Super fast delivery and authentic product! Outstanding sound quality and bass.",
+      "verified": true,
+      "createdAt": "2026-09-10T19:40:07.656Z"
+    },
+    {
+      "_id": "d8e8e279-d730-4fed-8a5f-eddb16874cbf",
+      "productId": "c6500bab-8198-45fe-9610-65aefbff82c6",
+      "name": "Sarah Tariq",
+      "rating": 5,
+      "comment": "Very comfortable to wear for long calls and music sessions. Highly recommended!",
+      "verified": true,
+      "createdAt": "2026-09-10T19:40:07.656Z"
+    }
+  ],
+  "orders": [
+    {
+      "_id": "d58dcaf9-1182-45e4-8e38-799b0ce02bc8",
+      "items": [
+        {
+          "productId": "b3a6c94d-1eb7-4b51-9ef9-7f05f4e2004d",
+          "name": "Burhan USB-C Hub 7-in-1",
+          "price": 4499,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1625948515291-69613efd103f?w=400"
+        }
+      ],
+      "customer": {
+        "name": "Verification Customer",
+        "email": "test@verification.com",
+        "phone": "03001234567",
+        "alternatePhone": "",
+        "province": "Punjab",
+        "city": "Islamabad",
+        "address": "House 123, Street 4, F-7/2",
+        "postalCode": ""
+      },
+      "subtotal": 4499,
+      "shipping": 200,
+      "total": 4699,
+      "paymentMethod": "cod",
+      "status": "pending",
+      "notes": "Production verification test order",
+      "createdAt": "2026-09-10T19:54:49.868Z",
+      "updatedAt": "2026-09-10T19:54:49.869Z",
+      "timeline": [
+        {
+          "status": "pending",
+          "timestamp": "2026-09-10T19:54:49.868Z",
+          "message": "Order placed successfully by customer via website"
+        }
+      ]
+    },
+    {
+      "_id": "82a66c17-1826-43d8-b38e-0f2e8563f9d9",
+      "items": [
+        {
+          "productId": "b3a6c94d-1eb7-4b51-9ef9-7f05f4e2004d",
+          "name": "Burhan USB-C Hub 7-in-1",
+          "price": 4499,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1625948515291-69613efd103f?w=400"
+        }
+      ],
+      "customer": {
+        "name": "Verification Customer",
+        "email": "test@verification.com",
+        "phone": "03001234567",
+        "alternatePhone": "",
+        "province": "Punjab",
+        "city": "Islamabad",
+        "address": "House 123, Street 4, F-7/2",
+        "postalCode": ""
+      },
+      "subtotal": 4499,
+      "shipping": 200,
+      "total": 4699,
+      "paymentMethod": "cod",
+      "status": "pending",
+      "notes": "Production verification test order",
+      "createdAt": "2026-09-10T19:56:01.112Z",
+      "updatedAt": "2026-09-10T19:56:01.112Z",
+      "timeline": [
+        {
+          "status": "pending",
+          "timestamp": "2026-09-10T19:56:01.112Z",
+          "message": "Order placed successfully by customer via website"
+        }
+      ]
+    },
+    {
+      "_id": "463eec2e-4d4b-4332-8ee7-dd67c6dabbd7",
+      "items": [
+        {
+          "productId": "b3a6c94d-1eb7-4b51-9ef9-7f05f4e2004d",
+          "name": "Burhan USB-C Hub 7-in-1",
+          "price": 4499,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1625948515291-69613efd103f?w=400"
+        }
+      ],
+      "customer": {
+        "name": "Verification Customer",
+        "email": "test@verification.com",
+        "phone": "03001234567",
+        "alternatePhone": "",
+        "province": "Punjab",
+        "city": "Islamabad",
+        "address": "House 123, Street 4, F-7/2",
+        "postalCode": ""
+      },
+      "subtotal": 4499,
+      "shipping": 200,
+      "total": 4699,
+      "paymentMethod": "cod",
+      "status": "confirmed",
+      "notes": "Production verification test order",
+      "createdAt": "2026-09-10T19:56:29.191Z",
+      "updatedAt": "2026-09-10T19:56:29.866Z",
+      "timeline": [
+        {
+          "status": "pending",
+          "timestamp": "2026-09-10T19:56:29.191Z",
+          "message": "Order placed successfully by customer via website"
+        },
+        {
+          "status": "confirmed",
+          "timestamp": "2026-09-10T19:56:29.866Z",
+          "message": "Call confirmed with customer"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

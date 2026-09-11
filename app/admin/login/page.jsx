@@ -126,6 +126,11 @@ export default function AdminLoginPage() {
             </button>
           </form>
 
+          {/* Credentials Info */}
+          <div className="mt-6 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600">
+            <span className="font-semibold text-slate-800">Admin Access:</span> Use your administrative email (<code className="bg-slate-200 px-1 rounded">admin@burhan.com</code> / <code className="bg-slate-200 px-1 rounded">Admin@123</code>) or configured credentials.
+          </div>
+
           {/* Back to Store */}
           <div className="mt-6 text-center">
             <a

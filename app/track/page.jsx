@@ -1,18 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Search, Package, CheckCircle, Clock, Truck, X } from 'lucide-react';
 
-export default function TrackOrderPage() {
-  const [orderId, setOrderId] = useState('');
-  const [phone, setPhone] = useState('');
+function TrackOrderContent() {
+  const searchParams = useSearchParams();
+  const [orderId, setOrderId] = useState(searchParams.get('orderId') || '');
+  const [phone, setPhone] = useState(searchParams.get('phone') || '');
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleTrack = async (e) => {
-    e.preventDefault();
+  const executeTrack = async (targetId, targetPhone) => {
+    const idToUse = (targetId !== undefined ? targetId : orderId).trim();
+    const phoneToUse = (targetPhone !== undefined ? targetPhone : phone).trim();
+
+    if (!idToUse) {
+      setError('Please enter your Order ID');
+      return;
+    }
+
     setError('');
     setLoading(true);
 
@@ -22,7 +31,7 @@ export default function TrackOrderPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ orderId, phone })
+        body: JSON.stringify({ orderId: idToUse, phone: phoneToUse })
       });
 
       let data = {};
@@ -32,10 +41,10 @@ export default function TrackOrderPage() {
         data = { error: 'Invalid response format' };
       }
 
-      if (response.ok) {
+      if (response.ok && data.order) {
         setOrder(data.order);
       } else {
-        setError(data.error || 'Order not found');
+        setError(data.error || 'Order not found. Please verify your Order ID and phone number.');
         setOrder(null);
       }
     } catch (err) {
@@ -44,6 +53,22 @@ export default function TrackOrderPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Auto-track if orderId is provided in URL params
+  useEffect(() => {
+    const queryOrderId = searchParams.get('orderId');
+    const queryPhone = searchParams.get('phone');
+    if (queryOrderId) {
+      setOrderId(queryOrderId);
+      if (queryPhone) setPhone(queryPhone);
+      executeTrack(queryOrderId, queryPhone || '');
+    }
+  }, [searchParams]);
+
+  const handleTrack = (e) => {
+    e.preventDefault();
+    executeTrack();
   };
 
   const getStatusIcon = (status) => {
@@ -221,5 +246,19 @@ export default function TrackOrderPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function TrackOrderPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-burhan-background pt-24 pb-12 flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-burhan-secondary border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <TrackOrderContent />
+    </Suspense>
   );
 }

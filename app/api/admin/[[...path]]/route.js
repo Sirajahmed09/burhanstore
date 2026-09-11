@@ -347,6 +347,7 @@ export async function POST(request) {
 
       const response = successResponse({
         success: true,
+        token,
         user: {
           id: admin._id,
           email: admin.email,

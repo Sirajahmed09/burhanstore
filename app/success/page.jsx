@@ -97,7 +97,7 @@ function SuccessContent() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href={`/track?orderId=${orderId}&phone=${order?.customer.phone || ''}`}
+              href={`/track?orderId=${orderId || ''}&phone=${order?.customer?.phone || ''}`}
               className="bg-burhan-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-burhan-secondary transition-colors flex items-center justify-center space-x-2"
             >
               <Package className="w-5 h-5" />

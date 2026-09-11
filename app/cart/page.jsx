@@ -69,9 +69,10 @@ export default function CartPage() {
               >
                 <div className="relative w-24 h-24 flex-shrink-0">
                   <Image
-                    src={item.thumbnail}
+                    src={item.thumbnail || item.images?.[0] || item.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'}
                     alt={item.name}
                     fill
+                    referrerPolicy="no-referrer"
                     className="object-cover rounded-lg"
                   />
                 </div>
