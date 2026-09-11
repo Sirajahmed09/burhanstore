@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCart } from '@/lib/contexts/CartContext';
+import { trackRemoveFromCart, trackBeginCheckout } from '@/lib/analytics/gtag';
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, getCartTotal, getCartCount, clearCart } = useCart();
@@ -13,6 +14,15 @@ export default function CartPage() {
 
   const subtotal = getCartTotal();
   const total = subtotal + shippingCost;
+
+  const handleRemove = (item) => {
+    removeFromCart(item._id);
+    trackRemoveFromCart(item, item.quantity);
+  };
+
+  const handleCheckoutClick = () => {
+    trackBeginCheckout(cart, total);
+  };
 
   if (cart.length === 0) {
     return (
@@ -113,7 +123,7 @@ export default function CartPage() {
                         PKR {(item.price * item.quantity).toLocaleString()}
                       </span>
                       <button
-                        onClick={() => removeFromCart(item._id)}
+                        onClick={() => handleRemove(item)}
                         className="text-burhan-error hover:bg-burhan-error/10 p-2 rounded-lg transition-colors"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -169,7 +179,7 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <Link href="/checkout">
+              <Link href="/checkout" onClick={handleCheckoutClick}>
                 <button className="w-full bg-burhan-primary text-white py-4 rounded-xl font-semibold text-lg hover:bg-burhan-secondary transition-colors ripple flex items-center justify-center space-x-2">
                   <span>Proceed to Checkout</span>
                   <ArrowRight className="w-5 h-5" />

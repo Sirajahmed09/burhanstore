@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CheckCircle, Package, ArrowRight } from 'lucide-react';
+import { trackPurchase } from '@/lib/analytics/gtag';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -15,7 +16,17 @@ function SuccessContent() {
     if (orderId) {
       fetch(`/api/orders/${orderId}`)
         .then(res => (res.ok ? res.json() : { order: null }))
-        .then(data => setOrder(data?.order || null))
+        .then(data => {
+          const ord = data?.order || null;
+          setOrder(ord);
+          if (ord && ord._id && typeof window !== 'undefined') {
+            const key = `burhan_ga_purchased_${ord._id}`;
+            if (!sessionStorage.getItem(key)) {
+              trackPurchase(ord);
+              sessionStorage.setItem(key, 'true');
+            }
+          }
+        })
         .catch(err => console.error('Failed to load order:', err));
     }
   }, [orderId]);

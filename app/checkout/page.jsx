@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -23,10 +23,30 @@ export default function CheckoutPage() {
     paymentMethod: 'cod'
   });
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState('');
+  const [validationWarning, setValidationWarning] = useState('');
 
   const shippingCost = 200;
   const subtotal = getCartTotal();
   const total = subtotal + shippingCost;
+
+  // Validate cart items on mount to ensure all items are still active and available
+  useEffect(() => {
+    if (cart.length > 0) {
+      fetch('/api/cart/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: cart })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.issues && data.issues.length > 0) {
+            setValidationWarning(data.issues.map(i => i.message).join(' '));
+          }
+        })
+        .catch(err => console.error('Cart validation check failed:', err));
+    }
+  }, [cart]);
 
   const provinces = [
     'Punjab',
@@ -69,10 +89,11 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError('');
     
     if (!validateForm()) return;
     if (cart.length === 0) {
-      alert('Your cart is empty');
+      setSubmitError('Your cart is empty');
       return;
     }
 
@@ -101,9 +122,6 @@ export default function CheckoutPage() {
           city: formData.city.trim(),
           address: formData.address.trim()
         },
-        subtotal,
-        shipping: shippingCost,
-        total,
         paymentMethod: formData.paymentMethod,
         notes: formData.notes ? formData.notes.trim() : ''
       };
@@ -127,11 +145,13 @@ export default function CheckoutPage() {
         clearCart();
         router.push(`/success?orderId=${data.order._id}`);
       } else {
-        alert(data.error || 'Failed to place order. Please try again.');
+        setSubmitError(data.error || 'Failed to place order. Please try again.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (error) {
       console.error('Order error:', error);
-      alert('An error occurred. Please try again.');
+      setSubmitError('An unexpected network error occurred. Please try again.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
@@ -170,6 +190,25 @@ export default function CheckoutPage() {
         </motion.div>
 
         <form onSubmit={handleSubmit}>
+          {submitError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium flex items-center justify-between">
+              <span>{submitError}</span>
+              <button
+                type="button"
+                onClick={() => setSubmitError('')}
+                className="text-red-500 hover:text-red-800 ml-4 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {validationWarning && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm font-medium">
+              ⚠️ {validationWarning}
+            </div>
+          )}
+
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Checkout Form */}
             <div className="lg:col-span-2 space-y-6">

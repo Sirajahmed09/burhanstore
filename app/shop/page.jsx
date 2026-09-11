@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import ProductCard from '@/components/product/ProductCard';
 import { Filter, Search, X } from 'lucide-react';
+import { trackViewItemList, trackSearch } from '@/lib/analytics/gtag';
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -64,8 +65,15 @@ function ShopContent() {
     fetch(`/api/products?${params.toString()}`)
       .then(res => (res.ok ? res.json() : { products: [] }))
       .then(data => {
-        setProducts(data?.products || []);
+        const prods = data?.products || [];
+        setProducts(prods);
         setLoading(false);
+        if (prods.length > 0) {
+          trackViewItemList(prods, filters.category || 'All Products');
+        }
+        if (filters.search) {
+          trackSearch(filters.search);
+        }
       })
       .catch(err => {
         console.error('Failed to load products:', err);

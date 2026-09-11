@@ -3,6 +3,7 @@ import { Providers } from './providers'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import LoadingScreen from '@/components/layout/LoadingScreen'
+import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
 import { OrganizationSchema, WebsiteSchema, LocalBusinessSchema } from '@/components/seo/StructuredData'
 
 export const metadata = {
@@ -77,6 +78,7 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{__html:'window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);'}} />
       </head>
       <body>
+        <GoogleAnalytics />
         <Providers>
           <LoadingScreen />
           <Navbar />

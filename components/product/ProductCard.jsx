@@ -7,6 +7,7 @@ import { Heart, ShoppingCart, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCart } from '@/lib/contexts/CartContext';
 import { useWishlist } from '@/lib/contexts/WishlistContext';
+import { trackAddToCart as gaAddToCart } from '@/lib/analytics/gtag';
 
 export default function ProductCard({ product }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -20,6 +21,7 @@ export default function ProductCard({ product }) {
     e.preventDefault();
     if (isOutOfStock) return;
     addToCart(product);
+    gaAddToCart(product, 1);
   };
 
   const handleWishlist = (e) => {

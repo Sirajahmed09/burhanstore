@@ -8,6 +8,7 @@ import { ShoppingCart, Heart, Star, Truck, Shield, RotateCcw, Check } from 'luci
 import { useCart } from '@/lib/contexts/CartContext';
 import { useWishlist } from '@/lib/contexts/WishlistContext';
 import ProductCard from '@/components/product/ProductCard';
+import { trackViewItem, trackAddToCart as gaAddToCart } from '@/lib/analytics/gtag';
 
 export default function ProductDetailPage() {
   const router = useRouter();
@@ -29,10 +30,12 @@ export default function ProductDetailPage() {
       fetch(`/api/products/${slug}`)
         .then(res => (res.ok ? res.json() : { product: null }))
         .then(data => {
-          setProduct(data.product || null);
+          const prod = data.product || null;
+          setProduct(prod);
           setLoading(false);
           
-          if (data.product) {
+          if (prod) {
+            trackViewItem(prod);
             // Fetch related products
             return fetch(`/api/products/${slug}/related`)
               .then(res => (res.ok ? res.json() : { products: [] }))
@@ -51,12 +54,14 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (product) {
       addToCart(product, quantity);
+      gaAddToCart(product, quantity);
     }
   };
 
   const handleBuyNow = () => {
     if (product) {
       addToCart(product, quantity);
+      gaAddToCart(product, quantity);
       router.push('/cart');
     }
   };

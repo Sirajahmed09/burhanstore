@@ -7,6 +7,19 @@ function errorResponse(message, status = 500) {
   return NextResponse.json({ error: message }, { status });
 }
 
+// Active product visibility filter: strictly excludes inactive, hidden, or draft products
+const ACTIVE_PRODUCT_FILTER = {
+  status: { $nin: ['inactive', 'hidden', 'draft'] },
+  isActive: { $ne: false }
+};
+
+function isProductActive(product) {
+  if (!product) return false;
+  if (product.status === 'inactive' || product.status === 'hidden' || product.status === 'draft') return false;
+  if (product.isActive === false) return false;
+  return true;
+}
+
 // Helper function to create slug from name
 function createSlug(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -52,7 +65,7 @@ export async function GET(request) {
 
       // Build filter
       const filter = {
-        status: { $ne: 'inactive' }
+        ...ACTIVE_PRODUCT_FILTER
       };
       if (category) filter.category = category;
       if (minPrice || maxPrice) {
@@ -112,19 +125,29 @@ export async function GET(request) {
 
     if (path === 'products/featured') {
       const productsCol = await getCollection('products');
-      const products = await productsCol.find({ isFeatured: true }).limit(8).toArray();
+      const products = await productsCol
+        .find({ ...ACTIVE_PRODUCT_FILTER, isFeatured: true })
+        .limit(8)
+        .toArray();
       return NextResponse.json({ products });
     }
 
     if (path === 'products/trending') {
       const productsCol = await getCollection('products');
-      const products = await productsCol.find({ isTrending: true }).limit(8).toArray();
+      const products = await productsCol
+        .find({ ...ACTIVE_PRODUCT_FILTER, isTrending: true })
+        .limit(8)
+        .toArray();
       return NextResponse.json({ products });
     }
 
     if (path === 'products/best-sellers') {
       const productsCol = await getCollection('products');
-      const products = await productsCol.find({}).sort({ reviewCount: -1, rating: -1 }).limit(8).toArray();
+      const products = await productsCol
+        .find({ ...ACTIVE_PRODUCT_FILTER })
+        .sort({ reviewCount: -1, rating: -1 })
+        .limit(8)
+        .toArray();
       return NextResponse.json({ products });
     }
 
@@ -133,12 +156,16 @@ export async function GET(request) {
       const productsCol = await getCollection('products');
       const product = await productsCol.findOne({ slug });
       
-      if (!product) {
-        return errorResponse('Product not found', 404);
+      if (!product || !isProductActive(product)) {
+        return errorResponse('Product not found or unavailable', 404);
       }
 
       const related = await productsCol
-        .find({ category: product.category, slug: { $ne: slug } })
+        .find({
+          category: product.category,
+          slug: { $ne: slug },
+          ...ACTIVE_PRODUCT_FILTER
+        })
         .limit(4)
         .toArray();
       
@@ -150,8 +177,8 @@ export async function GET(request) {
       const productsCol = await getCollection('products');
       const product = await productsCol.findOne({ slug });
       
-      if (!product) {
-        return errorResponse('Product not found', 404);
+      if (!product || !isProductActive(product)) {
+        return errorResponse('Product not found or is currently unavailable', 404);
       }
       
       return NextResponse.json({ product });
@@ -234,9 +261,10 @@ export async function GET(request) {
 
       const productsCol = await getCollection('products');
       
-      // Get suggestions (product names)
+      // Get suggestions (active product names only)
       const suggestions = await productsCol
         .find({
+          ...ACTIVE_PRODUCT_FILTER,
           $or: [
             { name: { $regex: query, $options: 'i' } },
             { category: { $regex: query, $options: 'i' } }
@@ -246,9 +274,10 @@ export async function GET(request) {
         .project({ name: 1, category: 1 })
         .toArray();
 
-      // Get full products
+      // Get full products (active products only)
       const products = await productsCol
         .find({
+          ...ACTIVE_PRODUCT_FILTER,
           $or: [
             { name: { $regex: query, $options: 'i' } },
             { description: { $regex: query, $options: 'i' } },
@@ -278,7 +307,83 @@ export async function POST(request) {
   const path = pathname.replace(/^\/api\/?/, '').replace(/\/$/, '');
 
   try {
-    // Create order - WITH SERVER-SIDE PRICE VALIDATION
+    // Validate cart items against real database stock, prices, and status
+    if (path === 'cart/validate') {
+      const body = await request.json();
+      const items = Array.isArray(body.items) ? body.items : [];
+      const productsCol = await getCollection('products');
+
+      const validated = [];
+      const issues = [];
+
+      for (const item of items) {
+        const prodId = item.productId || item._id;
+        const product = await productsCol.findOne({ _id: prodId });
+
+        if (!product) {
+          issues.push({
+            id: prodId,
+            name: item.name || 'Unknown item',
+            reason: 'not_found',
+            message: `"${item.name || 'Item'}" is no longer available in our store.`
+          });
+          continue;
+        }
+
+        if (!isProductActive(product)) {
+          issues.push({
+            id: prodId,
+            name: product.name,
+            reason: 'inactive',
+            message: `"${product.name}" is currently unavailable.`
+          });
+          continue;
+        }
+
+        const stock = Number(product.stock) || 0;
+        const requestedQty = Math.max(1, parseInt(item.quantity) || 1);
+
+        if (stock <= 0) {
+          issues.push({
+            id: prodId,
+            name: product.name,
+            reason: 'out_of_stock',
+            message: `"${product.name}" is out of stock.`
+          });
+          continue;
+        }
+
+        const allowedQty = Math.min(requestedQty, stock);
+        if (allowedQty < requestedQty) {
+          issues.push({
+            id: prodId,
+            name: product.name,
+            reason: 'stock_limited',
+            message: `Only ${stock} unit(s) of "${product.name}" are currently in stock.`
+          });
+        }
+
+        validated.push({
+          ...item,
+          _id: product._id,
+          productId: product._id,
+          name: product.name,
+          slug: product.slug,
+          price: product.price,
+          stock: product.stock,
+          thumbnail: product.thumbnail || product.images?.[0],
+          quantity: allowedQty
+        });
+      }
+
+      return NextResponse.json({
+        valid: issues.length === 0,
+        items: validated,
+        issues
+      });
+    }
+
+    // Create order - WITH SERVER-SIDE PRICE VALIDATION & ACTIVE CHECK
     if (path === 'orders') {
       const ordersCol = await getCollection('orders');
       const productsCol = await getCollection('products');
@@ -290,42 +395,54 @@ export async function POST(request) {
       }
       
       if (!body.customer || !body.customer.name || !body.customer.phone || !body.customer.address) {
-        return errorResponse('Customer information is required', 400);
+        return errorResponse('Customer information is required (name, phone, and complete shipping address)', 400);
+      }
+
+      const cleanPhone = String(body.customer.phone).replace(/[^0-9]/g, '');
+      if (cleanPhone.length < 10) {
+        return errorResponse('Please provide a valid Pakistani contact phone number (at least 10 digits)', 400);
       }
       
-      // Recalculate subtotal from actual product prices
+      // Recalculate subtotal from actual product prices in database
       let calculatedSubtotal = 0;
       const validatedItems = [];
       
       for (const item of body.items) {
-        if (!item.productId || !item.quantity || item.quantity < 1) {
+        const prodId = item.productId || item._id;
+        const requestedQty = parseInt(item.quantity);
+        if (!prodId || !requestedQty || requestedQty < 1) {
           return errorResponse('Invalid item in order', 400);
         }
         
-        // Fetch actual product price from database
-        const product = await productsCol.findOne({ _id: item.productId });
+        // Fetch actual product price and status from database
+        const product = await productsCol.findOne({ _id: prodId });
         if (!product) {
-          return errorResponse(`Product not found: ${item.productId}`, 404);
+          return errorResponse(`Product not found: ${item.name || prodId}`, 404);
+        }
+
+        if (!isProductActive(product)) {
+          return errorResponse(`Product "${product.name}" is currently unavailable for purchase.`, 400);
         }
         
-        if (product.stock < item.quantity) {
-          return errorResponse(`Insufficient stock for ${product.name}`, 400);
+        const availableStock = Number(product.stock) || 0;
+        if (availableStock < requestedQty) {
+          return errorResponse(`Insufficient stock for "${product.name}". Only ${availableStock} unit(s) remaining.`, 400);
         }
         
-        // Use server-side price, not client-provided price
-        const itemTotal = product.price * item.quantity;
+        // Use server-side price, never client-provided price
+        const itemTotal = Number(product.price) * requestedQty;
         calculatedSubtotal += itemTotal;
         
         validatedItems.push({
           productId: product._id,
           name: product.name,
           price: product.price, // Server-side price
-          quantity: item.quantity,
-          image: product.image || product.thumbnail || item.image
+          quantity: requestedQty,
+          image: product.image || product.thumbnail || product.images?.[0] || item.image || ''
         });
       }
       
-      const shipping = body.shipping !== undefined ? Number(body.shipping) : 200; // Fixed shipping cost
+      const shipping = 200; // Flat shipping rate in PKR
       const calculatedTotal = calculatedSubtotal + shipping;
       
       const order = {

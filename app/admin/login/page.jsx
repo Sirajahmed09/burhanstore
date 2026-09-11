@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Lock, Mail, LogIn } from 'lucide-react';
+import { Lock, Mail, LogIn, ShieldAlert } from 'lucide-react';
+import { trackLogin } from '@/lib/analytics/gtag';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -34,6 +35,8 @@ export default function AdminLoginPage() {
       const data = await response.json();
       
       if (data.user) {
+        // Track successful admin sign-in
+        trackLogin('admin_dashboard');
         // Successfully logged in
         window.location.href = '/admin/dashboard'; // Force navigation
       } else {
@@ -126,9 +129,10 @@ export default function AdminLoginPage() {
             </button>
           </form>
 
-          {/* Credentials Info */}
-          <div className="mt-6 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600">
-            <span className="font-semibold text-slate-800">Admin Access:</span> Use your administrative email (<code className="bg-slate-200 px-1 rounded">admin@burhan.com</code> / <code className="bg-slate-200 px-1 rounded">Admin@123</code>) or configured credentials.
+          {/* Security Notice */}
+          <div className="mt-6 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-center space-x-2">
+            <ShieldAlert className="w-4 h-4 text-slate-500 flex-shrink-0" />
+            <span>Authorized administrative personnel only. All access attempts are logged and monitored.</span>
           </div>
 
           {/* Back to Store */}
