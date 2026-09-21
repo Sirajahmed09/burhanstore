@@ -42,13 +42,14 @@ export default function FeaturedCategories() {
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
             >
-              <Link href={`/shop?category=${encodeURIComponent(category.name)}`}>
+              <Link href={`/category/${category.slug || category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}>
                 <div className="group bg-burhan-background rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 card-glow">
                   <div className="aspect-square relative overflow-hidden">
                     <Image
                       src={category.image}
-                      alt={category.name}
+                      alt={`${category.name} - BURHAN STORE`}
                       fill
+                      referrerPolicy="no-referrer"
                       className="object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />

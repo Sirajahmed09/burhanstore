@@ -44,7 +44,7 @@ export default function ProductCard({ product }) {
           <div className="relative aspect-square overflow-hidden bg-gray-50">
             <Image
               src={imageSrc}
-              alt={product.name || 'Product'}
+              alt={`${product.name || 'Product'} - BURHAN STORE`}
               fill
               referrerPolicy="no-referrer"
               className={`object-cover transition-transform duration-500 group-hover:scale-110 ${isOutOfStock ? 'grayscale opacity-75' : ''}`}

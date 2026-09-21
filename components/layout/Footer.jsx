@@ -20,12 +20,12 @@ export default function Footer() {
   ];
 
   const categoryLinks = [
-    { name: 'Wireless Earbuds', href: '/shop?category=Wireless+Earbuds' },
-    { name: 'Headphones', href: '/shop?category=Headphones' },
-    { name: 'Chargers', href: '/shop?category=Chargers' },
-    { name: 'Power Banks', href: '/shop?category=Power+Banks' },
-    { name: 'Smart Watches', href: '/shop?category=Smart+Watches' },
-    { name: 'Gaming Accessories', href: '/shop?category=Gaming+Accessories' },
+    { name: 'Wireless Earbuds', href: '/category/wireless-earbuds' },
+    { name: 'Headphones', href: '/category/headphones' },
+    { name: 'Chargers', href: '/category/chargers' },
+    { name: 'Power Banks', href: '/category/power-banks' },
+    { name: 'Smart Watches', href: '/category/smart-watches' },
+    { name: 'Gaming Accessories', href: '/category/gaming-accessories' },
   ];
 
   return (

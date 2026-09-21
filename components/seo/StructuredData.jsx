@@ -1,35 +1,33 @@
 /**
  * Structured Data Component for SEO
- * Generates JSON-LD for Organization, Website, and BreadcrumbList
+ * Generates JSON-LD for Organization, Website, BreadcrumbList, and Product
  */
 
 export function OrganizationSchema() {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://burhanstore.com";
+
   const schema = {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "Burhan Store",
+    "@type": "OnlineStore",
+    "name": "BURHAN STORE",
     "alternateName": "Burhan",
-    "url": process.env.NEXT_PUBLIC_BASE_URL || "https://burhanstore.com",
-    "logo": `${process.env.NEXT_PUBLIC_BASE_URL || "https://burhanstore.com"}/logo.png`,
-    "description": "Premium consumer electronics and mobile accessories in Pakistan",
+    "url": baseUrl,
+    "logo": `${baseUrl}/logo.png`,
+    "description": "Pakistan-focused online store for premium mobile accessories and electronics.",
+    "email": "infoburhancommunication@gmail.com",
     "address": {
       "@type": "PostalAddress",
-      "addressCountry": "PK",
-      "addressRegion": "Pakistan"
+      "addressLocality": "Karachi",
+      "addressRegion": "Sindh",
+      "addressCountry": "PK"
     },
     "contactPoint": {
       "@type": "ContactPoint",
-      "telephone": "+92-315-0693148",
+      "telephone": "+92-301-3301830",
       "contactType": "customer service",
       "areaServed": "PK",
       "availableLanguage": ["en", "ur"]
-    },
-    "sameAs": [
-      // Add social media links when available
-      // "https://www.facebook.com/burhanstore",
-      // "https://www.instagram.com/burhanstore",
-      // "https://twitter.com/burhanstore"
-    ]
+    }
   };
 
   return (
@@ -41,16 +39,19 @@ export function OrganizationSchema() {
 }
 
 export function WebsiteSchema() {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://burhanstore.com";
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "Burhan Store",
-    "url": process.env.NEXT_PUBLIC_BASE_URL || "https://burhanstore.com",
+    "name": "BURHAN STORE",
+    "alternateName": "Burhan Store Pakistan",
+    "url": baseUrl,
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": `${process.env.NEXT_PUBLIC_BASE_URL || "https://burhanstore.com"}/shop?search={search_term_string}`
+        "urlTemplate": `${baseUrl}/shop?search={search_term_string}`
       },
       "query-input": "required name=search_term_string"
     }
@@ -64,7 +65,9 @@ export function WebsiteSchema() {
   );
 }
 
-export function BreadcrumbSchema({ items }) {
+export function BreadcrumbSchema({ items = [] }) {
+  if (!Array.isArray(items) || items.length === 0) return null;
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -85,39 +88,60 @@ export function BreadcrumbSchema({ items }) {
 }
 
 export function ProductSchema({ product }) {
+  if (!product) return null;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://burhanstore.com";
-  
+
+  const rawImage = (Array.isArray(product.images) && product.images.length > 0 && product.images[0]) ||
+    product.thumbnail ||
+    product.image ||
+    null;
+
+  const imageUrl = rawImage
+    ? (rawImage.startsWith('http') ? rawImage : `${baseUrl}${rawImage.startsWith('/') ? '' : '/'}${rawImage}`)
+    : `${baseUrl}/og-image.jpg`;
+
+  const productUrl = `${baseUrl}/shop/${product.slug}`;
+  const price = Number(product.price) || 0;
+  const inStock = typeof product.stock === 'number' ? product.stock > 0 : true;
+
+  const hasValidRatings = typeof product.rating === 'number' &&
+    product.rating > 0 &&
+    typeof product.reviewCount === 'number' &&
+    product.reviewCount > 0;
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "Product",
     "name": product.name,
-    "image": product.image || `${baseUrl}/placeholder.jpg`,
-    "description": product.description || product.name,
-    "sku": product._id,
+    "image": imageUrl,
+    "description": product.description || `${product.name} available at BURHAN STORE.`,
+    "sku": product.sku ? String(product.sku) : String(product._id || ''),
     "brand": {
       "@type": "Brand",
-      "name": product.brand || "Burhan"
+      "name": product.brand || "BURHAN STORE"
     },
     "offers": {
       "@type": "Offer",
-      "url": `${baseUrl}/shop/${product.slug}`,
+      "url": productUrl,
       "priceCurrency": "PKR",
-      "price": product.price,
-      "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      "price": price,
+      "priceValidUntil": new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       "itemCondition": "https://schema.org/NewCondition",
-      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "availability": inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       "seller": {
         "@type": "Organization",
-        "name": "Burhan Store"
+        "name": "BURHAN STORE"
       }
     },
-    "aggregateRating": product.rating ? {
-      "@type": "AggregateRating",
-      "ratingValue": product.rating,
-      "reviewCount": product.reviewCount || 1,
-      "bestRating": 5,
-      "worstRating": 1
-    } : undefined
+    ...(hasValidRatings ? {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": product.rating,
+        "reviewCount": product.reviewCount,
+        "bestRating": 5,
+        "worstRating": 1
+      }
+    } : {})
   };
 
   return (
@@ -128,40 +152,3 @@ export function ProductSchema({ product }) {
   );
 }
 
-export function LocalBusinessSchema() {
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "name": "Burhan Store",
-    "image": `${process.env.NEXT_PUBLIC_BASE_URL || "https://burhanstore.com"}/logo.png`,
-    "@id": process.env.NEXT_PUBLIC_BASE_URL || "https://burhanstore.com",
-    "url": process.env.NEXT_PUBLIC_BASE_URL || "https://burhanstore.com",
-    "telephone": "+92-315-0693148",
-    "priceRange": "PKR",
-    "address": {
-      "@type": "PostalAddress",
-      "addressCountry": "PK"
-    },
-    "openingHoursSpecification": {
-      "@type": "OpeningHoursSpecification",
-      "dayOfWeek": [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
-      ],
-      "opens": "00:00",
-      "closes": "23:59"
-    }
-  };
-
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-    />
-  );
-}
