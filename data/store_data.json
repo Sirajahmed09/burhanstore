@@ -6,7 +6,8 @@
       "slug": "wireless-earbuds",
       "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500",
       "description": "Premium wireless earbuds with superior sound quality",
-      "productCount": 3
+      "productCount": 3,
+      "updatedAt": "2026-09-21T23:33:01.030Z"
     },
     {
       "_id": "3db0599c-87fd-43cc-bb63-a7e79842024e",
@@ -735,19 +736,19 @@
       "_id": "admin-burhan-owner",
       "name": "Burhan Store Owner",
       "email": "burhan@store",
-      "password": "$2a$10$TkWPJq8jg0cD7LJ1iwd1UOAOM9PWHxNRxBwZ3b41vdbjO4xpZxI7e",
+      "password": "$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES",
       "role": "superadmin",
-      "createdAt": "2026-09-10T19:40:07.656Z",
-      "updatedAt": "2026-09-10T19:40:07.656Z"
+      "createdAt": "2026-09-21T23:32:30.265Z",
+      "updatedAt": "2026-09-21T23:32:30.265Z"
     },
     {
       "_id": "admin-superadmin",
       "name": "Super Admin",
       "email": "admin@burhan.com",
-      "password": "$2a$10$E66okjRht1PObVKE8mgZd.eBZaQaHSvUMRxfYhEuXSu0Zi2nprgcC",
+      "password": "$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES",
       "role": "superadmin",
-      "createdAt": "2026-09-10T19:40:07.656Z",
-      "updatedAt": "2026-09-10T19:40:07.656Z"
+      "createdAt": "2026-09-21T23:32:30.265Z",
+      "updatedAt": "2026-09-21T23:32:30.265Z"
     }
   ],
   "settings": [
@@ -898,6 +899,43 @@
           "status": "confirmed",
           "timestamp": "2026-09-10T19:56:29.866Z",
           "message": "Call confirmed with customer"
+        }
+      ]
+    },
+    {
+      "_id": "24008afa-b558-45c4-b869-26acd0d2fcff",
+      "items": [
+        {
+          "productId": "d1999820-74f5-43c8-8f5a-89637ae404d9",
+          "name": "E2E Test Wireless ANC Earbuds",
+          "price": 4999,
+          "quantity": 2,
+          "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500"
+        }
+      ],
+      "customer": {
+        "name": "Muhammad Ali",
+        "email": "",
+        "phone": "03001234567",
+        "alternatePhone": "",
+        "province": "Punjab",
+        "city": "Islamabad",
+        "address": "House 12, Street 4, F-7/2",
+        "postalCode": ""
+      },
+      "subtotal": 9998,
+      "shipping": 200,
+      "total": 10198,
+      "paymentMethod": "cod",
+      "status": "pending",
+      "notes": "",
+      "createdAt": "2026-09-21T23:33:00.843Z",
+      "updatedAt": "2026-09-21T23:33:00.843Z",
+      "timeline": [
+        {
+          "status": "pending",
+          "timestamp": "2026-09-21T23:33:00.843Z",
+          "message": "Order placed successfully by customer via website"
         }
       ]
     }

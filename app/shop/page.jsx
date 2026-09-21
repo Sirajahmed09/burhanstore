@@ -44,7 +44,7 @@ function ShopContent() {
 
   // Fetch categories
   useEffect(() => {
-    fetch('/api/categories')
+    fetch(`/api/categories?_t=${Date.now()}`, { cache: 'no-store' })
       .then(res => (res.ok ? res.json() : { categories: [] }))
       .then(data => setCategories(data?.categories || []))
       .catch(err => console.error('Failed to load categories:', err));
@@ -60,9 +60,10 @@ function ShopContent() {
     if (filters.search) params.append('search', filters.search);
     if (filters.inStock) params.append('inStock', 'true');
     if (filters.rating) params.append('rating', filters.rating);
+    params.append('_t', Date.now().toString());
 
     setLoading(true);
-    fetch(`/api/products?${params.toString()}`)
+    fetch(`/api/products?${params.toString()}`, { cache: 'no-store' })
       .then(res => (res.ok ? res.json() : { products: [] }))
       .then(data => {
         const prods = data?.products || [];

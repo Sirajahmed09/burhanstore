@@ -44,7 +44,13 @@ export default function AdminCategoriesPage() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/categories');
+      const response = await fetch(`/api/admin/categories?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setCategories(data.categories || []);
@@ -141,6 +147,7 @@ export default function AdminCategoriesPage() {
       setCategories(prev => prev.filter(c => c._id !== deleteTarget._id));
       showToast(`Category "${deleteTarget.name}" deleted successfully`);
       setDeleteTarget(null);
+      await fetchCategories();
     } catch (error) {
       showToast(error.message || 'Failed to delete category', 'error');
     } finally {

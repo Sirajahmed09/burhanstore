@@ -10,7 +10,7 @@ export default function FeaturedCategories() {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    fetch('/api/categories')
+    fetch(`/api/categories?_t=${Date.now()}`, { cache: 'no-store' })
       .then(res => (res.ok ? res.json() : { categories: [] }))
       .then(data => setCategories(data?.categories || []))
       .catch(err => console.error('Failed to load categories:', err));

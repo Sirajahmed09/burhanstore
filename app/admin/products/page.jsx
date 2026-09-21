@@ -58,7 +58,13 @@ export default function AdminProductsPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin/products?limit=200');
+      const res = await fetch(`/api/admin/products?limit=200&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setProducts(data?.products || []);
@@ -73,7 +79,13 @@ export default function AdminProductsPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/api/admin/categories');
+      const res = await fetch(`/api/admin/categories?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setCategories(data?.categories || []);
@@ -101,11 +113,18 @@ export default function AdminProductsPage() {
       const res = await fetch(`/api/admin/products/${product._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: nextStatus })
+        body: JSON.stringify({ status: nextStatus, isActive: nextStatus === 'active' })
       });
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error('Failed to update status');
+        throw new Error(data.error || 'Failed to update status');
+      }
+
+      if (data.product) {
+        setProducts(prev =>
+          prev.map(p => (p._id === product._id ? data.product : p))
+        );
       }
 
       showToast(`Product is now ${nextStatus === 'active' ? 'Visible (Active)' : 'Hidden (Inactive)'}`);
@@ -145,15 +164,22 @@ export default function AdminProductsPage() {
         })
       });
 
-      if (!res.ok) throw new Error('Failed to update price');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to update price');
 
-      setProducts(prev =>
-        prev.map(p =>
-          p._id === priceModalProduct._id
-            ? { ...p, price: parsedPrice, oldPrice: parsedOld }
-            : p
-        )
-      );
+      if (data.product) {
+        setProducts(prev =>
+          prev.map(p => (p._id === priceModalProduct._id ? data.product : p))
+        );
+      } else {
+        setProducts(prev =>
+          prev.map(p =>
+            p._id === priceModalProduct._id
+              ? { ...p, price: parsedPrice, oldPrice: parsedOld }
+              : p
+          )
+        );
+      }
 
       showToast(`Price updated to PKR ${parsedPrice.toLocaleString()}`);
       setPriceModalProduct(null);
@@ -183,15 +209,22 @@ export default function AdminProductsPage() {
         body: JSON.stringify({ stock: parsedStock })
       });
 
-      if (!res.ok) throw new Error('Failed to update stock');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to update stock');
 
-      setProducts(prev =>
-        prev.map(p =>
-          p._id === stockModalProduct._id
-            ? { ...p, stock: parsedStock }
-            : p
-        )
-      );
+      if (data.product) {
+        setProducts(prev =>
+          prev.map(p => (p._id === stockModalProduct._id ? data.product : p))
+        );
+      } else {
+        setProducts(prev =>
+          prev.map(p =>
+            p._id === stockModalProduct._id
+              ? { ...p, stock: parsedStock }
+              : p
+          )
+        );
+      }
 
       showToast(
         parsedStock === 0
@@ -216,7 +249,8 @@ export default function AdminProductsPage() {
         method: 'DELETE'
       });
 
-      if (!res.ok) throw new Error('Failed to delete product');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to delete product');
 
       setProducts(prev => prev.filter(p => p._id !== deleteProductTarget._id));
       showToast(`"${deleteProductTarget.name}" deleted successfully.`);

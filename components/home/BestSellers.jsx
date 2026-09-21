@@ -9,7 +9,7 @@ export default function BestSellers() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/products/best-sellers')
+    fetch(`/api/products/best-sellers?_t=${Date.now()}`, { cache: 'no-store' })
       .then(res => (res.ok ? res.json() : { products: [] }))
       .then(data => {
         setProducts(data?.products || []);

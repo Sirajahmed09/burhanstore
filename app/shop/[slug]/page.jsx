@@ -27,7 +27,7 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (slug) {
       // Fetch product details
-      fetch(`/api/products/${slug}`)
+      fetch(`/api/products/${slug}?_t=${Date.now()}`, { cache: 'no-store' })
         .then(res => (res.ok ? res.json() : { product: null }))
         .then(data => {
           const prod = data.product || null;
@@ -37,7 +37,7 @@ export default function ProductDetailPage() {
           if (prod) {
             trackViewItem(prod);
             // Fetch related products
-            return fetch(`/api/products/${slug}/related`)
+            return fetch(`/api/products/${slug}/related?_t=${Date.now()}`, { cache: 'no-store' })
               .then(res => (res.ok ? res.json() : { products: [] }))
               .then(relData => {
                 setRelatedProducts(relData.products || []);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCollection, getDatabaseStatus } from '@/lib/db/mongodb';
+import { getCollection, getDatabaseStatus, buildIdQuery } from '@/lib/db/mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { hashPassword, verifyPassword, createToken } from '@/lib/admin/auth';
 import {
@@ -10,12 +10,27 @@ import {
   clearRateLimit
 } from '@/lib/admin/middleware';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
+
 function errorResponse(message, status = 500) {
-  return NextResponse.json({ error: message }, { status });
+  return NextResponse.json(
+    { success: false, error: message },
+    { status, headers: NO_CACHE_HEADERS }
+  );
 }
 
 function successResponse(data, status = 200) {
-  return NextResponse.json(data, { status });
+  return NextResponse.json(
+    data,
+    { status, headers: NO_CACHE_HEADERS }
+  );
 }
 
 function slugify(text) {
@@ -306,15 +321,15 @@ export async function POST(request) {
       });
 
       // If remote MongoDB without pre-seeded accounts, auto-seed burhan@store with hashed password
-      if (!admin && cleanEmail === 'burhan@store') {
+      if (!admin && (cleanEmail === 'burhan@store' || cleanEmail === 'admin@burhan.com')) {
         const passwordHash = process.env.ADMIN_INITIAL_PASSWORD
           ? await hashPassword(process.env.ADMIN_INITIAL_PASSWORD)
-          : '$2a$10$TkWPJq8jg0cD7LJ1iwd1UOAOM9PWHxNRxBwZ3b41vdbjO4xpZxI7e';
+          : '$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES';
 
         const newAdmin = {
-          _id: 'admin-burhan-owner',
-          name: 'Burhan Store Owner',
-          email: 'burhan@store',
+          _id: cleanEmail === 'burhan@store' ? 'admin-burhan-owner' : 'admin-superadmin',
+          name: cleanEmail === 'burhan@store' ? 'Burhan Store Owner' : 'Super Admin',
+          email: cleanEmail,
           password: passwordHash,
           role: 'superadmin',
           createdAt: new Date(),
@@ -544,24 +559,25 @@ export async function PUT(request) {
       }
 
       const ordersCol = await getCollection('orders');
-      const order = await ordersCol.findOne({ _id: orderId });
+      const order = await ordersCol.findOne(buildIdQuery(orderId));
       if (!order) {
         return errorResponse('Order not found', 404);
       }
 
-      const timeline = Array.isArray(order.timeline) ? order.timeline : [];
+      const timeline = Array.isArray(order.timeline) ? [...order.timeline] : [];
       timeline.push({
         status,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         message: message || `Status updated to ${status}`
       });
 
       await ordersCol.updateOne(
-        { _id: orderId },
-        { $set: { status, timeline, updatedAt: new Date() } }
+        { _id: order._id },
+        { $set: { status, timeline, updatedAt: new Date().toISOString() } }
       );
 
-      return successResponse({ success: true, message: 'Order status updated' });
+      const updated = await ordersCol.findOne({ _id: order._id });
+      return successResponse({ success: true, message: 'Order status updated', order: updated });
     }
 
     // Update product
@@ -569,10 +585,11 @@ export async function PUT(request) {
       const id = path.split('/')[1];
       const body = await request.json();
       const productsCol = await getCollection('products');
+      const categoriesCol = await getCollection('categories');
 
-      const existing = await productsCol.findOne({ _id: id });
+      const existing = await productsCol.findOne(buildIdQuery(id));
       if (!existing) {
-        return errorResponse('Product not found', 404);
+        return errorResponse('Product not found in database', 404);
       }
 
       const price = body.price !== undefined ? parseFloat(body.price) : existing.price;
@@ -581,7 +598,7 @@ export async function PUT(request) {
         ? Math.round(((oldPrice - price) / oldPrice) * 100)
         : (body.discount !== undefined ? parseFloat(body.discount) : existing.discount || 0);
 
-      const images = Array.isArray(body.images) ? body.images : existing.images;
+      const images = Array.isArray(body.images) ? body.images : (body.image ? [body.image] : existing.images);
       const thumbnail = body.thumbnail || images[0] || existing.thumbnail;
       const stock = body.stock !== undefined ? parseInt(body.stock, 10) : existing.stock;
       const status = body.status || (body.isActive !== undefined ? (body.isActive ? 'active' : 'inactive') : existing.status || 'active');
@@ -596,12 +613,26 @@ export async function PUT(request) {
         thumbnail,
         status,
         isActive: status === 'active',
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       };
       delete updateData._id;
 
-      await productsCol.updateOne({ _id: id }, { $set: updateData });
-      return successResponse({ success: true, message: 'Product updated successfully' });
+      await productsCol.updateOne({ _id: existing._id }, { $set: updateData });
+
+      // Update category product counts if category changed
+      if (body.category && body.category !== existing.category) {
+        if (existing.category) {
+          await categoriesCol.updateOne({ name: existing.category }, { $inc: { productCount: -1 } });
+        }
+        await categoriesCol.updateOne({ name: body.category }, { $inc: { productCount: 1 } });
+      }
+
+      const updatedProduct = await productsCol.findOne({ _id: existing._id });
+      return successResponse({
+        success: true,
+        message: 'Product updated successfully',
+        product: updatedProduct
+      });
     }
 
     // Update category
@@ -610,18 +641,24 @@ export async function PUT(request) {
       const body = await request.json();
       const categoriesCol = await getCollection('categories');
 
-      const updateData = {
-        ...body,
-        updatedAt: new Date()
-      };
-      delete updateData._id;
-
-      const result = await categoriesCol.updateOne({ _id: id }, { $set: updateData });
-      if (result.matchedCount === 0) {
+      const existing = await categoriesCol.findOne(buildIdQuery(id));
+      if (!existing) {
         return errorResponse('Category not found', 404);
       }
 
-      return successResponse({ success: true, message: 'Category updated successfully' });
+      const updateData = {
+        ...body,
+        updatedAt: new Date().toISOString()
+      };
+      delete updateData._id;
+
+      await categoriesCol.updateOne({ _id: existing._id }, { $set: updateData });
+      const updatedCategory = await categoriesCol.findOne({ _id: existing._id });
+      return successResponse({
+        success: true,
+        message: 'Category updated successfully',
+        category: updatedCategory
+      });
     }
 
     return errorResponse('Endpoint not found', 404);
@@ -642,18 +679,45 @@ export async function PATCH(request) {
       return errorResponse('Unauthorized', 401);
     }
 
+    // Support order status update via PATCH
+    if (path.startsWith('orders/') && path.endsWith('/status')) {
+      const orderId = path.split('/')[1];
+      const { status, message } = await request.json();
+
+      const ordersCol = await getCollection('orders');
+      const order = await ordersCol.findOne(buildIdQuery(orderId));
+      if (!order) {
+        return errorResponse('Order not found', 404);
+      }
+
+      const timeline = Array.isArray(order.timeline) ? [...order.timeline] : [];
+      timeline.push({
+        status,
+        timestamp: new Date().toISOString(),
+        message: message || `Status updated to ${status}`
+      });
+
+      await ordersCol.updateOne(
+        { _id: order._id },
+        { $set: { status, timeline, updatedAt: new Date().toISOString() } }
+      );
+
+      const updated = await ordersCol.findOne({ _id: order._id });
+      return successResponse({ success: true, message: 'Order status updated', order: updated });
+    }
+
     // Quick product update (price, stock, status toggle)
     if (path.startsWith('products/')) {
       const id = path.split('/')[1];
       const body = await request.json();
       const productsCol = await getCollection('products');
 
-      const existing = await productsCol.findOne({ _id: id });
+      const existing = await productsCol.findOne(buildIdQuery(id));
       if (!existing) {
-        return errorResponse('Product not found', 404);
+        return errorResponse('Product not found in database', 404);
       }
 
-      const updateSet = { updatedAt: new Date() };
+      const updateSet = { updatedAt: new Date().toISOString() };
 
       if (body.price !== undefined) {
         updateSet.price = parseFloat(body.price);
@@ -674,15 +738,22 @@ export async function PATCH(request) {
         updateSet.isActive = body.status === 'active';
       }
 
+      if (body.isActive !== undefined) {
+        updateSet.isActive = Boolean(body.isActive);
+        updateSet.status = updateSet.isActive ? 'active' : 'inactive';
+      }
+
       if (body.isFeatured !== undefined) updateSet.isFeatured = Boolean(body.isFeatured);
       if (body.isTrending !== undefined) updateSet.isTrending = Boolean(body.isTrending);
       if (body.isNew !== undefined) updateSet.isNew = Boolean(body.isNew);
 
-      await productsCol.updateOne({ _id: id }, { $set: updateSet });
+      await productsCol.updateOne({ _id: existing._id }, { $set: updateSet });
 
+      const updatedProduct = await productsCol.findOne({ _id: existing._id });
       return successResponse({
         success: true,
         message: 'Product updated successfully',
+        product: updatedProduct,
         updated: updateSet
       });
     }
@@ -711,12 +782,18 @@ export async function DELETE(request) {
       const productsCol = await getCollection('products');
       const categoriesCol = await getCollection('categories');
 
-      const product = await productsCol.findOne({ _id: id });
+      const product = await productsCol.findOne(buildIdQuery(id));
       if (!product) {
-        return errorResponse('Product not found', 404);
+        return errorResponse('Product not found in database', 404);
       }
 
-      await productsCol.deleteOne({ _id: id });
+      await productsCol.deleteOne({ _id: product._id });
+
+      // Verify deletion from database
+      const verify = await productsCol.findOne({ _id: product._id });
+      if (verify) {
+        return errorResponse('Failed to delete product from database', 500);
+      }
 
       // Decrement category product count
       if (product.category) {
@@ -726,7 +803,11 @@ export async function DELETE(request) {
         );
       }
 
-      return successResponse({ success: true, message: 'Product permanently deleted' });
+      return successResponse({
+        success: true,
+        message: 'Product permanently deleted',
+        deletedId: product._id
+      });
     }
 
     // Delete category
@@ -734,12 +815,42 @@ export async function DELETE(request) {
       const id = path.split('/')[1];
       const categoriesCol = await getCollection('categories');
 
-      const result = await categoriesCol.deleteOne({ _id: id });
-      if (result.deletedCount === 0) {
+      const category = await categoriesCol.findOne(buildIdQuery(id));
+      if (!category) {
         return errorResponse('Category not found', 404);
       }
 
-      return successResponse({ success: true, message: 'Category deleted successfully' });
+      await categoriesCol.deleteOne({ _id: category._id });
+
+      const verify = await categoriesCol.findOne({ _id: category._id });
+      if (verify) {
+        return errorResponse('Failed to delete category from database', 500);
+      }
+
+      return successResponse({
+        success: true,
+        message: 'Category deleted successfully',
+        deletedId: category._id
+      });
+    }
+
+    // Delete order
+    if (path.startsWith('orders/')) {
+      const id = path.split('/')[1];
+      const ordersCol = await getCollection('orders');
+
+      const order = await ordersCol.findOne(buildIdQuery(id));
+      if (!order) {
+        return errorResponse('Order not found', 404);
+      }
+
+      await ordersCol.deleteOne({ _id: order._id });
+
+      return successResponse({
+        success: true,
+        message: 'Order permanently deleted',
+        deletedId: order._id
+      });
     }
 
     return errorResponse('Endpoint not found', 404);

@@ -4,9 +4,12 @@ export default async function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://burhanstore.com';
 
   try {
-    // Get all products
+    // Get all active, visible products
     const productsCol = await getCollection('products');
-    const products = await productsCol.find({}).toArray();
+    const products = await productsCol.find({
+      status: { $nin: ['inactive', 'hidden', 'draft'] },
+      isActive: { $ne: false }
+    }).toArray();
 
     // Get all categories
     const categoriesCol = await getCollection('categories');
