@@ -17,7 +17,10 @@ import {
   Eye,
   Edit,
   RefreshCw,
-  Boxes
+  Boxes,
+  CheckSquare,
+  Users,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -93,6 +96,32 @@ export default function AdminDashboard() {
             </Link>
           </div>
         </div>
+
+        {/* Pending Approvals Alert Banner for Owner */}
+        {stats?.pendingApprovalsCount > 0 && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 shadow-xs">
+            <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
+              <div className="flex items-start space-x-3">
+                <CheckSquare className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5 sm:mt-0" />
+                <div>
+                  <h3 className="font-bold text-base text-blue-950">
+                    Pending Employee Change Requests ({stats.pendingApprovalsCount} Waiting)
+                  </h3>
+                  <p className="text-xs text-blue-800 mt-0.5">
+                    Staff members have submitted product price, stock, or catalog updates that require your authorization before taking effect.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/admin/approvals"
+                className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors whitespace-nowrap shadow-xs"
+              >
+                <span>Review Approvals Queue</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Low Stock Warning Alert Banner (B.3) */}
         {lowStockItems.length > 0 && (
@@ -219,7 +248,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Action Navigation Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             href="/admin/products"
             className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-burhan-secondary/40 shadow-xs hover:shadow-md transition-all group flex items-center space-x-4"
@@ -236,21 +265,6 @@ export default function AdminDashboard() {
           </Link>
 
           <Link
-            href="/admin/categories"
-            className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-burhan-secondary/40 shadow-xs hover:shadow-md transition-all group flex items-center space-x-4"
-          >
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <FolderOpen className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900 text-sm group-hover:text-emerald-700">
-                Categories
-              </h3>
-              <p className="text-xs text-gray-500">Add, edit, and organize catalogs</p>
-            </div>
-          </Link>
-
-          <Link
             href="/admin/orders"
             className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-burhan-secondary/40 shadow-xs hover:shadow-md transition-all group flex items-center space-x-4"
           >
@@ -262,6 +276,38 @@ export default function AdminDashboard() {
                 Customer Orders
               </h3>
               <p className="text-xs text-gray-500">Process shipping &amp; status</p>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/approvals"
+            className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-amber-500/40 shadow-xs hover:shadow-md transition-all group flex items-center space-x-4"
+          >
+            <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <CheckSquare className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 text-sm group-hover:text-amber-700">
+                Approvals Queue
+              </h3>
+              <p className="text-xs text-gray-500">
+                {stats?.pendingApprovalsCount ? `${stats.pendingApprovalsCount} pending request(s)` : 'Review staff changes'}
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/employees"
+            className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-purple-500/40 shadow-xs hover:shadow-md transition-all group flex items-center space-x-4"
+          >
+            <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 text-sm group-hover:text-purple-700">
+                Team &amp; Roles
+              </h3>
+              <p className="text-xs text-gray-500">Add staff &amp; manage access</p>
             </div>
           </Link>
         </div>

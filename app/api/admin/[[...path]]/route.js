@@ -5,10 +5,20 @@ import { hashPassword, verifyPassword, createToken } from '@/lib/admin/auth';
 import {
   requireAuth,
   requireRole,
+  requirePermission,
+  requireOwner,
   isRateLimited,
   recordFailedAttempt,
   clearRateLimit
 } from '@/lib/admin/middleware';
+import {
+  ROLES,
+  doesActionRequireApproval,
+  hasPermission,
+  ROLE_DEFAULT_PERMISSIONS,
+  ALL_PERMISSIONS
+} from '@/lib/admin/permissions';
+import { logAuditEvent } from '@/lib/admin/audit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -45,7 +55,9 @@ function slugify(text) {
     .replace(/-+$/, '');
 }
 
+// =========================================================================
 // GET handler for admin endpoints
+// =========================================================================
 export async function GET(request) {
   const { pathname, searchParams } = new URL(request.url);
   const path = pathname.replace(/^\/api\/admin\/?/, '').replace(/\/$/, '');
@@ -57,19 +69,31 @@ export async function GET(request) {
       return errorResponse('Unauthorized', 401);
     }
 
-    // Verify current user session
+    // 1. Current user session profile & effective permissions
     if (path === 'auth/me') {
-      return successResponse({ user: auth.user });
+      const user = auth.user;
+      const effectivePerms = (user.role === ROLES.OWNER || user.role === 'superadmin')
+        ? ALL_PERMISSIONS
+        : (Array.isArray(user.permissions) ? user.permissions : (ROLE_DEFAULT_PERMISSIONS[user.role] || []));
+
+      return successResponse({
+        user: {
+          ...user,
+          effectivePermissions: effectivePerms
+        }
+      });
     }
 
-    // Dashboard stats
+    // 2. Dashboard stats (with pending approvals count for owner/manager)
     if (path === 'dashboard/stats') {
       const productsCol = await getCollection('products');
       const ordersCol = await getCollection('orders');
       const categoriesCol = await getCollection('categories');
+      const approvalsCol = await getCollection('approvals');
 
       const allProducts = await productsCol.find({}).toArray();
       const allOrders = await ordersCol.find({}).toArray();
+      const pendingApprovalsCount = await approvalsCol.countDocuments({ status: 'PENDING' });
 
       const totalProducts = allProducts.length;
       const totalOrders = allOrders.length;
@@ -113,6 +137,7 @@ export async function GET(request) {
         cancelledOrders,
         totalRevenue,
         todayRevenue,
+        pendingApprovalsCount,
         lowStockCount: lowStockProducts.length,
         outOfStockCount: outOfStockProducts.length,
         lowStockAlerts: [...outOfStockProducts, ...lowStockProducts].slice(0, 10),
@@ -122,7 +147,7 @@ export async function GET(request) {
       });
     }
 
-    // Health & Database diagnostic endpoint
+    // 3. Health & Database diagnostic endpoint
     if (path === 'health' || path === 'system/status') {
       const dbStatus = getDatabaseStatus();
       return successResponse({
@@ -133,7 +158,97 @@ export async function GET(request) {
       });
     }
 
-    // Get single product: /api/admin/products/:id
+    // 4. Employees & Team Management (Owner & Superadmin only)
+    if (path === 'employees') {
+      const ownerCheck = await requireOwner(request);
+      if (!ownerCheck.authorized) {
+        return errorResponse('Forbidden: Only store owners can view or manage team members', 403);
+      }
+
+      const adminsCol = await getCollection('admins');
+      const employees = await adminsCol.find({}).toArray();
+
+      // Mask password hashes
+      const safeEmployees = employees.map(emp => {
+        const { password, ...safe } = emp;
+        return safe;
+      });
+
+      return successResponse({
+        employees: safeEmployees,
+        availableRoles: [ROLES.OWNER, ROLES.MANAGER, ROLES.EMPLOYEE],
+        availablePermissions: ALL_PERMISSIONS
+      });
+    }
+
+    // 5. Approvals List (Owner & Superadmin can review all, Employees can view their own requests)
+    if (path === 'approvals') {
+      const approvalsCol = await getCollection('approvals');
+      const status = searchParams.get('status'); // 'PENDING', 'APPROVED', 'REJECTED'
+
+      let query = {};
+      if (status) {
+        query.status = status.toUpperCase();
+      }
+
+      // If user is employee, restrict to approvals requested by them
+      const isOwner = auth.user.role === ROLES.OWNER || auth.user.role === 'superadmin';
+      if (!isOwner) {
+        query['requestedBy.id'] = auth.user.id;
+      }
+
+      const approvals = await approvalsCol.find(query).sort({ createdAt: -1 }).toArray();
+
+      return successResponse({
+        approvals,
+        total: approvals.length,
+        pendingCount: approvals.filter(a => a.status === 'PENDING').length
+      });
+    }
+
+    // Single approval detail
+    if (path.startsWith('approvals/') && path.split('/').length === 2) {
+      const id = path.split('/')[1];
+      const approvalsCol = await getCollection('approvals');
+      const approval = await approvalsCol.findOne({ _id: id });
+
+      if (!approval) {
+        return errorResponse('Approval request not found', 404);
+      }
+
+      const isOwner = auth.user.role === ROLES.OWNER || auth.user.role === 'superadmin';
+      if (!isOwner && approval.requestedBy?.id !== auth.user.id) {
+        return errorResponse('Forbidden', 403);
+      }
+
+      return successResponse({ approval });
+    }
+
+    // 6. Audit Logs (Owner, Superadmin, and Manager only)
+    if (path === 'audit-logs' || path === 'audit') {
+      const auditPerm = await requirePermission(request, 'audit:read');
+      if (!auditPerm.authorized) {
+        return errorResponse('Forbidden: You do not have permission to view audit logs', 403);
+      }
+
+      const auditCol = await getCollection('audit_logs');
+      const action = searchParams.get('action');
+      const targetType = searchParams.get('targetType');
+      const limit = parseInt(searchParams.get('limit')) || 100;
+
+      const query = {};
+      if (action) query.action = action;
+      if (targetType) query.targetType = targetType;
+
+      const logs = await auditCol.find(query).sort({ timestamp: -1 }).limit(limit).toArray();
+
+      return successResponse({
+        logs,
+        total: logs.length
+      });
+    }
+
+    // 7. Get single product: /api/admin/products/:id
     if (path.startsWith('products/') && path.split('/').length === 2) {
       const id = path.split('/')[1];
       const productsCol = await getCollection('products');
@@ -148,7 +263,7 @@ export async function GET(request) {
       return successResponse({ product });
     }
 
-    // Get all products with search, filtering and pagination
+    // 8. Get all products with search, filtering and pagination
     if (path === 'products') {
       const productsCol = await getCollection('products');
       const page = parseInt(searchParams.get('page')) || 1;
@@ -196,7 +311,7 @@ export async function GET(request) {
       });
     }
 
-    // Get all categories
+    // 9. Get all categories
     if (path === 'categories') {
       const categoriesCol = await getCollection('categories');
       const productsCol = await getCollection('products');
@@ -222,7 +337,7 @@ export async function GET(request) {
       return successResponse({ categories: updatedCategories });
     }
 
-    // Get single category: /api/admin/categories/:id
+    // 10. Get single category: /api/admin/categories/:id
     if (path.startsWith('categories/') && path.split('/').length === 2) {
       const id = path.split('/')[1];
       const categoriesCol = await getCollection('categories');
@@ -237,7 +352,7 @@ export async function GET(request) {
       return successResponse({ category });
     }
 
-    // Orders endpoints
+    // 11. Orders endpoints
     if (path === 'orders') {
       const ordersCol = await getCollection('orders');
       const status = searchParams.get('status');
@@ -262,7 +377,7 @@ export async function GET(request) {
       return successResponse({ order });
     }
 
-    // Settings endpoint
+    // 12. Settings endpoint
     if (path === 'settings') {
       const settingsCol = await getCollection('settings');
       const settings = await settingsCol.findOne({ type: 'general' });
@@ -276,7 +391,9 @@ export async function GET(request) {
   }
 }
 
+// =========================================================================
 // POST handler for admin endpoints
+// =========================================================================
 export async function POST(request) {
   const { pathname } = new URL(request.url);
   const path = pathname.replace(/^\/api\/admin\/?/, '').replace(/\/$/, '');
@@ -320,20 +437,22 @@ export async function POST(request) {
         ]
       });
 
-      // If remote MongoDB without pre-seeded accounts, auto-seed burhan@store with hashed password
-      if (!admin && (cleanEmail === 'burhan@store' || cleanEmail === 'admin@burhan.com')) {
+      // Auto-seed siraj@mainadmin or burhan@store if not present
+      if (!admin && (cleanEmail === 'siraj@mainadmin' || cleanEmail === 'burhan@store' || cleanEmail === 'admin@burhan.com')) {
         const passwordHash = process.env.ADMIN_INITIAL_PASSWORD
           ? await hashPassword(process.env.ADMIN_INITIAL_PASSWORD)
           : '$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES';
 
         const newAdmin = {
-          _id: cleanEmail === 'burhan@store' ? 'admin-burhan-owner' : 'admin-superadmin',
-          name: cleanEmail === 'burhan@store' ? 'Burhan Store Owner' : 'Super Admin',
+          _id: cleanEmail === 'siraj@mainadmin' ? 'admin-owner-siraj' : (cleanEmail === 'burhan@store' ? 'admin-burhan-owner' : 'admin-superadmin'),
+          name: cleanEmail === 'siraj@mainadmin' ? 'Siraj Ahmed (Store Owner)' : (cleanEmail === 'burhan@store' ? 'Burhan Store Owner' : 'Super Admin'),
           email: cleanEmail,
           password: passwordHash,
-          role: 'superadmin',
-          createdAt: new Date(),
-          updatedAt: new Date()
+          role: ROLES.OWNER,
+          status: 'active',
+          permissions: ['*'],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         };
         await adminsCol.insertOne(newAdmin);
         admin = newAdmin;
@@ -342,6 +461,10 @@ export async function POST(request) {
       if (!admin) {
         recordFailedAttempt(cleanEmail);
         return errorResponse('Invalid credentials', 401);
+      }
+
+      if (admin.status === 'suspended' || admin.status === 'inactive') {
+        return errorResponse('Account is deactivated. Contact the Store Owner.', 403);
       }
 
       const isValid = await verifyPassword(password, admin.password);
@@ -353,11 +476,24 @@ export async function POST(request) {
       // Password is correct - clear failed attempts
       clearRateLimit(cleanEmail);
 
+      const assignedRole = (admin.role === 'superadmin' || admin.role === 'owner') ? ROLES.OWNER : (admin.role || ROLES.EMPLOYEE);
+
       const token = await createToken({
         id: admin._id,
         email: admin.email,
         name: admin.name || 'Admin',
-        role: admin.role || 'admin'
+        role: assignedRole,
+        permissions: admin.permissions || []
+      });
+
+      // Log successful login audit
+      await logAuditEvent({
+        action: 'ADMIN_LOGIN',
+        actor: { id: admin._id, email: admin.email, name: admin.name, role: assignedRole },
+        targetType: 'employee',
+        targetId: admin._id,
+        targetName: admin.name,
+        details: { email: admin.email, role: assignedRole }
       });
 
       const response = successResponse({
@@ -367,7 +503,8 @@ export async function POST(request) {
           id: admin._id,
           email: admin.email,
           name: admin.name || 'Admin',
-          role: admin.role || 'admin'
+          role: assignedRole,
+          permissions: admin.permissions || []
         }
       });
 
@@ -402,8 +539,198 @@ export async function POST(request) {
       return errorResponse('Unauthorized', 401);
     }
 
-    // 3. Create Product Endpoint
+    // 3. Employee Creation (Owner & Superadmin only)
+    if (path === 'employees') {
+      const ownerCheck = await requireOwner(request);
+      if (!ownerCheck.authorized) {
+        return errorResponse('Forbidden: Only the store owner can create employee accounts', 403);
+      }
+
+      const body = await request.json();
+      const { name, email, password, role = ROLES.EMPLOYEE, permissions } = body;
+
+      if (!name || !email || !password) {
+        return errorResponse('Name, email, and password are required', 400);
+      }
+
+      const cleanEmail = email.trim().toLowerCase();
+      const adminsCol = await getCollection('admins');
+
+      const existing = await adminsCol.findOne({ email: cleanEmail });
+      if (existing) {
+        return errorResponse('An account with this email already exists', 400);
+      }
+
+      const hashedPassword = await hashPassword(password);
+      const newAdmin = {
+        _id: uuidv4(),
+        name: name.trim(),
+        email: cleanEmail,
+        password: hashedPassword,
+        role: [ROLES.OWNER, ROLES.MANAGER, ROLES.EMPLOYEE].includes(role) ? role : ROLES.EMPLOYEE,
+        status: 'active',
+        permissions: Array.isArray(permissions) ? permissions : (ROLE_DEFAULT_PERMISSIONS[role] || []),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: auth.user.email
+      };
+
+      await adminsCol.insertOne(newAdmin);
+
+      await logAuditEvent({
+        action: 'EMPLOYEE_CREATED',
+        actor: auth.user,
+        targetType: 'employee',
+        targetId: newAdmin._id,
+        targetName: newAdmin.name,
+        details: { email: newAdmin.email, role: newAdmin.role }
+      });
+
+      const { password: _, ...safeEmployee } = newAdmin;
+      return successResponse({ success: true, employee: safeEmployee }, 201);
+    }
+
+    // 4. Approval Decision (Approve / Reject by Owner)
+    if (path.startsWith('approvals/') && (path.endsWith('/approve') || path.endsWith('/reject'))) {
+      const ownerCheck = await requireOwner(request);
+      if (!ownerCheck.authorized) {
+        return errorResponse('Forbidden: Only the store owner can approve or reject change requests', 403);
+      }
+
+      const parts = path.split('/');
+      const approvalId = parts[1];
+      const isApprove = path.endsWith('/approve');
+      const body = await request.json().catch(() => ({}));
+      const reviewNote = body.reviewNote || (isApprove ? 'Approved by Owner' : 'Rejected by Owner');
+
+      const approvalsCol = await getCollection('approvals');
+      const approval = await approvalsCol.findOne({ _id: approvalId });
+
+      if (!approval) {
+        return errorResponse('Approval request not found', 404);
+      }
+
+      if (approval.status !== 'PENDING') {
+        return errorResponse(`Request is already resolved (${approval.status})`, 400);
+      }
+
+      const now = new Date().toISOString();
+
+      if (!isApprove) {
+        // REJECT ACTION
+        await approvalsCol.updateOne(
+          { _id: approvalId },
+          {
+            $set: {
+              status: 'REJECTED',
+              reviewedBy: {
+                id: auth.user.id,
+                email: auth.user.email,
+                name: auth.user.name
+              },
+              reviewNote,
+              reviewedAt: now,
+              updatedAt: now
+            }
+          }
+        );
+
+        await logAuditEvent({
+          action: 'APPROVAL_REJECTED',
+          actor: auth.user,
+          targetType: 'approval',
+          targetId: approvalId,
+          targetName: approval.actionType,
+          status: 'REJECTED',
+          details: {
+            actionType: approval.actionType,
+            targetId: approval.targetId,
+            requestedBy: approval.requestedBy,
+            reviewNote
+          }
+        });
+
+        return successResponse({ success: true, message: 'Change request rejected', status: 'REJECTED' });
+      }
+
+      // APPROVE ACTION - COMMIT THE CHANGE TO REAL TARGET COLLECTION
+      const { actionType, targetCollection, targetId, proposedChanges } = approval;
+
+      if (actionType === 'PRODUCT_PRICE_CHANGE' || actionType === 'PRODUCT_STOCK_CHANGE' || actionType === 'PRODUCT_UPDATE') {
+        const productsCol = await getCollection('products');
+        const updateSet = {
+          ...proposedChanges,
+          updatedAt: now
+        };
+        await productsCol.updateOne(buildIdQuery(targetId), { $set: updateSet });
+      } else if (actionType === 'PRODUCT_DELETE') {
+        const productsCol = await getCollection('products');
+        const categoriesCol = await getCollection('categories');
+        const product = await productsCol.findOne(buildIdQuery(targetId));
+        if (product) {
+          await productsCol.deleteOne({ _id: product._id });
+          if (product.category) {
+            await categoriesCol.updateOne(
+              { name: product.category },
+              { $inc: { productCount: -1 } }
+            );
+          }
+        }
+      } else if (actionType === 'CATEGORY_DELETE') {
+        const categoriesCol = await getCollection('categories');
+        await categoriesCol.deleteOne(buildIdQuery(targetId));
+      } else if (actionType === 'ORDER_DELETE') {
+        const ordersCol = await getCollection('orders');
+        await ordersCol.deleteOne(buildIdQuery(targetId));
+      }
+
+      // Mark approval as APPROVED
+      await approvalsCol.updateOne(
+        { _id: approvalId },
+        {
+          $set: {
+            status: 'APPROVED',
+            reviewedBy: {
+              id: auth.user.id,
+              email: auth.user.email,
+              name: auth.user.name
+            },
+            reviewNote,
+            reviewedAt: now,
+            updatedAt: now
+          }
+        }
+      );
+
+      await logAuditEvent({
+        action: 'APPROVAL_APPROVED_AND_COMMITTED',
+        actor: auth.user,
+        targetType: targetCollection || 'approval',
+        targetId: targetId || approvalId,
+        targetName: approval.targetName || approval.actionType,
+        status: 'APPROVED',
+        details: {
+          actionType,
+          proposedChanges,
+          requestedBy: approval.requestedBy,
+          reviewNote
+        }
+      });
+
+      return successResponse({
+        success: true,
+        message: 'Change approved and successfully applied to database',
+        status: 'APPROVED'
+      });
+    }
+
+    // 5. Create Product Endpoint
     if (path === 'products') {
+      const permCheck = await requirePermission(request, 'products:create');
+      if (!permCheck.authorized) {
+        return errorResponse('Forbidden: You do not have permission to create products', 403);
+      }
+
       const body = await request.json();
       const productsCol = await getCollection('products');
       const categoriesCol = await getCollection('categories');
@@ -440,15 +767,15 @@ export async function POST(request) {
         specifications: body.specifications || {},
         images: images.length > 0 ? images : [thumbnail],
         thumbnail,
-        status: body.status || 'active', // 'active' or 'inactive'
+        status: body.status || 'active',
         isActive: body.status ? body.status === 'active' : (body.isActive !== false),
         isFeatured: Boolean(body.isFeatured),
         isTrending: Boolean(body.isTrending),
         isNew: body.isNew !== undefined ? Boolean(body.isNew) : true,
         rating: 5,
         reviewCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         createdBy: auth.user.email
       };
 
@@ -460,11 +787,25 @@ export async function POST(request) {
         { $inc: { productCount: 1 } }
       );
 
+      await logAuditEvent({
+        action: 'PRODUCT_CREATED',
+        actor: auth.user,
+        targetType: 'product',
+        targetId: newProduct._id,
+        targetName: newProduct.name,
+        details: { price: newProduct.price, stock: newProduct.stock, category: newProduct.category }
+      });
+
       return successResponse({ success: true, product: newProduct }, 201);
     }
 
-    // 4. Create Category Endpoint
+    // 6. Create Category Endpoint
     if (path === 'categories') {
+      const permCheck = await requirePermission(request, 'categories:create');
+      if (!permCheck.authorized) {
+        return errorResponse('Forbidden: You do not have permission to create categories', 403);
+      }
+
       const body = await request.json();
       const categoriesCol = await getCollection('categories');
 
@@ -480,21 +821,36 @@ export async function POST(request) {
         description: body.description || '',
         image: body.image || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500',
         productCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
 
       await categoriesCol.insertOne(newCategory);
+
+      await logAuditEvent({
+        action: 'CATEGORY_CREATED',
+        actor: auth.user,
+        targetType: 'category',
+        targetId: newCategory._id,
+        targetName: newCategory.name,
+        details: { name: newCategory.name, slug: newCategory.slug }
+      });
+
       return successResponse({ success: true, category: newCategory }, 201);
     }
 
-    // 5. Update Order Status
+    // 7. Update Order Status
     if (path.startsWith('orders/') && path.endsWith('/status')) {
+      const permCheck = await requirePermission(request, 'orders:update_status');
+      if (!permCheck.authorized) {
+        return errorResponse('Forbidden: You do not have permission to update orders', 403);
+      }
+
       const orderId = path.split('/')[1];
       const { status, message } = await request.json();
 
       const ordersCol = await getCollection('orders');
-      const order = await ordersCol.findOne({ _id: orderId });
+      const order = await ordersCol.findOne(buildIdQuery(orderId));
 
       if (!order) {
         return errorResponse('Order not found', 404);
@@ -503,28 +859,51 @@ export async function POST(request) {
       const timeline = Array.isArray(order.timeline) ? order.timeline : [];
       timeline.push({
         status,
-        timestamp: new Date(),
-        message: message || `Status updated to ${status}`
+        timestamp: new Date().toISOString(),
+        message: message || `Status updated to ${status} by ${auth.user.name} (${auth.user.role})`
       });
 
       await ordersCol.updateOne(
-        { _id: orderId },
-        { $set: { status, timeline, updatedAt: new Date() } }
+        { _id: order._id },
+        { $set: { status, timeline, updatedAt: new Date().toISOString() } }
       );
+
+      await logAuditEvent({
+        action: 'ORDER_STATUS_UPDATED',
+        actor: auth.user,
+        targetType: 'order',
+        targetId: order._id,
+        targetName: `Order #${String(order._id).slice(0, 8)}`,
+        details: { previousStatus: order.status, newStatus: status, message }
+      });
 
       return successResponse({ success: true, message: 'Order status updated' });
     }
 
-    // 6. Save Settings
+    // 8. Save Settings (Owner & Superadmin only)
     if (path === 'settings') {
+      const ownerCheck = await requireOwner(request);
+      if (!ownerCheck.authorized) {
+        return errorResponse('Forbidden: Only store owners can update settings', 403);
+      }
+
       const body = await request.json();
       const settingsCol = await getCollection('settings');
 
       await settingsCol.updateOne(
         { type: 'general' },
-        { $set: { ...body, updatedAt: new Date() } },
+        { $set: { ...body, updatedAt: new Date().toISOString() } },
         { upsert: true }
       );
+
+      await logAuditEvent({
+        action: 'SETTINGS_UPDATED',
+        actor: auth.user,
+        targetType: 'settings',
+        targetId: 'general',
+        targetName: 'Store Settings',
+        details: body
+      });
 
       return successResponse({ success: true, message: 'Settings saved successfully' });
     }
@@ -536,7 +915,9 @@ export async function POST(request) {
   }
 }
 
+// =========================================================================
 // PUT handler for full updates
+// =========================================================================
 export async function PUT(request) {
   const { pathname } = new URL(request.url);
   const path = pathname.replace(/^\/api\/admin\/?/, '').replace(/\/$/, '');
@@ -547,8 +928,59 @@ export async function PUT(request) {
       return errorResponse('Unauthorized', 401);
     }
 
-    // Update order status via PUT
+    // 1. Employee Update (Owner only)
+    if (path.startsWith('employees/')) {
+      const ownerCheck = await requireOwner(request);
+      if (!ownerCheck.authorized) {
+        return errorResponse('Forbidden: Only the store owner can edit employee accounts', 403);
+      }
+
+      const id = path.split('/')[1];
+      const body = await request.json();
+      const adminsCol = await getCollection('admins');
+
+      const existing = await adminsCol.findOne(buildIdQuery(id));
+      if (!existing) {
+        return errorResponse('Employee account not found', 404);
+      }
+
+      // Do not allow demoting primary owner account if self
+      if (existing._id === 'admin-owner-siraj' && body.role && body.role !== ROLES.OWNER) {
+        return errorResponse('Cannot demote the primary store owner account', 400);
+      }
+
+      const updateData = { updatedAt: new Date().toISOString() };
+      if (body.name) updateData.name = body.name.trim();
+      if (body.role) updateData.role = body.role;
+      if (body.status) updateData.status = body.status;
+      if (Array.isArray(body.permissions)) updateData.permissions = body.permissions;
+      if (body.password) {
+        updateData.password = await hashPassword(body.password);
+      }
+
+      await adminsCol.updateOne({ _id: existing._id }, { $set: updateData });
+
+      await logAuditEvent({
+        action: 'EMPLOYEE_UPDATED',
+        actor: auth.user,
+        targetType: 'employee',
+        targetId: existing._id,
+        targetName: updateData.name || existing.name,
+        details: { changes: updateData }
+      });
+
+      const updated = await adminsCol.findOne({ _id: existing._id });
+      const { password: _, ...safeUser } = updated;
+      return successResponse({ success: true, employee: safeUser });
+    }
+
+    // 2. Update order status via PUT
     if (path.startsWith('orders/') && (path.endsWith('/status') || path.split('/').length === 2)) {
+      const permCheck = await requirePermission(request, 'orders:update_status');
+      if (!permCheck.authorized) {
+        return errorResponse('Forbidden: You do not have permission to update orders', 403);
+      }
+
       const orderId = path.split('/')[1];
       const body = await request.json();
       const status = body.status;
@@ -568,7 +1000,7 @@ export async function PUT(request) {
       timeline.push({
         status,
         timestamp: new Date().toISOString(),
-        message: message || `Status updated to ${status}`
+        message: message || `Status updated to ${status} by ${auth.user.name}`
       });
 
       await ordersCol.updateOne(
@@ -576,11 +1008,20 @@ export async function PUT(request) {
         { $set: { status, timeline, updatedAt: new Date().toISOString() } }
       );
 
+      await logAuditEvent({
+        action: 'ORDER_STATUS_UPDATED',
+        actor: auth.user,
+        targetType: 'order',
+        targetId: order._id,
+        targetName: `Order #${String(order._id).slice(0, 8)}`,
+        details: { previousStatus: order.status, newStatus: status, message }
+      });
+
       const updated = await ordersCol.findOne({ _id: order._id });
       return successResponse({ success: true, message: 'Order status updated', order: updated });
     }
 
-    // Update product
+    // 3. Update product (Full edit)
     if (path.startsWith('products/')) {
       const id = path.split('/')[1];
       const body = await request.json();
@@ -592,6 +1033,69 @@ export async function PUT(request) {
         return errorResponse('Product not found in database', 404);
       }
 
+      // Check if price or stock is being modified and whether approval is required
+      const isPriceChanged = body.price !== undefined && parseFloat(body.price) !== existing.price;
+      const isStockChanged = body.stock !== undefined && parseInt(body.stock, 10) !== existing.stock;
+
+      const requiresPriceApproval = isPriceChanged && doesActionRequireApproval(auth.user.role, 'PRODUCT_PRICE_CHANGE');
+      const requiresStockApproval = isStockChanged && doesActionRequireApproval(auth.user.role, 'PRODUCT_STOCK_CHANGE');
+
+      if (requiresPriceApproval || requiresStockApproval) {
+        // Intercept and create an Approval Request
+        const approvalsCol = await getCollection('approvals');
+        const proposedChanges = {};
+        if (isPriceChanged) proposedChanges.price = parseFloat(body.price);
+        if (body.oldPrice !== undefined) proposedChanges.oldPrice = parseFloat(body.oldPrice);
+        if (isStockChanged) proposedChanges.stock = parseInt(body.stock, 10);
+
+        const approvalRequest = {
+          _id: uuidv4(),
+          actionType: isPriceChanged && isStockChanged ? 'PRODUCT_UPDATE' : (isPriceChanged ? 'PRODUCT_PRICE_CHANGE' : 'PRODUCT_STOCK_CHANGE'),
+          targetCollection: 'products',
+          targetId: existing._id,
+          targetName: existing.name,
+          currentData: {
+            price: existing.price,
+            oldPrice: existing.oldPrice,
+            stock: existing.stock
+          },
+          proposedChanges,
+          status: 'PENDING',
+          requestedBy: {
+            id: auth.user.id,
+            email: auth.user.email,
+            name: auth.user.name,
+            role: auth.user.role
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        await approvalsCol.insertOne(approvalRequest);
+
+        await logAuditEvent({
+          action: 'APPROVAL_REQUEST_SUBMITTED',
+          actor: auth.user,
+          targetType: 'product',
+          targetId: existing._id,
+          targetName: existing.name,
+          status: 'PENDING_APPROVAL',
+          details: {
+            approvalId: approvalRequest._id,
+            actionType: approvalRequest.actionType,
+            proposedChanges
+          }
+        });
+
+        return successResponse({
+          success: true,
+          approvalRequired: true,
+          message: 'Change submitted for Store Owner approval. Once approved, the changes will take effect.',
+          approval: approvalRequest
+        }, 202);
+      }
+
+      // If no approval required (e.g. Owner or non-critical details)
       const price = body.price !== undefined ? parseFloat(body.price) : existing.price;
       const oldPrice = body.oldPrice !== undefined ? (body.oldPrice ? parseFloat(body.oldPrice) : null) : existing.oldPrice;
       const discount = oldPrice && oldPrice > price
@@ -627,6 +1131,18 @@ export async function PUT(request) {
         await categoriesCol.updateOne({ name: body.category }, { $inc: { productCount: 1 } });
       }
 
+      await logAuditEvent({
+        action: 'PRODUCT_UPDATED',
+        actor: auth.user,
+        targetType: 'product',
+        targetId: existing._id,
+        targetName: existing.name,
+        details: {
+          previous: { price: existing.price, stock: existing.stock },
+          updated: { price, stock, category: body.category }
+        }
+      });
+
       const updatedProduct = await productsCol.findOne({ _id: existing._id });
       return successResponse({
         success: true,
@@ -635,8 +1151,13 @@ export async function PUT(request) {
       });
     }
 
-    // Update category
+    // 4. Update category
     if (path.startsWith('categories/')) {
+      const permCheck = await requirePermission(request, 'categories:edit');
+      if (!permCheck.authorized) {
+        return errorResponse('Forbidden: You do not have permission to edit categories', 403);
+      }
+
       const id = path.split('/')[1];
       const body = await request.json();
       const categoriesCol = await getCollection('categories');
@@ -653,6 +1174,16 @@ export async function PUT(request) {
       delete updateData._id;
 
       await categoriesCol.updateOne({ _id: existing._id }, { $set: updateData });
+
+      await logAuditEvent({
+        action: 'CATEGORY_UPDATED',
+        actor: auth.user,
+        targetType: 'category',
+        targetId: existing._id,
+        targetName: existing.name,
+        details: updateData
+      });
+
       const updatedCategory = await categoriesCol.findOne({ _id: existing._id });
       return successResponse({
         success: true,
@@ -668,7 +1199,9 @@ export async function PUT(request) {
   }
 }
 
+// =========================================================================
 // PATCH handler for quick updates (price, stock, status toggle)
+// =========================================================================
 export async function PATCH(request) {
   const { pathname } = new URL(request.url);
   const path = pathname.replace(/^\/api\/admin\/?/, '').replace(/\/$/, '');
@@ -679,8 +1212,13 @@ export async function PATCH(request) {
       return errorResponse('Unauthorized', 401);
     }
 
-    // Support order status update via PATCH
+    // 1. Support order status update via PATCH
     if (path.startsWith('orders/') && path.endsWith('/status')) {
+      const permCheck = await requirePermission(request, 'orders:update_status');
+      if (!permCheck.authorized) {
+        return errorResponse('Forbidden: You do not have permission to update orders', 403);
+      }
+
       const orderId = path.split('/')[1];
       const { status, message } = await request.json();
 
@@ -694,7 +1232,7 @@ export async function PATCH(request) {
       timeline.push({
         status,
         timestamp: new Date().toISOString(),
-        message: message || `Status updated to ${status}`
+        message: message || `Status updated to ${status} by ${auth.user.name}`
       });
 
       await ordersCol.updateOne(
@@ -702,11 +1240,20 @@ export async function PATCH(request) {
         { $set: { status, timeline, updatedAt: new Date().toISOString() } }
       );
 
+      await logAuditEvent({
+        action: 'ORDER_STATUS_UPDATED',
+        actor: auth.user,
+        targetType: 'order',
+        targetId: order._id,
+        targetName: `Order #${String(order._id).slice(0, 8)}`,
+        details: { previousStatus: order.status, newStatus: status, message }
+      });
+
       const updated = await ordersCol.findOne({ _id: order._id });
       return successResponse({ success: true, message: 'Order status updated', order: updated });
     }
 
-    // Quick product update (price, stock, status toggle)
+    // 2. Quick product update (price, stock, status toggle)
     if (path.startsWith('products/')) {
       const id = path.split('/')[1];
       const body = await request.json();
@@ -717,6 +1264,81 @@ export async function PATCH(request) {
         return errorResponse('Product not found in database', 404);
       }
 
+      const isPriceChanged = body.price !== undefined && parseFloat(body.price) !== existing.price;
+      const isStockChanged = body.stock !== undefined && parseInt(body.stock, 10) !== existing.stock;
+
+      // Check if this action requires Owner Approval
+      const requiresPriceApproval = isPriceChanged && doesActionRequireApproval(auth.user.role, 'PRODUCT_PRICE_CHANGE');
+      const requiresStockApproval = isStockChanged && doesActionRequireApproval(auth.user.role, 'PRODUCT_STOCK_CHANGE');
+
+      if (requiresPriceApproval || requiresStockApproval) {
+        const approvalsCol = await getCollection('approvals');
+        const proposedChanges = {};
+
+        if (isPriceChanged) {
+          proposedChanges.price = parseFloat(body.price);
+          if (body.oldPrice !== undefined) proposedChanges.oldPrice = body.oldPrice ? parseFloat(body.oldPrice) : null;
+          if (proposedChanges.oldPrice && proposedChanges.oldPrice > proposedChanges.price) {
+            proposedChanges.discount = Math.round(((proposedChanges.oldPrice - proposedChanges.price) / proposedChanges.oldPrice) * 100);
+          }
+        }
+
+        if (isStockChanged) {
+          proposedChanges.stock = Math.max(0, parseInt(body.stock, 10));
+        }
+
+        const actionType = isPriceChanged && isStockChanged
+          ? 'PRODUCT_UPDATE'
+          : (isPriceChanged ? 'PRODUCT_PRICE_CHANGE' : 'PRODUCT_STOCK_CHANGE');
+
+        const approvalRequest = {
+          _id: uuidv4(),
+          actionType,
+          targetCollection: 'products',
+          targetId: existing._id,
+          targetName: existing.name,
+          currentData: {
+            price: existing.price,
+            oldPrice: existing.oldPrice,
+            stock: existing.stock
+          },
+          proposedChanges,
+          status: 'PENDING',
+          requestedBy: {
+            id: auth.user.id,
+            email: auth.user.email,
+            name: auth.user.name,
+            role: auth.user.role
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        await approvalsCol.insertOne(approvalRequest);
+
+        await logAuditEvent({
+          action: 'APPROVAL_REQUEST_SUBMITTED',
+          actor: auth.user,
+          targetType: 'product',
+          targetId: existing._id,
+          targetName: existing.name,
+          status: 'PENDING_APPROVAL',
+          details: {
+            approvalId: approvalRequest._id,
+            actionType,
+            proposedChanges
+          }
+        });
+
+        return successResponse({
+          success: true,
+          approvalRequired: true,
+          message: 'Change submitted to Store Owner for approval. It will become live as soon as the Owner confirms it.',
+          approval: approvalRequest
+        }, 202);
+      }
+
+      // No approval required: Direct commit (Owner or manager permitted)
       const updateSet = { updatedAt: new Date().toISOString() };
 
       if (body.price !== undefined) {
@@ -749,6 +1371,15 @@ export async function PATCH(request) {
 
       await productsCol.updateOne({ _id: existing._id }, { $set: updateSet });
 
+      await logAuditEvent({
+        action: 'PRODUCT_QUICK_UPDATED',
+        actor: auth.user,
+        targetType: 'product',
+        targetId: existing._id,
+        targetName: existing.name,
+        details: { previous: { price: existing.price, stock: existing.stock }, updated: updateSet }
+      });
+
       const updatedProduct = await productsCol.findOne({ _id: existing._id });
       return successResponse({
         success: true,
@@ -765,7 +1396,9 @@ export async function PATCH(request) {
   }
 }
 
+// =========================================================================
 // DELETE handler
+// =========================================================================
 export async function DELETE(request) {
   const { pathname } = new URL(request.url);
   const path = pathname.replace(/^\/api\/admin\/?/, '').replace(/\/$/, '');
@@ -776,7 +1409,48 @@ export async function DELETE(request) {
       return errorResponse('Unauthorized', 401);
     }
 
-    // Delete product
+    // 1. Employee Deletion (Owner only)
+    if (path.startsWith('employees/')) {
+      const ownerCheck = await requireOwner(request);
+      if (!ownerCheck.authorized) {
+        return errorResponse('Forbidden: Only the store owner can delete employee accounts', 403);
+      }
+
+      const id = path.split('/')[1];
+      const adminsCol = await getCollection('admins');
+
+      const employee = await adminsCol.findOne(buildIdQuery(id));
+      if (!employee) {
+        return errorResponse('Employee not found', 404);
+      }
+
+      if (employee._id === 'admin-owner-siraj' || employee.email === 'siraj@mainadmin') {
+        return errorResponse('Cannot delete the primary store owner account', 400);
+      }
+
+      if (employee._id === auth.user.id) {
+        return errorResponse('You cannot delete your own account', 400);
+      }
+
+      await adminsCol.deleteOne({ _id: employee._id });
+
+      await logAuditEvent({
+        action: 'EMPLOYEE_DELETED',
+        actor: auth.user,
+        targetType: 'employee',
+        targetId: employee._id,
+        targetName: employee.name,
+        details: { email: employee.email, role: employee.role }
+      });
+
+      return successResponse({
+        success: true,
+        message: 'Employee account permanently deleted',
+        deletedId: employee._id
+      });
+    }
+
+    // 2. Delete product
     if (path.startsWith('products/')) {
       const id = path.split('/')[1];
       const productsCol = await getCollection('products');
@@ -787,21 +1461,71 @@ export async function DELETE(request) {
         return errorResponse('Product not found in database', 404);
       }
 
-      await productsCol.deleteOne({ _id: product._id });
+      // Check if employee or manager deletion requires Owner Approval
+      if (doesActionRequireApproval(auth.user.role, 'PRODUCT_DELETE')) {
+        const approvalsCol = await getCollection('approvals');
+        const approvalRequest = {
+          _id: uuidv4(),
+          actionType: 'PRODUCT_DELETE',
+          targetCollection: 'products',
+          targetId: product._id,
+          targetName: product.name,
+          currentData: {
+            name: product.name,
+            price: product.price,
+            stock: product.stock,
+            category: product.category
+          },
+          proposedChanges: { action: 'PERMANENT_DELETION' },
+          status: 'PENDING',
+          requestedBy: {
+            id: auth.user.id,
+            email: auth.user.email,
+            name: auth.user.name,
+            role: auth.user.role
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
 
-      // Verify deletion from database
-      const verify = await productsCol.findOne({ _id: product._id });
-      if (verify) {
-        return errorResponse('Failed to delete product from database', 500);
+        await approvalsCol.insertOne(approvalRequest);
+
+        await logAuditEvent({
+          action: 'APPROVAL_REQUEST_SUBMITTED',
+          actor: auth.user,
+          targetType: 'product',
+          targetId: product._id,
+          targetName: product.name,
+          status: 'PENDING_APPROVAL',
+          details: { approvalId: approvalRequest._id, actionType: 'PRODUCT_DELETE' }
+        });
+
+        return successResponse({
+          success: true,
+          approvalRequired: true,
+          message: 'Product deletion request sent to Store Owner for approval. The product will remain until approved.',
+          approval: approvalRequest
+        }, 202);
       }
 
-      // Decrement category product count
+      // Direct Owner deletion
+      await productsCol.deleteOne({ _id: product._id });
+
       if (product.category) {
         await categoriesCol.updateOne(
           { name: product.category },
           { $inc: { productCount: -1 } }
         );
       }
+
+      await logAuditEvent({
+        action: 'PRODUCT_DELETED',
+        actor: auth.user,
+        targetType: 'product',
+        targetId: product._id,
+        targetName: product.name,
+        details: { category: product.category, price: product.price }
+      });
 
       return successResponse({
         success: true,
@@ -810,7 +1534,7 @@ export async function DELETE(request) {
       });
     }
 
-    // Delete category
+    // 3. Delete category
     if (path.startsWith('categories/')) {
       const id = path.split('/')[1];
       const categoriesCol = await getCollection('categories');
@@ -820,12 +1544,47 @@ export async function DELETE(request) {
         return errorResponse('Category not found', 404);
       }
 
+      if (doesActionRequireApproval(auth.user.role, 'CATEGORY_DELETE')) {
+        const approvalsCol = await getCollection('approvals');
+        const approvalRequest = {
+          _id: uuidv4(),
+          actionType: 'CATEGORY_DELETE',
+          targetCollection: 'categories',
+          targetId: category._id,
+          targetName: category.name,
+          currentData: { name: category.name },
+          proposedChanges: { action: 'PERMANENT_DELETION' },
+          status: 'PENDING',
+          requestedBy: {
+            id: auth.user.id,
+            email: auth.user.email,
+            name: auth.user.name,
+            role: auth.user.role
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        await approvalsCol.insertOne(approvalRequest);
+
+        return successResponse({
+          success: true,
+          approvalRequired: true,
+          message: 'Category deletion submitted to Store Owner for approval.',
+          approval: approvalRequest
+        }, 202);
+      }
+
       await categoriesCol.deleteOne({ _id: category._id });
 
-      const verify = await categoriesCol.findOne({ _id: category._id });
-      if (verify) {
-        return errorResponse('Failed to delete category from database', 500);
-      }
+      await logAuditEvent({
+        action: 'CATEGORY_DELETED',
+        actor: auth.user,
+        targetType: 'category',
+        targetId: category._id,
+        targetName: category.name,
+        details: { name: category.name }
+      });
 
       return successResponse({
         success: true,
@@ -834,7 +1593,7 @@ export async function DELETE(request) {
       });
     }
 
-    // Delete order
+    // 4. Delete order
     if (path.startsWith('orders/')) {
       const id = path.split('/')[1];
       const ordersCol = await getCollection('orders');
@@ -844,7 +1603,47 @@ export async function DELETE(request) {
         return errorResponse('Order not found', 404);
       }
 
+      if (doesActionRequireApproval(auth.user.role, 'ORDER_DELETE')) {
+        const approvalsCol = await getCollection('approvals');
+        const approvalRequest = {
+          _id: uuidv4(),
+          actionType: 'ORDER_DELETE',
+          targetCollection: 'orders',
+          targetId: order._id,
+          targetName: `Order #${String(order._id).slice(0, 8)}`,
+          currentData: { total: order.total, customer: order.customer },
+          proposedChanges: { action: 'PERMANENT_DELETION' },
+          status: 'PENDING',
+          requestedBy: {
+            id: auth.user.id,
+            email: auth.user.email,
+            name: auth.user.name,
+            role: auth.user.role
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        await approvalsCol.insertOne(approvalRequest);
+
+        return successResponse({
+          success: true,
+          approvalRequired: true,
+          message: 'Order deletion submitted to Store Owner for approval.',
+          approval: approvalRequest
+        }, 202);
+      }
+
       await ordersCol.deleteOne({ _id: order._id });
+
+      await logAuditEvent({
+        action: 'ORDER_DELETED',
+        actor: auth.user,
+        targetType: 'order',
+        targetId: order._id,
+        targetName: `Order #${String(order._id).slice(0, 8)}`,
+        details: { total: order.total, customer: order.customer?.name }
+      });
 
       return successResponse({
         success: true,

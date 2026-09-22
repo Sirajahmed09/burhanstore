@@ -167,6 +167,12 @@ export default function AdminProductsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Failed to update price');
 
+      if (data.approvalRequired) {
+        showToast(data.message || 'Price change submitted to Store Owner for approval.', 'info');
+        setPriceModalProduct(null);
+        return;
+      }
+
       if (data.product) {
         setProducts(prev =>
           prev.map(p => (p._id === priceModalProduct._id ? data.product : p))
@@ -212,6 +218,12 @@ export default function AdminProductsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Failed to update stock');
 
+      if (data.approvalRequired) {
+        showToast(data.message || 'Stock change submitted to Store Owner for approval.', 'info');
+        setStockModalProduct(null);
+        return;
+      }
+
       if (data.product) {
         setProducts(prev =>
           prev.map(p => (p._id === stockModalProduct._id ? data.product : p))
@@ -251,6 +263,12 @@ export default function AdminProductsPage() {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Failed to delete product');
+
+      if (data.approvalRequired) {
+        showToast(data.message || 'Deletion request sent to Store Owner for approval.', 'info');
+        setDeleteProductTarget(null);
+        return;
+      }
 
       setProducts(prev => prev.filter(p => p._id !== deleteProductTarget._id));
       showToast(`"${deleteProductTarget.name}" deleted successfully.`);

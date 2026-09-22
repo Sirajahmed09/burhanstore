@@ -733,11 +733,24 @@
   ],
   "admins": [
     {
+      "_id": "admin-owner-siraj",
+      "name": "Siraj Ahmed (Store Owner)",
+      "email": "siraj@mainadmin",
+      "password": "$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES",
+      "role": "owner",
+      "status": "active",
+      "permissions": ["*"],
+      "createdAt": "2026-09-21T23:32:30.265Z",
+      "updatedAt": "2026-09-21T23:32:30.265Z"
+    },
+    {
       "_id": "admin-burhan-owner",
       "name": "Burhan Store Owner",
       "email": "burhan@store",
       "password": "$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES",
-      "role": "superadmin",
+      "role": "owner",
+      "status": "active",
+      "permissions": ["*"],
       "createdAt": "2026-09-21T23:32:30.265Z",
       "updatedAt": "2026-09-21T23:32:30.265Z"
     },
@@ -746,11 +759,15 @@
       "name": "Super Admin",
       "email": "admin@burhan.com",
       "password": "$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES",
-      "role": "superadmin",
+      "role": "owner",
+      "status": "active",
+      "permissions": ["*"],
       "createdAt": "2026-09-21T23:32:30.265Z",
       "updatedAt": "2026-09-21T23:32:30.265Z"
     }
   ],
+  "approvals": [],
+  "audit_logs": [],
   "settings": [
     {
       "_id": "e47a3d82-522a-47bc-a978-5e55398c1cf6",
