@@ -1,5 +1,8 @@
 import { getCollection } from '@/lib/db/mongodb';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://burhanstore.com';
 

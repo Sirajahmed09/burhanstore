@@ -386,8 +386,8 @@ export default function CheckoutPage() {
                       className="w-5 h-5 text-burhan-secondary"
                     />
                     <div className="ml-4">
-                      <div className="font-semibold text-burhan-primary">Cash on Delivery</div>
-                      <div className="text-sm text-burhan-text-secondary">Pay when you receive</div>
+                      <div className="font-semibold text-burhan-primary">Cash on Delivery (COD)</div>
+                      <div className="text-sm text-burhan-text-secondary">Pay with cash when your parcel is delivered at your doorstep across Pakistan</div>
                     </div>
                   </label>
 
@@ -395,32 +395,26 @@ export default function CheckoutPage() {
                     <input
                       type="radio"
                       name="payment"
-                      value="jazzcash"
-                      checked={formData.paymentMethod === 'jazzcash'}
+                      value="card"
+                      checked={formData.paymentMethod === 'card'}
                       onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
                       className="w-5 h-5 text-burhan-secondary"
                     />
                     <div className="ml-4">
-                      <div className="font-semibold text-burhan-primary">JazzCash</div>
-                      <div className="text-sm text-burhan-text-secondary">Mobile wallet payment</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-burhan-secondary transition-colors">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="easypaisa"
-                      checked={formData.paymentMethod === 'easypaisa'}
-                      onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                      className="w-5 h-5 text-burhan-secondary"
-                    />
-                    <div className="ml-4">
-                      <div className="font-semibold text-burhan-primary">EasyPaisa</div>
-                      <div className="text-sm text-burhan-text-secondary">Mobile wallet payment</div>
+                      <div className="font-semibold text-burhan-primary">Debit / Credit Card</div>
+                      <div className="text-sm text-burhan-text-secondary">Direct bank transfer or card machine on delivery</div>
                     </div>
                   </label>
                 </div>
+
+                {formData.paymentMethod === 'card' && (
+                  <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-200 text-sm text-blue-900">
+                    <p className="font-semibold mb-1">Payment Instructions:</p>
+                    <p>
+                      No online credit/debit card numbers are entered on this website. Once your order is placed, our support team will reach out via WhatsApp / phone with official bank transfer account details or arrange a portable card machine for doorstep delivery.
+                    </p>
+                  </div>
+                )}
               </motion.div>
             </div>
 

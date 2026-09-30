@@ -5,6 +5,9 @@ import WhyBurhan from '@/components/home/WhyBurhan';
 import CustomerReviews from '@/components/home/CustomerReviews';
 import WhatsAppCTA from '@/components/home/WhatsAppCTA';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata = {
   title: {
     absolute: 'BURHAN STORE | Premium Mobile Accessories & Electronics in Pakistan',

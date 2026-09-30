@@ -188,23 +188,27 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
       setError('Please enter a valid price.');
       return;
     }
-    if (formData.images.length === 0) {
-      setError('Please upload or add at least one product image.');
-      return;
+    let activeImages = [...formData.images];
+    if (activeImages.length === 0 && imageUrlInput.trim()) {
+      activeImages = [imageUrlInput.trim()];
+    }
+    if (activeImages.length === 0) {
+      activeImages = ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800'];
     }
 
     setLoading(true);
 
     try {
-      const coverImage = formData.images[formData.coverIndex] || formData.images[0];
+      const coverImage = activeImages[formData.coverIndex] || activeImages[0];
       // Re-order images so cover is first
       const orderedImages = [
         coverImage,
-        ...formData.images.filter((_, idx) => idx !== formData.coverIndex)
+        ...activeImages.filter((_, idx) => idx !== formData.coverIndex)
       ];
 
       const payload = {
         name: formData.name.trim(),
+        slug: formData.slug ? formData.slug.trim() : '',
         category: formData.category,
         price: parseFloat(formData.price),
         oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
@@ -237,11 +241,14 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
         throw new Error(data.error || 'Failed to save product');
       }
 
-      setSuccessMsg(isEdit ? 'Product updated successfully!' : 'Product created successfully!');
+      if (data.approvalRequired) {
+        setSuccessMsg(data.message || 'Submitted for Store Owner approval!');
+      } else {
+        setSuccessMsg(isEdit ? 'Product updated successfully!' : 'Product created successfully!');
+      }
       setTimeout(() => {
-        router.push('/admin/products');
-        router.refresh();
-      }, 800);
+        window.location.href = '/admin/products';
+      }, 500);
     } catch (err) {
       setError(err.message || 'An error occurred while saving.');
       setLoading(false);

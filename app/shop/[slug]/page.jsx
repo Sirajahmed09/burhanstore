@@ -3,6 +3,9 @@ import { getCollection } from '@/lib/db/mongodb';
 import { ProductSchema, BreadcrumbSchema } from '@/components/seo/StructuredData';
 import ProductDetailClient from '@/components/product/ProductDetailClient';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://burhanstore.com';
 
 function serialize(doc) {

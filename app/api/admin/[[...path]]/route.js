@@ -19,6 +19,7 @@ import {
   ALL_PERMISSIONS
 } from '@/lib/admin/permissions';
 import { logAuditEvent } from '@/lib/admin/audit';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -28,6 +29,24 @@ const NO_CACHE_HEADERS = {
   'Pragma': 'no-cache',
   'Expires': '0',
 };
+
+function revalidateStorefront(slug = '', category = '') {
+  try {
+    revalidatePath('/', 'layout');
+    revalidatePath('/');
+    revalidatePath('/shop');
+    revalidatePath('/shop/[slug]', 'page');
+    if (slug) revalidatePath(`/shop/${slug}`);
+    revalidatePath('/category/[slug]', 'page');
+    if (category) {
+      const catSlug = slugify(category);
+      revalidatePath(`/category/${catSlug}`);
+    }
+    revalidatePath('/sitemap.xml');
+  } catch (err) {
+    console.warn('[Admin Revalidation] Notice:', err.message);
+  }
+}
 
 function errorResponse(message, status = 500) {
   return NextResponse.json(
@@ -463,7 +482,7 @@ export async function POST(request) {
         return errorResponse('Invalid credentials', 401);
       }
 
-      if (admin.status === 'suspended' || admin.status === 'inactive') {
+      if (admin.status === 'suspended' || admin.status === 'inactive' || admin.status === 'disabled') {
         return errorResponse('Account is deactivated. Contact the Store Owner.', 403);
       }
 
@@ -656,13 +675,15 @@ export async function POST(request) {
       // APPROVE ACTION - COMMIT THE CHANGE TO REAL TARGET COLLECTION
       const { actionType, targetCollection, targetId, proposedChanges } = approval;
 
-      if (actionType === 'PRODUCT_PRICE_CHANGE' || actionType === 'PRODUCT_STOCK_CHANGE' || actionType === 'PRODUCT_UPDATE') {
+      if (actionType === 'PRODUCT_PRICE_CHANGE' || actionType === 'PRODUCT_STOCK_CHANGE' || actionType === 'PRODUCT_UPDATE' || actionType === 'PRODUCT_STATUS_CHANGE') {
         const productsCol = await getCollection('products');
         const updateSet = {
           ...proposedChanges,
           updatedAt: now
         };
         await productsCol.updateOne(buildIdQuery(targetId), { $set: updateSet });
+        const updatedProd = await productsCol.findOne(buildIdQuery(targetId));
+        if (updatedProd) revalidateStorefront(updatedProd.slug, updatedProd.category);
       } else if (actionType === 'PRODUCT_DELETE') {
         const productsCol = await getCollection('products');
         const categoriesCol = await getCollection('categories');
@@ -675,10 +696,12 @@ export async function POST(request) {
               { $inc: { productCount: -1 } }
             );
           }
+          revalidateStorefront(product.slug, product.category);
         }
       } else if (actionType === 'CATEGORY_DELETE') {
         const categoriesCol = await getCollection('categories');
         await categoriesCol.deleteOne(buildIdQuery(targetId));
+        revalidateStorefront('', '');
       } else if (actionType === 'ORDER_DELETE') {
         const ordersCol = await getCollection('orders');
         await ordersCol.deleteOne(buildIdQuery(targetId));
@@ -749,13 +772,17 @@ export async function POST(request) {
       const thumbnail = body.thumbnail || images[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500';
 
       const sku = (body.sku && body.sku.trim()) || `BUR-${Math.floor(100000 + Math.random() * 900000)}`;
-      const baseSlug = slugify(body.name);
-      const uniqueSlug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
+      let desiredSlug = body.slug ? slugify(body.slug) : slugify(body.name);
+      if (!desiredSlug) desiredSlug = `product-${Math.floor(1000 + Math.random() * 9000)}`;
+      const existingProduct = await productsCol.findOne({ slug: desiredSlug });
+      if (existingProduct) {
+        desiredSlug = `${desiredSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
 
       const newProduct = {
         _id: uuidv4(),
         name: body.name.trim(),
-        slug: body.slug ? slugify(body.slug) : uniqueSlug,
+        slug: desiredSlug,
         sku,
         category: body.category,
         price,
@@ -786,6 +813,9 @@ export async function POST(request) {
         { name: newProduct.category },
         { $inc: { productCount: 1 } }
       );
+
+      // Revalidate storefront cache immediately
+      revalidateStorefront(newProduct.slug, newProduct.category);
 
       await logAuditEvent({
         action: 'PRODUCT_CREATED',
@@ -960,13 +990,16 @@ export async function PUT(request) {
 
       await adminsCol.updateOne({ _id: existing._id }, { $set: updateData });
 
+      const safeChanges = { ...updateData };
+      if (safeChanges.password) safeChanges.password = '[REDACTED]';
+
       await logAuditEvent({
         action: 'EMPLOYEE_UPDATED',
         actor: auth.user,
         targetType: 'employee',
         targetId: existing._id,
         targetName: updateData.name || existing.name,
-        details: { changes: updateData }
+        details: { changes: safeChanges }
       });
 
       const updated = await adminsCol.findOne({ _id: existing._id });
@@ -1023,6 +1056,11 @@ export async function PUT(request) {
 
     // 3. Update product (Full edit)
     if (path.startsWith('products/')) {
+      const permCheck = await requirePermission(request, 'products:edit_details');
+      if (!permCheck.authorized) {
+        return errorResponse('Forbidden: You do not have permission to edit products', 403);
+      }
+
       const id = path.split('/')[1];
       const body = await request.json();
       const productsCol = await getCollection('products');
@@ -1033,31 +1071,46 @@ export async function PUT(request) {
         return errorResponse('Product not found in database', 404);
       }
 
-      // Check if price or stock is being modified and whether approval is required
+      // Check if price, stock, or visibility is being modified and whether approval is required
       const isPriceChanged = body.price !== undefined && parseFloat(body.price) !== existing.price;
       const isStockChanged = body.stock !== undefined && parseInt(body.stock, 10) !== existing.stock;
+      const isStatusChanged = (body.status !== undefined && body.status !== existing.status) || 
+                              (body.isActive !== undefined && Boolean(body.isActive) !== Boolean(existing.isActive));
 
       const requiresPriceApproval = isPriceChanged && doesActionRequireApproval(auth.user.role, 'PRODUCT_PRICE_CHANGE');
       const requiresStockApproval = isStockChanged && doesActionRequireApproval(auth.user.role, 'PRODUCT_STOCK_CHANGE');
+      const requiresStatusApproval = isStatusChanged && doesActionRequireApproval(auth.user.role, 'PRODUCT_STATUS_CHANGE');
 
-      if (requiresPriceApproval || requiresStockApproval) {
+      if (requiresPriceApproval || requiresStockApproval || requiresStatusApproval) {
         // Intercept and create an Approval Request
         const approvalsCol = await getCollection('approvals');
         const proposedChanges = {};
         if (isPriceChanged) proposedChanges.price = parseFloat(body.price);
         if (body.oldPrice !== undefined) proposedChanges.oldPrice = parseFloat(body.oldPrice);
         if (isStockChanged) proposedChanges.stock = parseInt(body.stock, 10);
+        if (isStatusChanged) {
+          const nextStatus = body.status || (body.isActive ? 'active' : 'inactive');
+          proposedChanges.status = nextStatus;
+          proposedChanges.isActive = nextStatus === 'active';
+        }
+
+        let actionType = 'PRODUCT_UPDATE';
+        if (isStatusChanged && !isPriceChanged && !isStockChanged) actionType = 'PRODUCT_STATUS_CHANGE';
+        else if (isPriceChanged && !isStockChanged) actionType = 'PRODUCT_PRICE_CHANGE';
+        else if (isStockChanged && !isPriceChanged) actionType = 'PRODUCT_STOCK_CHANGE';
 
         const approvalRequest = {
           _id: uuidv4(),
-          actionType: isPriceChanged && isStockChanged ? 'PRODUCT_UPDATE' : (isPriceChanged ? 'PRODUCT_PRICE_CHANGE' : 'PRODUCT_STOCK_CHANGE'),
+          actionType,
           targetCollection: 'products',
           targetId: existing._id,
           targetName: existing.name,
           currentData: {
             price: existing.price,
             oldPrice: existing.oldPrice,
-            stock: existing.stock
+            stock: existing.stock,
+            status: existing.status,
+            isActive: existing.isActive
           },
           proposedChanges,
           status: 'PENDING',
@@ -1144,6 +1197,9 @@ export async function PUT(request) {
       });
 
       const updatedProduct = await productsCol.findOne({ _id: existing._id });
+      if (updatedProduct) {
+        revalidateStorefront(updatedProduct.slug, updatedProduct.category);
+      }
       return successResponse({
         success: true,
         message: 'Product updated successfully',
@@ -1266,12 +1322,26 @@ export async function PATCH(request) {
 
       const isPriceChanged = body.price !== undefined && parseFloat(body.price) !== existing.price;
       const isStockChanged = body.stock !== undefined && parseInt(body.stock, 10) !== existing.stock;
+      const isStatusChanged = (body.status !== undefined && body.status !== existing.status) || 
+                              (body.isActive !== undefined && Boolean(body.isActive) !== Boolean(existing.isActive));
+
+      // Permission checks
+      if (isStatusChanged && !hasPermission(auth.user, 'products:toggle_status') && !hasPermission(auth.user, 'products:edit_details')) {
+        return errorResponse('Forbidden: You do not have permission to change product visibility/status', 403);
+      }
+      if (isPriceChanged && !hasPermission(auth.user, 'products:edit_price') && !hasPermission(auth.user, 'products:edit_details')) {
+        return errorResponse('Forbidden: You do not have permission to change product prices', 403);
+      }
+      if (isStockChanged && !hasPermission(auth.user, 'products:edit_stock') && !hasPermission(auth.user, 'products:edit_details')) {
+        return errorResponse('Forbidden: You do not have permission to change product inventory', 403);
+      }
 
       // Check if this action requires Owner Approval
       const requiresPriceApproval = isPriceChanged && doesActionRequireApproval(auth.user.role, 'PRODUCT_PRICE_CHANGE');
       const requiresStockApproval = isStockChanged && doesActionRequireApproval(auth.user.role, 'PRODUCT_STOCK_CHANGE');
+      const requiresStatusApproval = isStatusChanged && doesActionRequireApproval(auth.user.role, 'PRODUCT_STATUS_CHANGE');
 
-      if (requiresPriceApproval || requiresStockApproval) {
+      if (requiresPriceApproval || requiresStockApproval || requiresStatusApproval) {
         const approvalsCol = await getCollection('approvals');
         const proposedChanges = {};
 
@@ -1287,9 +1357,16 @@ export async function PATCH(request) {
           proposedChanges.stock = Math.max(0, parseInt(body.stock, 10));
         }
 
-        const actionType = isPriceChanged && isStockChanged
-          ? 'PRODUCT_UPDATE'
-          : (isPriceChanged ? 'PRODUCT_PRICE_CHANGE' : 'PRODUCT_STOCK_CHANGE');
+        if (isStatusChanged) {
+          const nextStatus = body.status || (body.isActive ? 'active' : 'inactive');
+          proposedChanges.status = nextStatus;
+          proposedChanges.isActive = nextStatus === 'active';
+        }
+
+        let actionType = 'PRODUCT_UPDATE';
+        if (isStatusChanged && !isPriceChanged && !isStockChanged) actionType = 'PRODUCT_STATUS_CHANGE';
+        else if (isPriceChanged && !isStockChanged) actionType = 'PRODUCT_PRICE_CHANGE';
+        else if (isStockChanged && !isPriceChanged) actionType = 'PRODUCT_STOCK_CHANGE';
 
         const approvalRequest = {
           _id: uuidv4(),
@@ -1300,7 +1377,9 @@ export async function PATCH(request) {
           currentData: {
             price: existing.price,
             oldPrice: existing.oldPrice,
-            stock: existing.stock
+            stock: existing.stock,
+            status: existing.status,
+            isActive: existing.isActive
           },
           proposedChanges,
           status: 'PENDING',
@@ -1381,6 +1460,9 @@ export async function PATCH(request) {
       });
 
       const updatedProduct = await productsCol.findOne({ _id: existing._id });
+      if (updatedProduct) {
+        revalidateStorefront(updatedProduct.slug, updatedProduct.category);
+      }
       return successResponse({
         success: true,
         message: 'Product updated successfully',
@@ -1517,6 +1599,8 @@ export async function DELETE(request) {
           { $inc: { productCount: -1 } }
         );
       }
+
+      revalidateStorefront(product.slug, product.category);
 
       await logAuditEvent({
         action: 'PRODUCT_DELETED',

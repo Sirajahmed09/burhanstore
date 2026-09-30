@@ -6,7 +6,7 @@
       "slug": "wireless-earbuds",
       "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500",
       "description": "Premium wireless earbuds with superior sound quality",
-      "productCount": 3,
+      "productCount": 1,
       "updatedAt": "2026-09-21T23:33:01.030Z"
     },
     {
@@ -15,7 +15,7 @@
       "slug": "headphones",
       "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500",
       "description": "High-quality over-ear and on-ear headphones",
-      "productCount": 1
+      "productCount": 0
     },
     {
       "_id": "96e59764-7d46-40f3-99a1-0ca57ed6aeed",
@@ -23,7 +23,7 @@
       "slug": "chargers",
       "image": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=500",
       "description": "Fast charging solutions for all your devices",
-      "productCount": 4
+      "productCount": 0
     },
     {
       "_id": "297a3635-f6b4-4f75-99ab-38526f0d34fd",
@@ -31,7 +31,7 @@
       "slug": "power-banks",
       "image": "https://images.unsplash.com/photo-1609592043357-554eb9496153?w=500",
       "description": "Portable power for life on the go",
-      "productCount": 2
+      "productCount": 0
     },
     {
       "_id": "f87f9091-a41e-46c5-a69f-ac1bd1592259",
@@ -39,7 +39,7 @@
       "slug": "smart-watches",
       "image": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=500",
       "description": "Stay connected with smart wearable technology",
-      "productCount": 1
+      "productCount": 0
     },
     {
       "_id": "8da0c6c6-0b16-4a8b-90c4-e5366c60e0f5",
@@ -47,10 +47,66 @@
       "slug": "gaming-accessories",
       "image": "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=500",
       "description": "Level up your gaming experience",
-      "productCount": 4
+      "productCount": 0
     }
   ],
   "products": [
+    {
+      "_id": "burhan-pro-2-flagship",
+      "name": "BURHAN Pro 2",
+      "slug": "burhan-pro-2",
+      "category": "Wireless Earbuds",
+      "price": 7499,
+      "oldPrice": 9999,
+      "discount": 25,
+      "images": [
+        "https://images.unsplash.com/photo-1606220838315-056192d5e927?w=800",
+        "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800",
+        "https://images.unsplash.com/photo-1606841837239-c5a1a4a07af7?w=800"
+      ],
+      "thumbnail": "https://images.unsplash.com/photo-1606220838315-056192d5e927?w=400",
+      "description": "Experience next-generation audio engineering with BURHAN Pro 2. Engineered with Hybrid Active Noise Cancellation (ANC), Transparency Ambient Mode, 12mm Custom Beryllium Dynamic Drivers, and ultra-low 40ms gaming latency. Up to 36 hours of battery playtime with Qi Wireless and USB-C quick charging.",
+      "features": [
+        "Hybrid Active Noise Cancellation (Up to 35dB ANC)",
+        "Crystal Clear Quad-Mic ENC with AI Noise Suppression",
+        "Transparency Ambient Mode for Instant Awareness",
+        "Ultra-Low 40ms Gaming & Streaming Latency",
+        "Up to 36 Hours Total Playtime (8h earbuds + 28h wireless case)",
+        "Qi Wireless Charging & Fast USB-C Quick Charging",
+        "IPX5 Sweat & Water Resistance for Workouts & Rain",
+        "Smart Touch Controls & Voice Assistant Integration"
+      ],
+      "specifications": {
+        "Driver": "12mm Custom High-Definition Dynamic Drivers",
+        "Bluetooth Version": "Bluetooth 5.3 + EDR",
+        "Battery Playtime": "8 Hours (Single Charge) / 36 Hours (With Case)",
+        "Charging Interface": "USB-C & Qi Wireless Charging",
+        "Water Resistance": "IPX5 Certified",
+        "Microphones": "Quad-Mic Array with ENC",
+        "Frequency Response": "20Hz - 20kHz",
+        "Compatibility": "iOS, Android, Windows, Mac",
+        "Warranty": "1 Year Official Burhan Store Replacement Warranty"
+      },
+      "inBox": [
+        "BURHAN Pro 2 Wireless Earbuds (Pair)",
+        "Smart Wireless Charging Case",
+        "3 Pairs Ergonomic Silicone Ear Tips (S, M, L)",
+        "Braided Type-C Fast Charging Cable",
+        "Official Warranty Card & User Manual"
+      ],
+      "stock": 50,
+      "sku": "BRH-PRO2-001",
+      "rating": 5,
+      "reviewCount": 38,
+      "isNew": true,
+      "isTrending": true,
+      "isFeatured": true,
+      "warranty": "1 Year Official Warranty",
+      "createdAt": "2026-09-29T23:58:02.303Z",
+      "updatedAt": "2026-09-30T00:11:07.378Z",
+      "status": "active",
+      "isActive": true
+    },
     {
       "_id": "fe9b99df-14e8-488c-a3ba-aa2a8afd47dd",
       "name": "Burhan AirPods Pro Max",
@@ -98,8 +154,9 @@
       "isFeatured": true,
       "warranty": "1 Year Official Warranty",
       "createdAt": "2026-09-10T19:40:07.655Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "c6500bab-8198-45fe-9610-65aefbff82c6",
@@ -145,8 +202,9 @@
       "isFeatured": true,
       "warranty": "1 Year Warranty",
       "createdAt": "2026-09-10T19:40:07.655Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "99aa89ce-6e3a-4695-a751-7b24c9d2b879",
@@ -193,8 +251,9 @@
       "isFeatured": true,
       "warranty": "1 Year Warranty",
       "createdAt": "2026-09-10T19:40:07.655Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "9b0c7042-bdf1-4c0c-885f-453cdc53b16e",
@@ -237,8 +296,9 @@
       "isFeatured": false,
       "warranty": "1 Year Warranty",
       "createdAt": "2026-09-10T19:40:07.655Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "beeea08c-26c7-4ae4-bf2c-d1aa183e97be",
@@ -279,8 +339,9 @@
       "isFeatured": false,
       "warranty": "6 Months Warranty",
       "createdAt": "2026-09-10T19:40:07.655Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "16f7c6d5-98a7-493f-abbf-64060a58a87b",
@@ -325,8 +386,9 @@
       "isFeatured": true,
       "warranty": "1 Year Warranty",
       "createdAt": "2026-09-10T19:40:07.655Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "e7e00ad5-5328-4176-b2c0-40d28e08692a",
@@ -368,8 +430,9 @@
       "isFeatured": false,
       "warranty": "1 Year Warranty",
       "createdAt": "2026-09-10T19:40:07.655Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "6ad31860-0b44-47a1-80c0-a1c3142eafbd",
@@ -418,8 +481,9 @@
       "isFeatured": true,
       "warranty": "1 Year Warranty",
       "createdAt": "2026-09-10T19:40:07.655Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "d1145c0d-aae0-4d3d-8eab-29524d2f146f",
@@ -463,8 +527,9 @@
       "isFeatured": false,
       "warranty": "1 Year Warranty",
       "createdAt": "2026-09-10T19:40:07.655Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "7c5438f8-2766-4d9f-8e8f-47993f73e52d",
@@ -507,8 +572,9 @@
       "isFeatured": false,
       "warranty": "1 Year Warranty",
       "createdAt": "2026-09-10T19:40:07.655Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "b3a6c94d-1eb7-4b51-9ef9-7f05f4e2004d",
@@ -550,9 +616,9 @@
       "isFeatured": false,
       "warranty": "1 Year Warranty",
       "createdAt": "2026-09-10T19:40:07.656Z",
-      "status": "active",
-      "isActive": true,
-      "updatedAt": "2026-09-10T19:56:29.192Z"
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "6aca318d-3ef3-4bf9-a299-2130e21d7fe5",
@@ -595,8 +661,9 @@
       "isFeatured": false,
       "warranty": "1 Year Warranty",
       "createdAt": "2026-09-10T19:40:07.656Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "a4992d69-4bac-488f-a870-8e151732adc5",
@@ -642,8 +709,9 @@
       "isFeatured": true,
       "warranty": "1 Year Warranty",
       "createdAt": "2026-09-10T19:40:07.656Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "7d8aab85-ff23-4254-9fd8-04d88574b087",
@@ -684,8 +752,9 @@
       "isFeatured": false,
       "warranty": "6 Months Warranty",
       "createdAt": "2026-09-10T19:40:07.656Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     },
     {
       "_id": "408f1ab6-9489-4eb1-b591-afef3c509633",
@@ -727,8 +796,9 @@
       "isFeatured": false,
       "warranty": "6 Months Warranty",
       "createdAt": "2026-09-10T19:40:07.656Z",
-      "status": "active",
-      "isActive": true
+      "status": "hidden",
+      "isActive": false,
+      "updatedAt": "2026-09-29T23:58:02.303Z"
     }
   ],
   "admins": [
@@ -739,7 +809,9 @@
       "password": "$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES",
       "role": "owner",
       "status": "active",
-      "permissions": ["*"],
+      "permissions": [
+        "*"
+      ],
       "createdAt": "2026-09-21T23:32:30.265Z",
       "updatedAt": "2026-09-21T23:32:30.265Z"
     },
@@ -750,7 +822,9 @@
       "password": "$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES",
       "role": "owner",
       "status": "active",
-      "permissions": ["*"],
+      "permissions": [
+        "*"
+      ],
       "createdAt": "2026-09-21T23:32:30.265Z",
       "updatedAt": "2026-09-21T23:32:30.265Z"
     },
@@ -761,7 +835,9 @@
       "password": "$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES",
       "role": "owner",
       "status": "active",
-      "permissions": ["*"],
+      "permissions": [
+        "*"
+      ],
       "createdAt": "2026-09-21T23:32:30.265Z",
       "updatedAt": "2026-09-21T23:32:30.265Z"
     }

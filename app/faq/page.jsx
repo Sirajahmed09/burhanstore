@@ -14,7 +14,7 @@ export default function FAQPage() {
     },
     {
       question: 'What payment methods do you accept?',
-      answer: 'We accept Cash on Delivery (COD), JazzCash, EasyPaisa, and debit card payments. Choose your preferred method at checkout.'
+      answer: 'We accept Cash on Delivery (COD) nationwide and Debit/Credit Card payments (direct bank transfer / card terminal on delivery).'
     },
     {
       question: 'How long does delivery take?',

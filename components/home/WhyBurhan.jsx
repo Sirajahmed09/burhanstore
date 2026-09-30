@@ -17,8 +17,8 @@ export default function WhyBurhan() {
     },
     {
       icon: CreditCard,
-      title: 'Secure Payments',
-      description: 'Cash on Delivery, JazzCash, EasyPaisa & Card payments'
+      title: 'Flexible Payments',
+      description: 'Cash on Delivery & Debit/Credit Card payments'
     },
     {
       icon: Headphones,

@@ -2,6 +2,9 @@ import { Suspense } from 'react';
 import ShopContent from '@/components/shop/ShopContent';
 import { BreadcrumbSchema } from '@/components/seo/StructuredData';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata = {
   title: 'Shop All Electronics & Mobile Accessories',
   description: 'Browse our full collection of premium wireless earbuds, smartwatches, power banks, fast chargers, and gaming accessories at BURHAN STORE with nationwide cash on delivery across Pakistan.',
