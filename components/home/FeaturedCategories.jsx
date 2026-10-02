@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
@@ -16,72 +15,61 @@ export default function FeaturedCategories() {
       .catch(err => console.error('Failed to load categories:', err));
   }, []);
 
+  if (categories.length === 0) return null;
+
   return (
-    <section className="py-20 bg-white">
-      <div className="container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <h2 className="font-heading text-4xl md:text-5xl font-bold text-burhan-primary mb-4">
-            Shop by Category
-          </h2>
-          <p className="text-xl text-burhan-text-secondary max-w-2xl mx-auto">
-            Discover our premium collection of technology products
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-          {categories.map((category, index) => (
-            <motion.div
-              key={category._id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Link href={`/category/${category.slug || category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}>
-                <div className="group bg-burhan-background rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 card-glow">
-                  <div className="aspect-square relative overflow-hidden">
-                    <Image
-                      src={category.image}
-                      alt={`${category.name} - BURHAN STORE`}
-                      fill
-                      referrerPolicy="no-referrer"
-                      className="object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h3 className="font-heading font-semibold text-white text-lg mb-1">
-                        {category.name}
-                      </h3>
-                      <p className="text-white/80 text-sm">
-                        {category.productCount} Products
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mt-12"
-        >
+    <section className="py-16 md:py-24 bg-slate-50 border-b border-slate-200/80">
+      <div className="container mx-auto px-4 max-w-6xl">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-10 text-center sm:text-left gap-4">
+          <div>
+            <div className="inline-flex items-center space-x-2 text-cyan-800 text-xs font-bold uppercase tracking-wider mb-2 px-3 py-1 bg-cyan-50 border border-cyan-200/70 rounded-md">
+              <span>Categories</span>
+            </div>
+            <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-slate-950 tracking-tight">
+              Explore Collections
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base mt-1">
+              Curated hardware and everyday accessories
+            </p>
+          </div>
           <Link
             href="/shop"
-            className="inline-flex items-center space-x-2 text-burhan-secondary hover:text-burhan-primary font-semibold text-lg group"
+            className="hidden sm:inline-flex items-center space-x-1.5 text-sm font-bold text-cyan-700 hover:text-cyan-800 transition-colors"
           >
-            <span>View All Products</span>
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <span>View All Categories</span>
+            <ArrowRight className="w-4 h-4" />
           </Link>
-        </motion.div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {categories.map((cat) => {
+            const slug = cat.slug || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const imgSrc = cat.image || 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400';
+            return (
+              <Link
+                key={cat._id || cat.name}
+                href={`/category/${slug}`}
+                className="group bg-white rounded-2xl p-3 border border-slate-200/80 hover:border-slate-300 hover:shadow-md transition-all duration-300 flex flex-col items-center text-center"
+              >
+                <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-100 mb-3">
+                  <Image
+                    src={imgSrc}
+                    alt={`${cat.name} - BURHAN STORE`}
+                    fill
+                    referrerPolicy="no-referrer"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <h3 className="font-heading text-xs sm:text-sm font-bold text-slate-900 group-hover:text-cyan-700 transition-colors line-clamp-1">
+                  {cat.name}
+                </h3>
+                <span className="text-[11px] text-slate-500 mt-0.5">
+                  {cat.productCount ? `${cat.productCount} Item${cat.productCount > 1 ? 's' : ''}` : 'Official Store'}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

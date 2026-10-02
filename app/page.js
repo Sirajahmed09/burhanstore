@@ -1,7 +1,8 @@
 import Hero from '@/components/home/Hero';
-import FeaturedCategories from '@/components/home/FeaturedCategories';
-import BestSellers from '@/components/home/BestSellers';
+import FeaturedProduct from '@/components/home/FeaturedProduct';
 import WhyBurhan from '@/components/home/WhyBurhan';
+import BestSellers from '@/components/home/BestSellers';
+import FeaturedCategories from '@/components/home/FeaturedCategories';
 import CustomerReviews from '@/components/home/CustomerReviews';
 import WhatsAppCTA from '@/components/home/WhatsAppCTA';
 
@@ -28,14 +29,25 @@ export const metadata = {
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-50">
+      {/* 1. Hero */}
       <Hero />
-      <FeaturedCategories />
-      <BestSellers />
+
+      {/* 2. Flagship Featured Product (BURHAN Pro 2) */}
+      <FeaturedProduct />
+
+      {/* 3. Why BURHAN - Trust & Authenticity */}
       <WhyBurhan />
+
+      {/* 4. Products / Collections */}
+      <BestSellers />
+      <FeaturedCategories />
+
+      {/* 5. Customer Reviews */}
       <CustomerReviews />
+
+      {/* 6. Final High-Conversion CTA & WhatsApp */}
       <WhatsAppCTA />
     </div>
   );
 }
-

@@ -289,7 +289,10 @@ export async function GET(request) {
       const productId = path.split('/')[1];
       const reviewsCol = await getCollection('reviews');
       const reviews = await reviewsCol
-        .find({ productId })
+        .find({
+          $or: [{ productId: productId }, { productSlug: productId }],
+          status: { $ne: 'hidden' }
+        })
         .sort({ createdAt: -1 })
         .toArray();
       
@@ -573,6 +576,56 @@ export async function POST(request) {
       }
       
       return NextResponse.json({ order: matchedOrder }, { headers: NO_CACHE_HEADERS });
+    }
+
+    // Customer review submission: POST /api/reviews
+    if (path === 'reviews') {
+      const body = await request.json();
+      const { productId, name, rating, comment } = body || {};
+
+      if (!productId || !name?.trim() || !comment?.trim()) {
+        return errorResponse('Product ID, your name, and a review comment are required', 400);
+      }
+
+      const reviewsCol = await getCollection('reviews');
+      const productsCol = await getCollection('products');
+
+      const numericRating = Math.min(5, Math.max(1, parseInt(rating, 10) || 5));
+
+      const newReview = {
+        _id: 'rev-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+        productId: String(productId),
+        name: String(name).trim(),
+        rating: numericRating,
+        comment: String(comment).trim(),
+        verified: true,
+        status: 'approved',
+        createdAt: new Date().toISOString()
+      };
+
+      await reviewsCol.insertOne(newReview);
+
+      // Recalculate product review count & average rating
+      const allProdReviews = await reviewsCol.find({
+        $or: [{ productId: String(productId) }, { productSlug: String(productId) }],
+        status: { $ne: 'hidden' }
+      }).toArray();
+
+      const avgRating = allProdReviews.length > 0
+        ? parseFloat((allProdReviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / allProdReviews.length).toFixed(1))
+        : numericRating;
+
+      await productsCol.updateOne(
+        { $or: [{ _id: productId }, { slug: productId }] },
+        {
+          $set: {
+            rating: avgRating,
+            reviewCount: allProdReviews.length
+          }
+        }
+      );
+
+      return NextResponse.json({ success: true, review: newReview }, { status: 201, headers: NO_CACHE_HEADERS });
     }
 
     // SECURITY: End of API endpoints

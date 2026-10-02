@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CheckCircle, Package, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Package, ArrowRight, MessageCircle, Truck, ShieldCheck } from 'lucide-react';
 import { trackPurchase } from '@/lib/analytics/gtag';
 
 function SuccessContent() {
@@ -32,110 +32,115 @@ function SuccessContent() {
   }, [orderId]);
 
   return (
-    <div className="min-h-screen bg-burhan-background pt-24 pb-12 flex items-center justify-center">
+    <div className="min-h-screen bg-slate-50 pt-20 md:pt-24 pb-20 flex items-center justify-center text-slate-900">
       <div className="container mx-auto px-4 max-w-2xl">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-2xl p-8 md:p-12 text-center"
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring" }}
-            className="w-24 h-24 bg-burhan-success rounded-full flex items-center justify-center mx-auto mb-6"
-          >
-            <CheckCircle className="w-12 h-12 text-white" />
-          </motion.div>
+        <div className="bg-white rounded-3xl p-6 sm:p-10 md:p-12 border border-slate-200/80 shadow-sm text-center">
+          {/* Animated Success Icon */}
+          <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-200">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
 
-          <h1 className="font-heading text-3xl md:text-4xl font-bold text-burhan-primary mb-4">
-            Order Placed Successfully!
+          <div className="text-xs uppercase tracking-wider font-bold text-cyan-700 mb-1">
+            Order Confirmed
+          </div>
+          <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-950 mb-3 tracking-tight">
+            Thank You for Your Order!
           </h1>
+          <p className="text-slate-600 text-sm sm:text-base mb-8 max-w-lg mx-auto leading-relaxed">
+            Your order has been received and is being prepared for dispatch with cash on delivery across Pakistan.
+          </p>
 
+          {/* Order ID Badge */}
           {order && (
-            <>
-              <p className="text-burhan-text-secondary text-lg mb-6">
-                Thank you for your order. Your order has been received and is being processed.
-              </p>
-
-              <div className="bg-burhan-background rounded-xl p-6 mb-8">
-                <div className="flex items-center justify-center space-x-2 mb-4">
-                  <Package className="w-5 h-5 text-burhan-secondary" />
-                  <span className="text-burhan-text-secondary font-semibold">Order ID</span>
-                </div>
-                <div className="font-mono text-2xl font-bold text-burhan-primary">
-                  {order._id.toUpperCase().slice(0, 12)}
-                </div>
+            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 mb-8 max-w-md mx-auto">
+              <div className="text-xs font-semibold text-slate-500 mb-1">Your Order Reference Number</div>
+              <div className="font-mono text-xl sm:text-2xl font-extrabold text-slate-950 tracking-wider">
+                {order._id ? order._id.toUpperCase().slice(0, 16) : 'BURHAN-ORD'}
               </div>
-
-              <div className="grid md:grid-cols-2 gap-4 mb-8 text-left">
-                <div className="bg-burhan-background rounded-xl p-4">
-                  <h3 className="font-semibold text-burhan-primary mb-2">Delivery Address</h3>
-                  <p className="text-burhan-text-secondary text-sm">
-                    {order.customer.name}<br />
-                    {order.customer.phone}<br />
-                    {order.customer.address}<br />
-                    {order.customer.city}, {order.customer.province}
-                  </p>
-                </div>
-
-                <div className="bg-burhan-background rounded-xl p-4">
-                  <h3 className="font-semibold text-burhan-primary mb-2">Order Summary</h3>
-                  <div className="text-sm space-y-1">
-                    <div className="flex justify-between text-burhan-text-secondary">
-                      <span>Subtotal:</span>
-                      <span>PKR {order.subtotal.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-burhan-text-secondary">
-                      <span>Shipping:</span>
-                      <span>PKR {order.shipping.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between font-semibold text-burhan-primary pt-2 border-t">
-                      <span>Total:</span>
-                      <span>PKR {order.total.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8">
-                <p className="text-burhan-text-primary text-sm">
-                  <strong>Note:</strong> You will receive a confirmation call shortly. Our delivery team will contact you for order confirmation and delivery schedule.
-                </p>
-              </div>
-            </>
+            </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href={`/track?orderId=${orderId || ''}&phone=${order?.customer?.phone || ''}`}
-              className="bg-burhan-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-burhan-secondary transition-colors flex items-center justify-center space-x-2"
+          {/* Delivery Details */}
+          {order?.customer && (
+            <div className="grid sm:grid-cols-2 gap-4 text-left mb-8">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  Recipient Details
+                </div>
+                <div className="text-sm font-bold text-slate-900">{order.customer.name}</div>
+                <div className="text-xs text-slate-600 mt-0.5">{order.customer.phone}</div>
+                <div className="text-xs text-slate-600 mt-1 leading-relaxed">
+                  {order.customer.address}, {order.customer.city}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  Payment Summary
+                </div>
+                <div className="text-xs text-slate-600 flex justify-between py-0.5">
+                  <span>Subtotal:</span>
+                  <span className="font-semibold text-slate-900">PKR {Number(order.subtotal || 0).toLocaleString()}</span>
+                </div>
+                <div className="text-xs text-slate-600 flex justify-between py-0.5">
+                  <span>Delivery:</span>
+                  <span className="font-semibold text-slate-900">PKR {Number(order.shipping || 200).toLocaleString()}</span>
+                </div>
+                <div className="text-sm font-extrabold text-slate-950 flex justify-between pt-1 border-t border-slate-200/60 mt-1">
+                  <span>Total Payable:</span>
+                  <span className="text-cyan-700">PKR {Number(order.total || 0).toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Next Steps Card */}
+          <div className="p-4 rounded-2xl bg-cyan-50/60 border border-cyan-100 text-xs sm:text-sm text-slate-700 mb-8 text-left space-y-2">
+            <div className="font-bold text-slate-900">What happens next?</div>
+            <div className="flex items-start space-x-2">
+              <span className="font-bold text-cyan-700">1.</span>
+              <span>Our verification team will confirm your order via phone or WhatsApp.</span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <span className="font-bold text-cyan-700">2.</span>
+              <span>Your package will be dispatched via courier with tracking updates.</span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <span className="font-bold text-cyan-700">3.</span>
+              <span>You pay cash only upon receiving and inspecting your parcel at your doorstep.</span>
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <a
+              href="https://wa.me/03150693148?text=Hello%20BURHAN%20STORE,%20I%20just%20placed%20an%20order!"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center space-x-2 shadow-xs"
             >
-              <Package className="w-5 h-5" />
-              <span>Track Order</span>
-            </Link>
+              <MessageCircle className="w-4 h-4" />
+              <span>WhatsApp Us for Fast Dispatch</span>
+            </a>
             <Link
-              href="/shop"
-              className="bg-white text-burhan-primary border-2 border-burhan-primary px-8 py-3 rounded-xl font-semibold hover:bg-burhan-primary hover:text-white transition-colors flex items-center justify-center space-x-2"
+              href="/"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center space-x-2"
             >
-              <span>Continue Shopping</span>
-              <ArrowRight className="w-5 h-5" />
+              <span>Return to Store</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
 }
 
-export default function SuccessPage() {
+export default function OrderSuccessPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-burhan-background pt-24 pb-12 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-burhan-secondary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-burhan-text-secondary">Loading...</p>
-        </div>
+      <div className="min-h-screen bg-slate-50 pt-24 pb-12 flex items-center justify-center text-slate-600">
+        Loading confirmation...
       </div>
     }>
       <SuccessContent />

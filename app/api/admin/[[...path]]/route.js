@@ -267,6 +267,22 @@ export async function GET(request) {
       });
     }
 
+    // Reviews list for moderation: GET /api/admin/reviews
+    if (path === 'reviews') {
+      const reviewsCol = await getCollection('reviews');
+      const productsCol = await getCollection('products');
+      const allReviews = await reviewsCol.find({}).sort({ createdAt: -1 }).toArray();
+      const allProducts = await productsCol.find({}).toArray();
+      const productMap = new Map(allProducts.map(p => [String(p._id), p.name]));
+
+      const enriched = allReviews.map(r => ({
+        ...r,
+        productName: productMap.get(String(r.productId)) || r.productName || 'BURHAN Pro 2'
+      }));
+
+      return successResponse({ reviews: enriched, total: enriched.length });
+    }
+
     // 7. Get single product: /api/admin/products/:id
     if (path.startsWith('products/') && path.split('/').length === 2) {
       const id = path.split('/')[1];
@@ -1307,6 +1323,19 @@ export async function PATCH(request) {
 
       const updated = await ordersCol.findOne({ _id: order._id });
       return successResponse({ success: true, message: 'Order status updated', order: updated });
+    }
+
+    // Review moderation (Approve / Hide): PATCH /api/admin/reviews/:id
+    if (path.startsWith('reviews/') && path.split('/').length === 2) {
+      const id = path.split('/')[1];
+      const body = await request.json();
+      const reviewsCol = await getCollection('reviews');
+      const updateFields = {};
+      if (body.status !== undefined) updateFields.status = body.status;
+      if (body.verified !== undefined) updateFields.verified = Boolean(body.verified);
+
+      await reviewsCol.updateOne(buildIdQuery(id), { $set: updateFields });
+      return successResponse({ success: true, message: 'Review updated successfully' });
     }
 
     // 2. Quick product update (price, stock, status toggle)

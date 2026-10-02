@@ -856,6 +856,11 @@
       "freeShippingThreshold": 5000,
       "shippingFee": 200,
       "updatedAt": "2026-09-10T19:40:07.656Z"
+    },
+    {
+      "type": "auth_security_config",
+      "jwtSecret": "4c37b8540581c3abde7271c1ffd258e844dfd662a6294b2264e476312de5c5ed",
+      "createdAt": "2026-10-02T00:36:38.758Z"
     }
   ],
   "reviews": [

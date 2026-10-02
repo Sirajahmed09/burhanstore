@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getCollection } from '@/lib/db/mongodb';
 import { BreadcrumbSchema } from '@/components/seo/StructuredData';
 import ProductCard from '@/components/product/ProductCard';
+import { PackageOpen, ArrowRight } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,7 +18,6 @@ function serialize(doc) {
 async function getCategoryBySlug(slug) {
   try {
     const categoriesCol = await getCollection('categories');
-    // Try matching slug, or generate matching slug from name
     const category = await categoriesCol.findOne({
       $or: [
         { slug: slug },
@@ -126,61 +126,62 @@ export default async function CategoryPage({ params }) {
   ];
 
   return (
-    <div className="min-h-screen bg-burhan-background pt-24 pb-12">
+    <div className="min-h-screen bg-slate-50 pt-20 md:pt-24 pb-16 text-slate-900">
       <BreadcrumbSchema items={breadcrumbs} />
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 max-w-6xl">
         {/* Breadcrumb Navigation Bar */}
-        <nav aria-label="Breadcrumb" className="mb-6">
-          <ol className="flex items-center space-x-2 text-sm text-burhan-text-secondary">
-            <li>
-              <Link href="/" className="hover:text-burhan-primary transition-colors">
-                Home
-              </Link>
-            </li>
-            <li>/</li>
-            <li>
-              <Link href="/shop" className="hover:text-burhan-primary transition-colors">
-                Shop
-              </Link>
-            </li>
-            <li>/</li>
-            <li className="text-burhan-primary font-semibold" aria-current="page">
-              {category.name}
-            </li>
-          </ol>
+        <nav aria-label="Breadcrumb" className="text-xs text-slate-500 py-3 mb-4 flex items-center space-x-2">
+          <Link href="/" className="hover:text-slate-900 transition-colors">
+            Home
+          </Link>
+          <span>/</span>
+          <Link href="/shop" className="hover:text-slate-900 transition-colors">
+            Shop
+          </Link>
+          <span>/</span>
+          <span className="text-slate-900 font-semibold truncate" aria-current="page">
+            {category.name}
+          </span>
         </nav>
 
         {/* Category Header */}
-        <div className="bg-white rounded-2xl p-8 mb-8 shadow-sm">
-          <h1 className="font-heading text-3xl md:text-5xl font-bold text-burhan-primary mb-3">
+        <div className="bg-white rounded-2xl md:rounded-3xl p-6 sm:p-8 md:p-10 border border-slate-200/80 shadow-xs mb-8">
+          <div className="inline-flex items-center space-x-2 text-cyan-800 text-xs font-bold uppercase tracking-wider mb-2 px-3 py-1 bg-cyan-50 border border-cyan-200/70 rounded-md">
+            <span>Category Collection</span>
+          </div>
+          <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-950 tracking-tight mb-3">
             {category.name}
           </h1>
-          <p className="text-burhan-text-secondary text-lg max-w-3xl">
-            {category.description || `Browse our curated collection of ${category.name.toLowerCase()} at BURHAN STORE. Authentic products with nationwide delivery in Pakistan.`}
+          <p className="text-slate-600 text-sm sm:text-base max-w-3xl leading-relaxed">
+            {category.description || `Browse authentic ${category.name.toLowerCase()} at BURHAN STORE with official 1-year warranty and fast nationwide cash on delivery across Pakistan.`}
           </p>
-          <div className="mt-4 text-sm font-semibold text-burhan-secondary">
-            {products.length} {products.length === 1 ? 'Product' : 'Products'} available
+          <div className="mt-4 text-xs sm:text-sm font-semibold text-slate-500">
+            Showing <strong className="text-slate-900">{products.length}</strong> available item{products.length !== 1 ? 's' : ''}
           </div>
         </div>
 
         {/* Products Grid */}
         {products.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center my-8">
-            <h2 className="font-heading text-2xl font-bold text-burhan-primary mb-3">
-              No products found in this category yet
+          <div className="bg-white rounded-2xl md:rounded-3xl p-8 sm:p-12 text-center border border-slate-200/80 shadow-xs my-8">
+            <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-4">
+              <PackageOpen className="w-8 h-8" />
+            </div>
+            <h2 className="font-heading text-xl font-bold text-slate-950 mb-2">
+              No products active in this category right now
             </h2>
-            <p className="text-burhan-text-secondary mb-6">
-              Check back soon for new arrivals or browse our full shop catalog.
+            <p className="text-sm text-slate-600 max-w-md mx-auto mb-6">
+              New inventory is arriving soon. In the meantime, explore our flagship BURHAN Pro 2 or browse the complete shop.
             </p>
             <Link
               href="/shop"
-              className="inline-block bg-burhan-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-burhan-secondary transition-colors"
+              className="inline-flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl text-xs sm:text-sm font-bold transition-colors"
             >
-              Browse All Products
+              <span>Explore All Products</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {products.map((product) => (
               <ProductCard key={product._id} product={product} />
             ))}
