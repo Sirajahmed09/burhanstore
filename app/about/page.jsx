@@ -9,7 +9,7 @@ export default function AboutPage() {
     {
       icon: ShieldCheck,
       title: 'Authenticity Guarantee',
-      description: 'We strictly sell certified original devices with official 1-year replacement warranty. No fakes or grey imports.'
+      description: 'We strictly sell certified original devices with official 6-month replacement warranty*. No fakes or grey imports.'
     },
     {
       icon: Truck,
@@ -56,7 +56,7 @@ export default function AboutPage() {
             Our flagship <strong>BURHAN Pro 2</strong> is the culmination of customer feedback — pairing active noise cancellation, low gaming latency, and multi-day battery endurance into an ergonomic design built for Pakistani commuters, gamers, and professionals.
           </p>
           <p>
-            From our Karachi distribution hub to remote towns across Sindh, Punjab, KPK, Balochistan, and Gilgit-Baltistan, we back every product with open-parcel verification and 1-year warranty coverage.
+            From our Karachi distribution hub to remote towns across Sindh, Punjab, KPK, Balochistan, and Gilgit-Baltistan, we back every product with open-parcel verification and 6-month replacement warranty* coverage.
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export default function AboutPage() {
             Experience the BURHAN Difference
           </h3>
           <p className="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mb-6">
-            Join thousands of satisfied Pakistani customers enjoying authentic audio with full warranty protection.
+            Join customers across Pakistan enjoying authentic audio with full warranty protection.
           </p>
           <Link
             href="/shop"

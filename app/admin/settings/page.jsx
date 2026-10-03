@@ -50,6 +50,7 @@ export default function AdminSettingsPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => {
     fetchSettings();
@@ -73,6 +74,7 @@ export default function AdminSettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
+    setNotification(null);
     try {
       const response = await fetch('/api/admin/settings', {
         method: 'POST',
@@ -81,12 +83,13 @@ export default function AdminSettingsPage() {
       });
 
       if (response.ok) {
-        alert('Settings saved successfully!');
+        setNotification({ type: 'success', message: 'Settings saved successfully!' });
       } else {
-        alert('Failed to save settings');
+        const errData = await response.json().catch(() => ({}));
+        setNotification({ type: 'error', message: errData.error || 'Failed to save settings' });
       }
     } catch (error) {
-      alert('Error saving settings');
+      setNotification({ type: 'error', message: 'Error saving settings. Please try again.' });
     } finally {
       setSaving(false);
     }
@@ -127,6 +130,22 @@ export default function AdminSettingsPage() {
             <span>{saving ? 'Saving...' : 'Save Changes'}</span>
           </button>
         </div>
+
+        {notification && (
+          <div className={`p-4 mb-6 rounded-xl border text-sm font-semibold flex items-center justify-between ${
+            notification.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-red-50 text-red-800 border-red-200'
+          }`}>
+            <span>{notification.message}</span>
+            <button
+              onClick={() => setNotification(null)}
+              className="text-xs ml-4 font-bold hover:underline"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* Business Information */}

@@ -30,6 +30,7 @@ export default function OrderDetailsPage({ params }) {
   const [updating, setUpdating] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [newStatus, setNewStatus] = useState('');
+  const [updateToast, setUpdateToast] = useState(null);
 
   const fetchOrderDetails = async () => {
     try {
@@ -65,6 +66,7 @@ export default function OrderDetailsPage({ params }) {
     e.preventDefault();
     if (!orderId || !newStatus) return;
 
+    setUpdateToast(null);
     try {
       setUpdating(true);
       const res = await fetch(`/api/admin/orders/${orderId}/status`, {
@@ -79,13 +81,15 @@ export default function OrderDetailsPage({ params }) {
       if (res.ok) {
         setStatusMessage('');
         await fetchOrderDetails();
-        alert('Order status successfully updated!');
+        setUpdateToast({ type: 'success', message: 'Order status successfully updated!' });
+        setTimeout(() => setUpdateToast(null), 3500);
       } else {
-        alert('Failed to update status');
+        const err = await res.json().catch(() => ({}));
+        setUpdateToast({ type: 'error', message: err.error || 'Failed to update status' });
       }
     } catch (err) {
       console.error('Error updating order:', err);
-      alert('Error updating order status');
+      setUpdateToast({ type: 'error', message: 'Error updating order status' });
     } finally {
       setUpdating(false);
     }
@@ -181,6 +185,17 @@ export default function OrderDetailsPage({ params }) {
             </button>
           </div>
         </div>
+
+        {updateToast && (
+          <div className={`p-4 mb-6 rounded-xl border text-sm font-semibold flex items-center justify-between ${
+            updateToast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-red-50 text-red-800 border-red-200'
+          }`}>
+            <span>{updateToast.message}</span>
+            <button onClick={() => setUpdateToast(null)} className="text-xs ml-3 font-bold">✕</button>
+          </div>
+        )}
 
         {/* Order Header Card */}
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-6">

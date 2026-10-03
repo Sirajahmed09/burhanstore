@@ -49,7 +49,7 @@ export default function WhatsAppCTA() {
           </span>
           <span className="flex items-center space-x-1.5">
             <ShieldCheck className="w-4 h-4 text-cyan-400" />
-            <span>1-Year Official Replacement Warranty</span>
+            <span>6-Month Replacement Warranty* (Terms Apply)</span>
           </span>
         </div>
       </div>

@@ -24,12 +24,40 @@ import {
   ArrowRight,
   Sparkles,
   PhoneCall,
-  Clock
+  Clock,
+  ChevronDown,
+  HelpCircle,
+  MessageSquarePlus,
+  Send
 } from 'lucide-react';
 import { useCart } from '@/lib/contexts/CartContext';
 import { useWishlist } from '@/lib/contexts/WishlistContext';
 import ProductCard from '@/components/product/ProductCard';
 import { trackViewItem, trackAddToCart as gaAddToCart } from '@/lib/analytics/gtag';
+
+// Icon dictionary for dynamic feature cards
+const ICON_MAP = {
+  Volume2,
+  BatteryCharging,
+  Zap,
+  Mic,
+  Sliders,
+  Droplets,
+  Radio,
+  Package,
+  ShieldCheck,
+  Sparkles,
+  Truck,
+  RotateCcw,
+  Clock
+};
+
+function getFeatureIcon(iconKey) {
+  if (iconKey && ICON_MAP[iconKey]) {
+    return ICON_MAP[iconKey];
+  }
+  return Sparkles;
+}
 
 export default function ProductDetailClient({ product, initialRelated = [] }) {
   const router = useRouter();
@@ -38,13 +66,31 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('specs');
   const [addedToast, setAddedToast] = useState(false);
+  
+  // Real Reviews state
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewFormData, setReviewFormData] = useState({
+    name: '',
+    rating: 5,
+    comment: ''
+  });
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSubmitMessage, setReviewSubmitMessage] = useState('');
+
+  // FAQ Accordion State (all open by default or index 0 open)
+  const [openFaqIndex, setOpenFaqIndex] = useState(0);
 
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
 
+  // Load related products & real reviews
   useEffect(() => {
     if (product) {
       trackViewItem(product);
+      
+      // Load related products if needed
       if (initialRelated.length === 0 && product.slug) {
         fetch(`/api/products/${product.slug}/related?_t=${Date.now()}`, { cache: 'no-store' })
           .then(res => (res.ok ? res.json() : { products: [] }))
@@ -53,6 +99,19 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
           })
           .catch(err => console.error('Failed to load related products:', err));
       }
+
+      // Load real customer reviews
+      const targetId = product._id || product.slug;
+      fetch(`/api/reviews/${targetId}?_t=${Date.now()}`, { cache: 'no-store' })
+        .then(res => (res.ok ? res.json() : { reviews: [] }))
+        .then(data => {
+          setReviews(data?.reviews || []);
+          setReviewsLoading(false);
+        })
+        .catch(err => {
+          console.error('Failed to load reviews:', err);
+          setReviewsLoading(false);
+        });
     }
   }, [product, initialRelated]);
 
@@ -73,97 +132,110 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
     }
   };
 
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!reviewFormData.name.trim() || !reviewFormData.comment.trim()) return;
+
+    setReviewSubmitting(true);
+    setReviewSubmitMessage('');
+
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: product._id,
+          productSlug: product.slug,
+          name: reviewFormData.name.trim(),
+          rating: Number(reviewFormData.rating) || 5,
+          comment: reviewFormData.comment.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setReviewSubmitMessage('Thank you! Your review has been submitted for moderation.');
+        setReviewFormData({ name: '', rating: 5, comment: '' });
+        setTimeout(() => setShowReviewForm(false), 3000);
+      } else {
+        setReviewSubmitMessage(data.error || 'Failed to submit review.');
+      }
+    } catch (err) {
+      setReviewSubmitMessage('Error submitting review. Please try again.');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   if (!product) {
     return null;
   }
 
-  const isPro2 = product.slug === 'burhan-pro-2' || product.name?.toLowerCase().includes('pro 2');
-
+  // Dynamic Product Images
   const productImages = (Array.isArray(product.images) && product.images.length > 0)
     ? product.images
     : (product.thumbnail ? [product.thumbnail] : (product.image ? [product.image] : ['https://images.unsplash.com/photo-1606220838315-056192d5e927?w=800']));
   const activeImage = productImages[selectedImage] || productImages[0];
 
-  const discountPercent = product.discount || (product.oldPrice && product.oldPrice > product.price
-    ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
+  // Dynamic Pricing & Discount Calculation
+  const price = Number(product.price) || 0;
+  const oldPrice = Number(product.oldPrice) || 0;
+  const discountPercent = product.discount || (oldPrice > price
+    ? Math.round(((oldPrice - price) / oldPrice) * 100)
     : 0);
 
-  // Pro 2 Key Highlights
-  const pro2Highlights = [
-    { label: 'Up to 35dB Hybrid ANC' },
-    { label: 'Up to 36H Total Playback' },
-    { label: '40ms Low Latency' },
-    { label: 'Bluetooth 5.3 + EDR' },
-    { label: 'Quad-Mic ENC' },
-    { label: 'USB-C + Qi Charging' },
-  ];
+  // Dynamic Badge
+  const badgeText = product.badge || (product.isFeatured ? 'Flagship Audio' : (product.isNew ? 'New Release' : ''));
 
-  // Pro 2 Why You'll Love It Benefits Grid
-  const pro2Benefits = [
-    {
-      icon: Volume2,
-      title: 'Hybrid ANC',
-      description: 'Reduce unwanted background noise with up to 35dB Active Noise Cancellation for deep musical immersion.',
-    },
-    {
-      icon: BatteryCharging,
-      title: '36H Battery',
-      description: 'Up to 8H per charge on earbuds and up to 36H total playtime with the compact wireless charging case.',
-    },
-    {
-      icon: Zap,
-      title: '40ms Low Latency',
-      description: 'Ultra-fast audio sync for mobile gaming (PUBG, COD) and video streaming without perceptible delay.',
-    },
-    {
-      icon: Mic,
-      title: 'Clear Calls',
-      description: 'Quad-Mic ENC environmental noise reduction isolates your voice from traffic and wind noise during calls.',
-    },
-    {
-      icon: Sliders,
-      title: 'Smart Touch',
-      description: 'Intuitive capacitive touch sensors for seamless playback, volume adjustment, call handling, and voice assistant.',
-    },
-    {
-      icon: Droplets,
-      title: 'IPX5 Protection',
-      description: 'Water and sweat resistant design built to withstand intense workout sessions and sudden rainy days.',
-    },
-    {
-      icon: Radio,
-      title: 'USB-C + Qi',
-      description: 'Fast USB-C cable charging plus convenient Qi wireless pad charging for effortless daily replenishment.',
-    },
-  ];
+  // Dynamic Highlights List
+  const highlights = Array.isArray(product.highlights) && product.highlights.length > 0
+    ? product.highlights
+    : (Array.isArray(product.features) && product.features.length > 0
+      ? product.features.map(f => typeof f === 'string' ? f : f.title).slice(0, 6)
+      : []);
 
-  // Authentic Customer Reviews for Pro 2
-  const reviews = [
-    {
-      author: 'Usman R.',
-      location: 'Lahore',
-      rating: 5,
-      date: 'September 2026',
-      title: 'Sound quality & ANC blew me away',
-      comment: 'I upgraded from ordinary earbuds and the ANC on the BURHAN Pro 2 is incredible. Commuting on the Metro is now peaceful. Battery easily lasts 4 days on a single case charge. Received within 48 hours via COD!',
-    },
-    {
-      author: 'Hamza K.',
-      location: 'Karachi',
-      rating: 5,
-      date: 'September 2026',
-      title: 'Zero latency in gaming',
-      comment: 'Tested on PUBG Mobile with low latency mode. Gunshots and footsteps are perfectly in sync. Quad mic is super clear on WhatsApp and Zoom calls too. Outstanding value for PKR 7,499.',
-    },
-    {
-      author: 'Ayesha M.',
-      location: 'Islamabad',
-      rating: 5,
-      date: 'August 2026',
-      title: 'Premium build and packaging',
-      comment: 'Packaging feels very high-end. Earbuds fit comfortably without falling out during jogging. Wireless charging works smoothly on my desk pad. Very happy with BURHAN official warranty.',
-    },
-  ];
+  // Dynamic Feature Cards
+  const featureCards = Array.isArray(product.features) && product.features.length > 0
+    ? product.features.map(f => {
+        if (typeof f === 'string') {
+          return { title: f, description: '', icon: 'Sparkles' };
+        }
+        return f;
+      })
+    : [];
+
+  // Dynamic Specifications
+  const specifications = product.specifications && typeof product.specifications === 'object'
+    ? (Array.isArray(product.specifications)
+        ? product.specifications
+        : Object.entries(product.specifications).map(([key, value]) => ({ key, value })))
+    : [];
+
+  // Dynamic What's in the Box
+  const inBoxItems = Array.isArray(product.inBox) && product.inBox.length > 0
+    ? product.inBox
+    : [];
+
+  // Dynamic FAQs
+  const faqs = Array.isArray(product.faqs) && product.faqs.length > 0
+    ? product.faqs
+    : [];
+
+  // Dynamic Warranty
+  const warrantyObj = typeof product.warranty === 'object' && product.warranty !== null
+    ? product.warranty
+    : {
+        duration: '6 Months',
+        type: 'Replacement Warranty',
+        description: typeof product.warranty === 'string' && product.warranty ? product.warranty : 'Your BURHAN product is covered for eligible internal product issues for 6 months from the date of purchase.',
+        terms: [
+          'The product must be reasonably clean and suitable for inspection.',
+          'The product must not have physical damage (cracks, broken parts, liquid damage, burn damage, or signs of misuse).',
+          'The issue must be verified as an eligible internal product fault.',
+          'Warranty claims are subject to inspection and verification by BURHAN.',
+          'Warranty does not cover physical or accidental damage, misuse, liquid damage, unauthorized modification or other externally caused damage.'
+        ]
+      };
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20 md:pt-24 pb-24 md:pb-16 text-slate-900">
@@ -228,9 +300,9 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                       {discountPercent}% OFF
                     </span>
                   )}
-                  {isPro2 && (
+                  {badgeText && (
                     <span className="bg-slate-900 text-cyan-300 text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-xs border border-slate-700">
-                      Flagship Audio
+                      {badgeText}
                     </span>
                   )}
                 </div>
@@ -266,7 +338,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                     >
                       <Image
                         src={image}
-                        alt={`${product.name} angle ${index + 1}`}
+                        alt={`${product.name} view ${index + 1}`}
                         fill
                         referrerPolicy="no-referrer"
                         className="object-cover"
@@ -281,7 +353,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
             <div className="md:col-span-6 lg:col-span-6 flex flex-col justify-start">
               {/* Product Category / Subtitle */}
               <div className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-cyan-700 mb-1">
-                {isPro2 ? 'Premium Wireless Earbuds' : (product.category || 'Consumer Electronics')}
+                {product.category || 'Official Consumer Electronics'}
               </div>
 
               {/* Title */}
@@ -289,19 +361,29 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                 {product.name}
               </h1>
 
-              {/* Reviews & Social Proof */}
+              {/* Real Ratings & Authenticity Tag */}
               <div className="flex items-center space-x-2 mb-4 text-xs sm:text-sm">
-                <div className="flex text-amber-400">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <span className="font-bold text-slate-900">5.0</span>
-                <span className="text-slate-500">·</span>
-                <span className="text-slate-600 font-medium">({product.reviewCount || 48} verified reviews)</span>
-                <span className="text-slate-500">·</span>
+                {reviews.length > 0 ? (
+                  <>
+                    <div className="flex text-amber-400">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <span className="font-bold text-slate-900">
+                      {(reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1)}
+                    </span>
+                    <span className="text-slate-500">·</span>
+                    <span className="text-slate-600 font-medium">({reviews.length} verified review{reviews.length !== 1 ? 's' : ''})</span>
+                    <span className="text-slate-500">·</span>
+                  </>
+                ) : null}
                 <span className="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded text-xs">
                   Official Stock
+                </span>
+                <span className="text-slate-500">·</span>
+                <span className="text-cyan-800 font-medium text-xs">
+                  Cash on Delivery
                 </span>
               </div>
 
@@ -309,11 +391,11 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 mb-5">
                 <div className="flex items-baseline space-x-3 mb-1">
                   <span className="text-3xl sm:text-4xl font-extrabold text-slate-950 tracking-tight">
-                    PKR {Number(product.price).toLocaleString()}
+                    PKR {price.toLocaleString()}
                   </span>
-                  {product.oldPrice && (
+                  {oldPrice > price && (
                     <span className="text-base sm:text-lg text-slate-400 line-through">
-                      PKR {Number(product.oldPrice).toLocaleString()}
+                      PKR {oldPrice.toLocaleString()}
                     </span>
                   )}
                   {discountPercent > 0 && (
@@ -329,20 +411,18 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                 </div>
               </div>
 
-              {/* Pro 2 Highlights List */}
+              {/* Short Description & Highlights */}
               <div className="mb-6">
                 <p className="text-slate-700 text-sm leading-relaxed mb-3">
-                  {isPro2
-                    ? 'Powerful sound, Hybrid ANC, clear calls and ultra-low latency — built for music, gaming and everyday use.'
-                    : (product.description || 'Premium audio engineering designed for all-day comfort and high-definition sound.')}
+                  {product.shortDescription || product.description || 'Premium technology engineering designed for everyday performance, durability, and all-day convenience.'}
                 </p>
 
-                {isPro2 && (
+                {highlights.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-slate-800 bg-cyan-50/50 border border-cyan-100 p-3.5 rounded-xl">
-                    {pro2Highlights.map((hl, idx) => (
+                    {highlights.map((hl, idx) => (
                       <div key={idx} className="flex items-center space-x-2">
                         <Check className="w-4 h-4 text-cyan-600 flex-shrink-0" />
-                        <span className="font-semibold">{hl.label}</span>
+                        <span className="font-semibold">{hl}</span>
                       </div>
                     ))}
                   </div>
@@ -384,7 +464,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                   </button>
                 </div>
                 <span className="text-xs text-slate-500">
-                  Subtotal: <strong className="text-slate-900">PKR {(product.price * quantity).toLocaleString()}</strong>
+                  Subtotal: <strong className="text-slate-900">PKR {(price * quantity).toLocaleString()}</strong>
                 </span>
               </div>
 
@@ -456,9 +536,9 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
               <div className="w-10 h-10 rounded-full bg-cyan-50 text-cyan-700 flex items-center justify-center mb-2.5">
                 <RotateCcw className="w-5 h-5" />
               </div>
-              <h2 className="text-sm font-bold text-slate-900 mb-1">7-Day Easy Returns</h2>
+              <h2 className="text-sm font-bold text-slate-900 mb-1">Open Parcel Check</h2>
               <p className="text-xs text-slate-600 leading-snug">
-                Defect replacement and exchange guarantee for total peace of mind
+                Verify package contents on doorstep delivery before making payment
               </p>
             </div>
 
@@ -475,25 +555,25 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
         </section>
 
         {/* ========================================================= */}
-        {/* SECTION 3: WHY YOU'LL LOVE PRO 2 */}
+        {/* SECTION 3: KEY FEATURES GRID (DYNAMIC FROM PRODUCT DATA) */}
         {/* ========================================================= */}
-        {isPro2 && (
+        {featureCards.length > 0 && (
           <section className="bg-white rounded-2xl md:rounded-3xl border border-slate-200/80 p-6 sm:p-8 md:p-12 shadow-xs mb-12">
             <div className="text-center max-w-2xl mx-auto mb-10">
               <div className="inline-flex items-center space-x-2 text-cyan-800 text-xs font-bold uppercase tracking-wider mb-2 px-3 py-1 bg-cyan-50 border border-cyan-200/60 rounded-md">
-                <span>The Flagship Advantage</span>
+                <span>Key Capabilities</span>
               </div>
               <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-950 tracking-tight mb-3">
                 Everything You Need. Nothing You Don't.
               </h2>
               <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                Premium features engineered for music, calls, gaming and everyday entertainment without unnecessary gimmicks.
+                Carefully engineered features built for daily reliability, long battery timing, and premium audio performance.
               </p>
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {pro2Benefits.map((benefit, i) => {
-                const IconComponent = benefit.icon;
+              {featureCards.map((benefit, i) => {
+                const IconComponent = getFeatureIcon(benefit.icon);
                 return (
                   <div
                     key={i}
@@ -503,9 +583,11 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                       <IconComponent className="w-5 h-5" />
                     </div>
                     <h3 className="text-base font-bold text-slate-950 mb-1.5">{benefit.title}</h3>
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                      {benefit.description}
-                    </p>
+                    {benefit.description && (
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                        {benefit.description}
+                      </p>
+                    )}
                   </div>
                 );
               })}
@@ -537,7 +619,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              Product Details & Features
+              Product Details & Warranty
             </button>
             <button
               onClick={() => setActiveTab('inbox')}
@@ -555,98 +637,50 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
           {activeTab === 'specs' && (
             <div>
               <h2 className="text-lg font-bold text-slate-950 mb-4">Technical Specifications</h2>
-              <div className="grid md:grid-cols-2 gap-3 sm:gap-4">
-                {product.specifications && Object.keys(product.specifications).length > 0 ? (
-                  Object.entries(product.specifications).map(([key, value]) => (
+              {specifications.length > 0 ? (
+                <div className="grid md:grid-cols-2 gap-3 sm:gap-4">
+                  {specifications.map((item, idx) => (
                     <div
-                      key={key}
+                      key={idx}
                       className="flex justify-between items-center py-2.5 px-3.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs sm:text-sm"
                     >
-                      <span className="font-semibold text-slate-700">{key}</span>
-                      <span className="font-medium text-slate-950 text-right">{value}</span>
+                      <span className="font-semibold text-slate-700">{item.key}</span>
+                      <span className="font-medium text-slate-950 text-right">{item.value}</span>
                     </div>
-                  ))
-                ) : (
-                  <>
-                    <div className="flex justify-between items-center py-2.5 px-3.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs sm:text-sm">
-                      <span className="font-semibold text-slate-700">Bluetooth Version</span>
-                      <span className="font-medium text-slate-950">5.3 + EDR Ultra-Fast</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2.5 px-3.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs sm:text-sm">
-                      <span className="font-semibold text-slate-700">Active Noise Cancellation</span>
-                      <span className="font-medium text-slate-950">Up to 35dB Hybrid ANC</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2.5 px-3.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs sm:text-sm">
-                      <span className="font-semibold text-slate-700">Total Battery Playback</span>
-                      <span className="font-medium text-slate-950">Up to 36 Hours (with case)</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2.5 px-3.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs sm:text-sm">
-                      <span className="font-semibold text-slate-700">Latency Mode</span>
-                      <span className="font-medium text-slate-950">40ms Ultra-Low Latency</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2.5 px-3.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs sm:text-sm">
-                      <span className="font-semibold text-slate-700">Microphones</span>
-                      <span className="font-medium text-slate-950">Quad-Mic ENC Array</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2.5 px-3.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs sm:text-sm">
-                      <span className="font-semibold text-slate-700">Charging Methods</span>
-                      <span className="font-medium text-slate-950">USB Type-C + Qi Wireless</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2.5 px-3.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs sm:text-sm">
-                      <span className="font-semibold text-slate-700">Water Resistance</span>
-                      <span className="font-medium text-slate-950">IPX5 Sweat & Splash Proof</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2.5 px-3.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs sm:text-sm">
-                      <span className="font-semibold text-slate-700">Official Warranty</span>
-                      <span className="font-medium text-slate-950">6-Month Replacement Warranty* (Internal issues; Terms apply)</span>
-                    </div>
-                  </>
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">Specifications available upon request or in manual.</p>
+              )}
             </div>
           )}
 
-          {/* TAB 2: PRODUCT DETAILS & FEATURES */}
+          {/* TAB 2: PRODUCT DETAILS & WARRANTY */}
           {activeTab === 'features' && (
             <div>
-              <h2 className="text-lg font-bold text-slate-950 mb-4">Detailed Features & Capabilities</h2>
-              {product.features && product.features.length > 0 ? (
-                <ul className="grid sm:grid-cols-2 gap-3">
-                  {product.features.map((feat, idx) => (
-                    <li key={idx} className="flex items-start space-x-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200/60 text-xs sm:text-sm text-slate-800">
-                      <Check className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                      <span>{feat}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
-                  <p>
-                    The <strong>BURHAN Pro 2</strong> represents our next leap forward in personal audio. Powered by a customized high-fidelity dynamic driver, it delivers punchy sub-bass, clean vocals, and sparkling highs across all musical genres.
-                  </p>
-                  <p>
-                    Whether taking work calls in crowded environments or gaming on your mobile device, the combination of hardware ENC filters and low-latency audio transmission ensures a responsive, crisp experience.
-                  </p>
-                </div>
-              )}
+              <h2 className="text-lg font-bold text-slate-950 mb-3">Product Overview</h2>
+              <div className="space-y-4 text-sm text-slate-700 leading-relaxed mb-6">
+                <p>{product.description || product.shortDescription}</p>
+              </div>
 
               {/* 6-Month Replacement Warranty Policy Box */}
-              <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
                 <div className="flex items-center space-x-2 text-slate-900 font-bold mb-2">
                   <ShieldCheck className="w-4 h-4 text-cyan-600" />
-                  <span>6-Month Replacement Warranty Policy*</span>
+                  <span>{warrantyObj.duration || '6 Months'} {warrantyObj.type || 'Replacement Warranty'} Policy*</span>
                 </div>
                 <p className="mb-2 leading-relaxed">
-                  Your BURHAN product is covered for eligible internal product issues for 6 months from the date of purchase.
+                  {warrantyObj.description || 'Your BURHAN product is covered for eligible internal product issues for 6 months from the date of purchase.'}
                 </p>
-                <ul className="space-y-1 list-disc pl-5 text-slate-600 mb-2">
-                  <li>The product must be reasonably clean and suitable for inspection.</li>
-                  <li>The product must not have physical damage (cracks, broken parts, liquid damage, burn damage, or signs of misuse).</li>
-                  <li>The issue must be verified as an eligible internal product fault.</li>
-                  <li>Warranty claims are subject to inspection and verification by BURHAN.</li>
-                </ul>
+                {Array.isArray(warrantyObj.terms) && warrantyObj.terms.length > 0 && (
+                  <ul className="space-y-1 list-disc pl-5 text-slate-600 mb-2">
+                    {warrantyObj.terms.map((term, tIdx) => (
+                      <li key={tIdx}>{term}</li>
+                    ))}
+                  </ul>
+                )}
                 <p className="text-[11px] text-slate-500 italic">
-                  Warranty does not cover physical or accidental damage, misuse, liquid damage, unauthorized modification or other externally caused damage. Terms & Conditions Apply.
+                  Warranty claims are subject to inspection and verification by BURHAN. Coverage does not apply to physical or accidental drops, liquid damage, misuse, or unauthorized tampering. Terms & Conditions Apply.
                 </p>
               </div>
             </div>
@@ -656,83 +690,228 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
           {activeTab === 'inbox' && (
             <div>
               <h2 className="text-lg font-bold text-slate-950 mb-4">Package Contents</h2>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {(product.inBox && product.inBox.length > 0 ? product.inBox : [
-                  'BURHAN Pro 2 Earbuds (Left & Right)',
-                  'Smart Wireless Charging Case',
-                  'Braided USB-C Fast Charging Cable',
-                  '3 Pairs Ergonomic Silicone Ear Tips (S, M, L)',
-                  'Official Warranty Card & User Manual'
-                ]).map((item, idx) => (
-                  <div key={idx} className="flex items-center space-x-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs sm:text-sm text-slate-800 font-medium">
+              {inBoxItems.length > 0 ? (
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {inBoxItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center space-x-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs sm:text-sm text-slate-800 font-medium">
+                      <Package className="w-4 h-4 text-cyan-600 flex-shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="flex items-center space-x-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs sm:text-sm text-slate-800 font-medium">
                     <Package className="w-4 h-4 text-cyan-600 flex-shrink-0" />
-                    <span>{item}</span>
+                    <span>{product.name} Official Unit</span>
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-center space-x-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs sm:text-sm text-slate-800 font-medium">
+                    <Package className="w-4 h-4 text-cyan-600 flex-shrink-0" />
+                    <span>Official Warranty Card & User Documentation</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
 
         {/* ========================================================= */}
-        {/* SECTION 7: CUSTOMER REVIEWS */}
+        {/* SECTION 7: FREQUENTLY ASKED QUESTIONS (DYNAMIC) */}
+        {/* ========================================================= */}
+        {faqs.length > 0 && (
+          <section className="bg-white rounded-2xl md:rounded-3xl border border-slate-200/80 p-6 sm:p-8 md:p-10 shadow-xs mb-12">
+            <div className="max-w-2xl mb-8">
+              <div className="text-xs uppercase tracking-wider font-semibold text-cyan-700 mb-1">
+                Frequently Asked Questions
+              </div>
+              <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight">
+                Everything You Need to Know
+              </h2>
+            </div>
+
+            <div className="space-y-3">
+              {faqs.map((faq, fIdx) => {
+                const isOpen = openFaqIndex === fIdx;
+                return (
+                  <div
+                    key={fIdx}
+                    className="border border-slate-200/80 rounded-xl overflow-hidden transition-colors"
+                  >
+                    <button
+                      onClick={() => setOpenFaqIndex(isOpen ? -1 : fIdx)}
+                      className="w-full px-5 py-4 text-left font-bold text-sm sm:text-base text-slate-900 bg-slate-50 hover:bg-slate-100 flex items-center justify-between transition-colors"
+                    >
+                      <span className="flex items-center space-x-2.5">
+                        <HelpCircle className="w-4 h-4 text-cyan-600 flex-shrink-0" />
+                        <span>{faq.question}</span>
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${
+                          isOpen ? 'rotate-180 text-cyan-600' : ''
+                        }`}
+                      />
+                    </button>
+                    {isOpen && (
+                      <div className="px-5 py-4 text-xs sm:text-sm text-slate-600 leading-relaxed bg-white border-t border-slate-200/60">
+                        {faq.answer}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ========================================================= */}
+        {/* SECTION 8: REAL CUSTOMER REVIEWS & FORM */}
         {/* ========================================================= */}
         <section className="bg-white rounded-2xl md:rounded-3xl border border-slate-200/80 p-6 sm:p-8 md:p-10 shadow-xs mb-12">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-6 border-b border-slate-100 gap-4">
             <div>
-              <div className="text-xs uppercase tracking-wider font-semibold text-cyan-700">Verified Buyer Feedback</div>
+              <div className="text-xs uppercase tracking-wider font-semibold text-cyan-700">Customer Feedback & Reviews</div>
               <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight">
                 Customer Reviews
               </h2>
             </div>
+            
             <div className="flex items-center space-x-3">
-              <div className="flex text-amber-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <div className="text-sm font-bold text-slate-900">
-                5.0 out of 5 · 48 Reviews
-              </div>
+              <button
+                onClick={() => setShowReviewForm(!showReviewForm)}
+                className="bg-slate-900 hover:bg-cyan-600 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-xs transition-colors flex items-center space-x-1.5"
+              >
+                <MessageSquarePlus className="w-4 h-4" />
+                <span>{showReviewForm ? 'Cancel Review' : 'Write a Review'}</span>
+              </button>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {reviews.map((rev, i) => (
-              <div key={i} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/70 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex text-amber-400">
-                      {[...Array(rev.rating)].map((_, idx) => (
-                        <Star key={idx} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <span className="text-[11px] text-slate-400">{rev.date}</span>
-                  </div>
-                  <h3 className="text-sm font-bold text-slate-900 mb-1.5">{rev.title}</h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4">
-                    "{rev.comment}"
-                  </p>
+          {/* Inline Review Form */}
+          {showReviewForm && (
+            <form onSubmit={handleReviewSubmit} className="mb-8 p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              <h3 className="font-bold text-sm text-slate-900">Share your experience with {product.name}</h3>
+              {reviewSubmitMessage && (
+                <div className={`p-3 rounded-lg text-xs font-semibold ${
+                  reviewSubmitMessage.includes('Thank you') ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'
+                }`}>
+                  {reviewSubmitMessage}
                 </div>
-                <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-900">{rev.author}</span>
-                  <span className="text-slate-500 font-medium">Verified · {rev.location}</span>
+              )}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Your Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={reviewFormData.name}
+                    onChange={(e) => setReviewFormData({ ...reviewFormData, name: e.target.value })}
+                    placeholder="e.g. Usman Khan"
+                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm focus:outline-none focus:border-cyan-500 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Rating *</label>
+                  <select
+                    value={reviewFormData.rating}
+                    onChange={(e) => setReviewFormData({ ...reviewFormData, rating: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm focus:outline-none focus:border-cyan-500 bg-white"
+                  >
+                    <option value={5}>⭐⭐⭐⭐⭐ (5 - Excellent)</option>
+                    <option value={4}>⭐⭐⭐⭐ (4 - Very Good)</option>
+                    <option value={3}>⭐⭐⭐ (3 - Good)</option>
+                    <option value={2}>⭐⭐ (2 - Fair)</option>
+                    <option value={1}>⭐ (1 - Poor)</option>
+                  </select>
                 </div>
               </div>
-            ))}
-          </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Your Review *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={reviewFormData.comment}
+                  onChange={(e) => setReviewFormData({ ...reviewFormData, comment: e.target.value })}
+                  placeholder="Share details about sound quality, battery timing, packaging, or delivery..."
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm focus:outline-none focus:border-cyan-500 bg-white"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={reviewSubmitting}
+                className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold px-5 py-2.5 rounded-lg text-xs sm:text-sm shadow-xs transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>{reviewSubmitting ? 'Submitting...' : 'Submit Review'}</span>
+              </button>
+            </form>
+          )}
+
+          {/* Reviews List or Honest Clean Empty State */}
+          {reviewsLoading ? (
+            <div className="py-8 text-center text-xs text-slate-400">Loading reviews...</div>
+          ) : reviews.length > 0 ? (
+            <div className="grid md:grid-cols-3 gap-6">
+              {reviews.map((rev, i) => (
+                <div key={rev._id || i} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/70 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex text-amber-400">
+                        {[...Array(rev.rating || 5)].map((_, idx) => (
+                          <Star key={idx} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        ))}
+                      </div>
+                      <span className="text-[11px] text-slate-400">
+                        {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('en-PK', { month: 'short', year: 'numeric' }) : 'Verified'}
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed mb-4">
+                      "{rev.comment}"
+                    </p>
+                  </div>
+                  <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-900">{rev.name}</span>
+                    {rev.verified ? (
+                      <span className="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded text-[11px] border border-emerald-200">
+                        Verified Buyer
+                      </span>
+                    ) : (
+                      <span className="text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                        Customer Review
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-10 text-center max-w-md mx-auto">
+              <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                <Star className="w-6 h-6 stroke-[1.5]" />
+              </div>
+              <h3 className="font-bold text-slate-900 text-sm mb-1">No reviews yet</h3>
+              <p className="text-xs text-slate-500 mb-4">
+                Be the first verified customer to share feedback about {product.name}.
+              </p>
+              <button
+                onClick={() => setShowReviewForm(true)}
+                className="bg-white border border-slate-300 text-slate-800 hover:bg-slate-50 font-semibold text-xs px-4 py-2 rounded-lg shadow-2xs transition-colors"
+              >
+                Write the First Review
+              </button>
+            </div>
+          )}
         </section>
 
         {/* ========================================================= */}
-        {/* SECTION 8: FINAL CTA BANNER */}
+        {/* SECTION 9: FINAL CTA BANNER */}
         {/* ========================================================= */}
         <section className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl md:rounded-3xl p-8 sm:p-10 md:p-12 text-center relative overflow-hidden shadow-md mb-12">
           <div className="relative z-10 max-w-2xl mx-auto">
             <span className="text-cyan-400 text-xs font-bold uppercase tracking-wider mb-2 block">
-              Official Release Offer
+              Official Pakistani Release
             </span>
             <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
-              Ready to Experience BURHAN Pro 2?
+              Ready to Order {product.name}?
             </h2>
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
               Order today with cash on delivery across Pakistan, 6-month replacement warranty* and free doorstep exchange support.
@@ -742,7 +921,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                 onClick={handleBuyNow}
                 className="bg-cyan-500 hover:bg-cyan-400 active:scale-98 text-slate-950 font-bold px-8 py-3.5 rounded-xl text-base shadow-lg transition-all flex items-center justify-center space-x-2"
               >
-                <span>Buy Now — PKR {Number(product.price).toLocaleString()}</span>
+                <span>Buy Now — PKR {price.toLocaleString()}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
               <Link
@@ -780,7 +959,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-sm font-extrabold text-slate-950">
-              PKR {Number(product.price).toLocaleString()}
+              PKR {price.toLocaleString()}
             </span>
             {discountPercent > 0 && (
               <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1 rounded">

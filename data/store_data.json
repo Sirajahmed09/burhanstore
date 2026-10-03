@@ -67,31 +67,54 @@
       "thumbnail": "https://images.unsplash.com/photo-1606220838315-056192d5e927?w=400",
       "description": "Experience next-generation audio engineering with BURHAN Pro 2. Engineered with Hybrid Active Noise Cancellation (ANC), Transparency Ambient Mode, 12mm Custom Beryllium Dynamic Drivers, and ultra-low 40ms gaming latency. Up to 36 hours of battery playtime with Qi Wireless and USB-C quick charging.",
       "features": [
-        "Hybrid Active Noise Cancellation (Up to 35dB ANC)",
-        "Crystal Clear Quad-Mic ENC with AI Noise Suppression",
-        "Transparency Ambient Mode for Instant Awareness",
-        "Ultra-Low 40ms Gaming & Streaming Latency",
-        "Up to 36 Hours Total Playtime (8h earbuds + 28h wireless case)",
-        "Qi Wireless Charging & Fast USB-C Quick Charging",
-        "IPX5 Sweat & Water Resistance for Workouts & Rain",
-        "Smart Touch Controls & Voice Assistant Integration"
+        {
+          "title": "35dB Hybrid ANC",
+          "description": "Reduce unwanted background noise with up to 35dB Active Noise Cancellation for deep musical immersion.",
+          "icon": "Volume2"
+        },
+        {
+          "title": "36H Battery",
+          "description": "Up to 8H per charge on earbuds and up to 36H total playtime with the compact wireless charging case.",
+          "icon": "BatteryCharging"
+        },
+        {
+          "title": "40ms Low Latency",
+          "description": "Ultra-fast audio sync for mobile gaming (PUBG, COD) and video streaming without perceptible delay.",
+          "icon": "Zap"
+        },
+        {
+          "title": "Clear Calls (Quad-Mic ENC)",
+          "description": "Quad-Mic ENC environmental noise reduction isolates your voice from traffic and wind noise during calls.",
+          "icon": "Mic"
+        },
+        {
+          "title": "Bluetooth 5.3 + EDR",
+          "description": "Instant pairing, stable connection, and extended range with high data transfer rate.",
+          "icon": "Radio"
+        },
+        {
+          "title": "USB-C + Qi Wireless",
+          "description": "Fast USB-C cable charging plus convenient Qi wireless pad charging for effortless daily replenishment.",
+          "icon": "Radio"
+        }
       ],
       "specifications": {
         "Driver": "12mm Custom High-Definition Dynamic Drivers",
-        "Bluetooth Version": "Bluetooth 5.3 + EDR",
-        "Battery Playtime": "8 Hours (Single Charge) / 36 Hours (With Case)",
-        "Charging Interface": "USB-C & Qi Wireless Charging",
-        "Water Resistance": "IPX5 Certified",
-        "Microphones": "Quad-Mic Array with ENC",
-        "Frequency Response": "20Hz - 20kHz",
-        "Compatibility": "iOS, Android, Windows, Mac",
-        "Warranty": "1 Year Official Burhan Store Replacement Warranty"
+        "Bluetooth Version": "Bluetooth 5.3 + EDR Ultra-Fast",
+        "Active Noise Cancellation": "Up to 35dB Hybrid Active Noise Cancellation",
+        "Battery Playtime": "Up to 8H Earbuds / Up to 36H Total with Case",
+        "Latency Mode": "40ms Ultra-Low Latency Gaming Mode",
+        "Microphones": "Quad-Mic Array with ENC Noise Reduction",
+        "Charging Interface": "USB Type-C Fast Charging & Qi Wireless Charging",
+        "Water Resistance": "IPX5 Sweat & Splash Proof",
+        "Compatibility": "Android, iOS, Windows, Mac",
+        "Official Warranty": "6 Months Replacement Warranty* (Internal Issues; Terms Apply)"
       },
       "inBox": [
-        "BURHAN Pro 2 Wireless Earbuds (Pair)",
+        "BURHAN Pro 2 Wireless Earbuds (Left & Right)",
         "Smart Wireless Charging Case",
+        "Braided USB-C Fast Charging Cable",
         "3 Pairs Ergonomic Silicone Ear Tips (S, M, L)",
-        "Braided Type-C Fast Charging Cable",
         "Official Warranty Card & User Manual"
       ],
       "stock": 50,
@@ -101,11 +124,66 @@
       "isNew": true,
       "isTrending": true,
       "isFeatured": true,
-      "warranty": "1 Year Official Warranty",
+      "warranty": {
+        "duration": "6 Months",
+        "type": "Replacement Warranty",
+        "description": "Your BURHAN product is covered for eligible internal product issues for 6 months from the date of purchase.",
+        "terms": [
+          "The product must be reasonably clean and suitable for inspection.",
+          "The product must not have physical damage (cracks, broken parts, liquid damage, burn damage, or signs of misuse).",
+          "The issue must be verified as an eligible internal product fault.",
+          "Warranty claims are subject to inspection and verification by BURHAN.",
+          "Warranty does not cover physical or accidental damage, misuse, liquid damage, unauthorized modification or other externally caused damage."
+        ]
+      },
       "createdAt": "2026-09-29T23:58:02.303Z",
       "updatedAt": "2026-09-30T00:11:07.378Z",
       "status": "active",
-      "isActive": true
+      "isActive": true,
+      "badge": "Flagship Audio",
+      "shortDescription": "Powerful sound, Hybrid ANC, clear calls and ultra-low latency — built for music, gaming and everyday use.",
+      "highlights": [
+        "Up to 35dB Hybrid ANC",
+        "Up to 36H Total Playback",
+        "40ms Low Latency",
+        "Bluetooth 5.3 + EDR",
+        "Quad-Mic ENC",
+        "USB-C + Qi Charging"
+      ],
+      "deliveryInfo": {
+        "codAvailable": true,
+        "estimatedDays": "1-3 Business Days",
+        "shippingFee": 200,
+        "freeShippingThreshold": 5000,
+        "notes": "Cash on delivery available across Pakistan with open parcel verification."
+      },
+      "faqs": [
+        {
+          "question": "Is Cash on Delivery available for BURHAN Pro 2?",
+          "answer": "Yes! Cash on Delivery is available across 150+ cities in Pakistan. You only pay when the parcel arrives at your doorstep."
+        },
+        {
+          "question": "How long does the battery last on a single charge?",
+          "answer": "BURHAN Pro 2 delivers up to 8 hours of continuous listening on a single charge, and up to 36 hours total with the compact wireless charging case."
+        },
+        {
+          "question": "Does it have low-latency gaming mode for PUBG and COD?",
+          "answer": "Yes, it features a dedicated 40ms ultra-low latency mode that ensures audio and visuals are in sync for competitive mobile gaming."
+        },
+        {
+          "question": "How does the 6-Month Replacement Warranty work?",
+          "answer": "Our 6-Month Replacement Warranty covers eligible internal product faults. If an internal fault occurs within 6 months, contact us on WhatsApp for rapid verification and replacement. (Physical and liquid damages are excluded; Terms apply)."
+        },
+        {
+          "question": "Can I open and inspect the parcel before paying?",
+          "answer": "Yes, open parcel verification is permitted so you can confirm the contents before paying cash."
+        }
+      ],
+      "seo": {
+        "title": "BURHAN Pro 2 Wireless Earbuds | 35dB ANC, 36H Battery & 40ms Gaming Latency",
+        "description": "Buy authentic BURHAN Pro 2 Wireless Earbuds in Pakistan. Features 35dB Hybrid ANC, 36H battery life, 40ms low latency, and 6-month replacement warranty with COD.",
+        "ogImage": "https://images.unsplash.com/photo-1606220838315-056192d5e927?w=800"
+      }
     },
     {
       "_id": "fe9b99df-14e8-488c-a3ba-aa2a8afd47dd",
@@ -152,7 +230,7 @@
       "isNew": true,
       "isTrending": true,
       "isFeatured": true,
-      "warranty": "1 Year Official Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "hidden",
       "isActive": false,
@@ -200,7 +278,7 @@
       "isNew": false,
       "isTrending": true,
       "isFeatured": true,
-      "warranty": "1 Year Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "hidden",
       "isActive": false,
@@ -249,7 +327,7 @@
       "isNew": true,
       "isTrending": false,
       "isFeatured": true,
-      "warranty": "1 Year Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "hidden",
       "isActive": false,
@@ -294,7 +372,7 @@
       "isNew": false,
       "isTrending": true,
       "isFeatured": false,
-      "warranty": "1 Year Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "hidden",
       "isActive": false,
@@ -384,7 +462,7 @@
       "isNew": true,
       "isTrending": true,
       "isFeatured": true,
-      "warranty": "1 Year Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "hidden",
       "isActive": false,
@@ -428,7 +506,7 @@
       "isNew": false,
       "isTrending": false,
       "isFeatured": false,
-      "warranty": "1 Year Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "hidden",
       "isActive": false,
@@ -479,7 +557,7 @@
       "isNew": true,
       "isTrending": true,
       "isFeatured": true,
-      "warranty": "1 Year Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "hidden",
       "isActive": false,
@@ -525,7 +603,7 @@
       "isNew": false,
       "isTrending": true,
       "isFeatured": false,
-      "warranty": "1 Year Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "hidden",
       "isActive": false,
@@ -570,7 +648,7 @@
       "isNew": false,
       "isTrending": false,
       "isFeatured": false,
-      "warranty": "1 Year Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "hidden",
       "isActive": false,
@@ -614,7 +692,7 @@
       "isNew": false,
       "isTrending": false,
       "isFeatured": false,
-      "warranty": "1 Year Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.656Z",
       "status": "hidden",
       "isActive": false,
@@ -659,7 +737,7 @@
       "isNew": true,
       "isTrending": false,
       "isFeatured": false,
-      "warranty": "1 Year Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.656Z",
       "status": "hidden",
       "isActive": false,
@@ -707,7 +785,7 @@
       "isNew": true,
       "isTrending": true,
       "isFeatured": true,
-      "warranty": "1 Year Warranty",
+      "warranty": "6 Months Replacement Warranty*",
       "createdAt": "2026-09-10T19:40:07.656Z",
       "status": "hidden",
       "isActive": false,
@@ -806,7 +884,7 @@
       "_id": "admin-owner-siraj",
       "name": "Siraj Ahmed (Store Owner)",
       "email": "siraj@mainadmin",
-      "password": "$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES",
+      "password": "$2a$10$c8w109GrzkCvbYuu6bJSWejRMzlK5V3laumpoWcbHTTW5oP6JWvA.",
       "role": "owner",
       "status": "active",
       "permissions": [
@@ -819,7 +897,7 @@
       "_id": "admin-burhan-owner",
       "name": "Burhan Store Owner",
       "email": "burhan@store",
-      "password": "$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES",
+      "password": "$2a$10$c8w109GrzkCvbYuu6bJSWejRMzlK5V3laumpoWcbHTTW5oP6JWvA.",
       "role": "owner",
       "status": "active",
       "permissions": [
@@ -832,7 +910,7 @@
       "_id": "admin-superadmin",
       "name": "Super Admin",
       "email": "admin@burhan.com",
-      "password": "$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES",
+      "password": "$2a$10$c8w109GrzkCvbYuu6bJSWejRMzlK5V3laumpoWcbHTTW5oP6JWvA.",
       "role": "owner",
       "status": "active",
       "permissions": [

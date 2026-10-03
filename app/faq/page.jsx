@@ -22,7 +22,7 @@ export default function FAQPage() {
     },
     {
       question: 'Do you provide warranty on products?',
-      answer: 'Yes! All our products come with an official warranty ranging from 6 months to 1 year, depending on the product. Warranty details are mentioned on each product page.'
+      answer: 'Yes! Eligible electronic products come with a 6-Month Replacement Warranty* covering internal product and hardware faults. Please refer to our Terms & Conditions for full qualification criteria.'
     },
     {
       question: 'Can I return or exchange a product?',

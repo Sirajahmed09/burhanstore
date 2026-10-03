@@ -153,7 +153,7 @@ export default async function CategoryPage({ params }) {
             {category.name}
           </h1>
           <p className="text-slate-600 text-sm sm:text-base max-w-3xl leading-relaxed">
-            {category.description || `Browse authentic ${category.name.toLowerCase()} at BURHAN STORE with official 1-year warranty and fast nationwide cash on delivery across Pakistan.`}
+            {category.description || `Browse authentic ${category.name.toLowerCase()} at BURHAN STORE with official 6-month replacement warranty* and fast nationwide cash on delivery across Pakistan.`}
           </p>
           <div className="mt-4 text-xs sm:text-sm font-semibold text-slate-500">
             Showing <strong className="text-slate-900">{products.length}</strong> available item{products.length !== 1 ? 's' : ''}

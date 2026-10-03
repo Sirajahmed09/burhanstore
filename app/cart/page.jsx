@@ -212,7 +212,7 @@ export default function CartPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <ShieldCheck className="w-4 h-4 text-cyan-600 flex-shrink-0" />
-                  <span>1-Year Official Replacement Warranty</span>
+                  <span>6-Month Replacement Warranty* (Terms Apply)</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RotateCcw className="w-4 h-4 text-cyan-600 flex-shrink-0" />

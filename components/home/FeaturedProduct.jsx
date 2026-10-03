@@ -64,7 +64,7 @@ export default function FeaturedProduct() {
     { text: '40ms Ultra-Low Latency for Gaming & Media' },
     { text: 'Bluetooth 5.3 + EDR with Quad-Mic ENC Array' },
     { text: 'Fast USB-C + Qi Wireless Charging Compatibility' },
-    { text: 'Official 1-Year Replacement Warranty' },
+    { text: '6-Month Replacement Warranty* (Internal Issues; Terms Apply)' },
   ];
 
   return (
@@ -177,7 +177,7 @@ export default function FeaturedProduct() {
               {/* Micro-signals */}
               <div className="mt-4 pt-4 border-t border-slate-200/60 text-xs text-slate-500 flex flex-wrap items-center gap-4">
                 <span>✓ Cash on Delivery</span>
-                <span>✓ 1-Year Official Warranty</span>
+                <span>✓ 6-Month Replacement Warranty*</span>
                 <span>✓ Open Parcel Allowed</span>
                 <span>✓ 7-Day Easy Replacement</span>
               </div>

@@ -10,6 +10,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusToast, setStatusToast] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -34,6 +35,7 @@ export default function AdminOrdersPage() {
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
+    setStatusToast(null);
     try {
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'POST',
@@ -43,11 +45,14 @@ export default function AdminOrdersPage() {
 
       if (response.ok) {
         setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
+        setStatusToast({ type: 'success', message: `Order #${String(orderId).slice(0, 8)} status updated to ${newStatus}` });
+        setTimeout(() => setStatusToast(null), 3000);
       } else {
-        alert('Failed to update status');
+        const err = await response.json().catch(() => ({}));
+        setStatusToast({ type: 'error', message: err.error || 'Failed to update order status' });
       }
     } catch (error) {
-      alert('Failed to update order status');
+      setStatusToast({ type: 'error', message: 'Failed to update order status' });
     }
   };
 
@@ -111,6 +116,17 @@ export default function AdminOrdersPage() {
             <span>Refresh Orders</span>
           </button>
         </div>
+
+        {statusToast && (
+          <div className={`p-3.5 mb-6 rounded-xl border text-sm font-semibold flex items-center justify-between ${
+            statusToast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-red-50 text-red-800 border-red-200'
+          }`}>
+            <span>{statusToast.message}</span>
+            <button onClick={() => setStatusToast(null)} className="text-xs ml-3 font-bold">✕</button>
+          </div>
+        )}
 
         {/* Quick Order Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">

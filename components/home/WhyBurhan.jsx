@@ -7,8 +7,8 @@ export default function WhyBurhan() {
   const trustPoints = [
     {
       icon: ShieldCheck,
-      title: '1-Year Official Warranty',
-      description: '100% authentic devices with manufacturer-backed replacement warranty. No copies, no refurbished units.'
+      title: '6-Month Replacement Warranty*',
+      description: '100% authentic devices with replacement coverage for eligible internal product issues. Terms & Conditions Apply.'
     },
     {
       icon: Truck,

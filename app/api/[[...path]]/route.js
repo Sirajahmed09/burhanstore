@@ -49,6 +49,13 @@ function isProductActive(product) {
   return true;
 }
 
+// Safely sanitize product data to never expose costPrice, internal margins, or admin notes
+function sanitizePublicProduct(product) {
+  if (!product) return null;
+  const { costPrice: _, adminNotes: __, internalMargin: ___, createdBy: ____, ...publicData } = product;
+  return publicData;
+}
+
 // Helper function to create slug from name
 function createSlug(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -144,7 +151,7 @@ export async function GET(request) {
       const total = await productsCol.countDocuments(filter);
       
       return NextResponse.json({ 
-        products, 
+        products: products.map(sanitizePublicProduct), 
         count: products.length,
         total,
         page,
@@ -158,7 +165,7 @@ export async function GET(request) {
         .find({ ...ACTIVE_PRODUCT_FILTER, isFeatured: true })
         .limit(8)
         .toArray();
-      return NextResponse.json({ products }, { headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ products: products.map(sanitizePublicProduct) }, { headers: NO_CACHE_HEADERS });
     }
 
     if (path === 'products/trending') {
@@ -167,7 +174,7 @@ export async function GET(request) {
         .find({ ...ACTIVE_PRODUCT_FILTER, isTrending: true })
         .limit(8)
         .toArray();
-      return NextResponse.json({ products }, { headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ products: products.map(sanitizePublicProduct) }, { headers: NO_CACHE_HEADERS });
     }
 
     if (path === 'products/best-sellers') {
@@ -177,7 +184,7 @@ export async function GET(request) {
         .sort({ reviewCount: -1, rating: -1 })
         .limit(8)
         .toArray();
-      return NextResponse.json({ products }, { headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ products: products.map(sanitizePublicProduct) }, { headers: NO_CACHE_HEADERS });
     }
 
     if (path.startsWith('products/') && path.includes('/related')) {
@@ -198,7 +205,7 @@ export async function GET(request) {
         .limit(4)
         .toArray();
       
-      return NextResponse.json({ products: related }, { headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ products: related.map(sanitizePublicProduct) }, { headers: NO_CACHE_HEADERS });
     }
 
     if (path.startsWith('products/')) {
@@ -210,7 +217,7 @@ export async function GET(request) {
         return errorResponse('Product not found or is currently unavailable', 404);
       }
       
-      return NextResponse.json({ product }, { headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ product: sanitizePublicProduct(product) }, { headers: NO_CACHE_HEADERS });
     }
 
     // Categories endpoint - calculates accurate active products count
@@ -235,17 +242,21 @@ export async function GET(request) {
       return NextResponse.json({ categories: updatedCategories }, { headers: NO_CACHE_HEADERS });
     }
 
-    // Order tracking endpoint (GET support)
+    // Order tracking endpoint (GET support with strict phone verification)
     if (path === 'orders/track') {
       const orderId = searchParams.get('orderId') || '';
       const phone = searchParams.get('phone') || '';
 
-      if (!orderId) {
-        return errorResponse('Order ID is required', 400);
+      if (!orderId || !phone) {
+        return errorResponse('Order ID and registered mobile number are required to track an order', 400);
       }
 
       const sanitizedOrderId = String(orderId).trim().toLowerCase();
-      const cleanInputPhone = phone ? String(phone).replace(/[^0-9]/g, '').slice(-10) : '';
+      const cleanInputPhone = String(phone).replace(/[^0-9]/g, '').slice(-10);
+
+      if (sanitizedOrderId.length === 0 || cleanInputPhone.length === 0) {
+        return errorResponse('Valid Order ID and mobile number are required', 400);
+      }
 
       const ordersCol = await getCollection('orders');
       const allOrders = await ordersCol.find({}).toArray();
@@ -256,8 +267,6 @@ export async function GET(request) {
           o._id.toLowerCase().startsWith(sanitizedOrderId) ||
           sanitizedOrderId.startsWith(o._id.slice(0, 12).toLowerCase());
 
-        if (!cleanInputPhone) return idMatches;
-
         const oPhone = String(o.customer?.phone || '').replace(/[^0-9]/g, '').slice(-10);
         const oAltPhone = String(o.customer?.alternatePhone || '').replace(/[^0-9]/g, '').slice(-10);
 
@@ -265,23 +274,41 @@ export async function GET(request) {
       });
 
       if (!matchedOrder) {
-        return errorResponse('Order not found', 404);
+        return errorResponse('Order not found. Please check your Order ID and phone number.', 404);
       }
 
       return NextResponse.json({ order: matchedOrder }, { headers: NO_CACHE_HEADERS });
     }
 
-    // Orders endpoint
+    // Orders confirmation receipt endpoint (Public view sanitized)
     if (path.startsWith('orders/') && !path.includes('track')) {
       const orderId = path.split('/')[1];
       const ordersCol = await getCollection('orders');
-      const order = await ordersCol.findOne({ _id: orderId });
+      const order = await ordersCol.findOne(buildIdQuery(orderId));
       
       if (!order) {
         return errorResponse('Order not found', 404);
       }
       
-      return NextResponse.json({ order }, { headers: NO_CACHE_HEADERS });
+      const safeOrder = {
+        _id: order._id,
+        orderNumber: order.orderNumber || order._id,
+        status: order.status || 'pending',
+        createdAt: order.createdAt,
+        items: Array.isArray(order.items) ? order.items : [],
+        subtotal: order.subtotal || order.pricing?.subtotal || 0,
+        shipping: order.shipping !== undefined ? order.shipping : (order.pricing?.shipping || 200),
+        total: order.total || order.pricing?.total || 0,
+        paymentMethod: order.paymentMethod || 'cod',
+        customer: {
+          name: order.customer?.name || '',
+          city: order.customer?.city || '',
+          address: order.customer?.address || '',
+          phone: order.customer?.phone || ''
+        }
+      };
+
+      return NextResponse.json({ order: safeOrder }, { headers: NO_CACHE_HEADERS });
     }
 
     // Reviews endpoint
@@ -592,13 +619,37 @@ export async function POST(request) {
 
       const numericRating = Math.min(5, Math.max(1, parseInt(rating, 10) || 5));
 
+      // Check if this reviewer has a verified completed order for this product
+      let isVerifiedBuyer = false;
+      if (body.orderId || body.phone || body.email) {
+        try {
+          const ordersCol = await getCollection('orders');
+          const orderQuery = {
+            status: { $in: ['delivered', 'shipped', 'confirmed'] },
+            $or: []
+          };
+          if (body.orderId) orderQuery.$or.push({ orderNumber: String(body.orderId).trim() });
+          if (body.phone) orderQuery.$or.push({ 'customer.phone': String(body.phone).trim() });
+          if (body.email) orderQuery.$or.push({ 'customer.email': String(body.email).trim() });
+
+          if (orderQuery.$or.length > 0) {
+            const matched = await ordersCol.findOne(orderQuery);
+            if (matched && Array.isArray(matched.items)) {
+              isVerifiedBuyer = matched.items.some(it => it.id === productId || it.slug === productId || it.name?.toLowerCase().includes(productId.toLowerCase()));
+            }
+          }
+        } catch (e) {
+          // ignore lookup error
+        }
+      }
+
       const newReview = {
         _id: 'rev-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
         productId: String(productId),
         name: String(name).trim(),
         rating: numericRating,
         comment: String(comment).trim(),
-        verified: true,
+        verified: isVerifiedBuyer,
         status: 'approved',
         createdAt: new Date().toISOString()
       };

@@ -159,12 +159,12 @@ export default function AdminEmployeesPage() {
 
   const handleDeleteEmployee = async (emp) => {
     if (emp._id === 'admin-owner-siraj' || emp.email === 'siraj@mainadmin') {
-      alert('The primary store owner account cannot be deleted.');
+      showToast('The primary store owner account cannot be deleted.', 'error');
       return;
     }
 
     if (emp._id === currentUser?.id) {
-      alert('You cannot delete your own logged-in account.');
+      showToast('You cannot delete your own logged-in account.', 'error');
       return;
     }
 
