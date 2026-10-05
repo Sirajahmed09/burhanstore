@@ -104,7 +104,7 @@ export default function AdminProductsPage() {
     setProducts(prev =>
       prev.map(p =>
         p._id === product._id
-          ? { ...p, status: nextStatus, isActive: nextStatus === 'active' }
+          ? { ...p, status: nextStatus, isActive: nextStatus === 'active', visible: nextStatus === 'active' }
           : p
       )
     );
@@ -113,7 +113,7 @@ export default function AdminProductsPage() {
       const res = await fetch(`/api/admin/products/${product._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: nextStatus, isActive: nextStatus === 'active' })
+        body: JSON.stringify({ status: nextStatus, isActive: nextStatus === 'active', visible: nextStatus === 'active' })
       });
 
       const data = await res.json().catch(() => ({}));

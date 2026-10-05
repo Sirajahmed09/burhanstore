@@ -826,6 +826,7 @@ export async function POST(request) {
         thumbnail,
         status: body.status || 'active',
         isActive: body.status ? body.status === 'active' : (body.isActive !== false),
+        visible: body.visible !== undefined ? Boolean(body.visible) : (body.status ? body.status === 'active' : (body.isActive !== false)),
         isFeatured: Boolean(body.isFeatured),
         isTrending: Boolean(body.isTrending),
         isNew: body.isNew !== undefined ? Boolean(body.isNew) : true,
@@ -1188,7 +1189,12 @@ export async function PUT(request) {
       const images = Array.isArray(body.images) ? body.images : (body.image ? [body.image] : existing.images);
       const thumbnail = body.thumbnail || images[0] || existing.thumbnail;
       const stock = body.stock !== undefined ? parseInt(body.stock, 10) : existing.stock;
-      const status = body.status || (body.isActive !== undefined ? (body.isActive ? 'active' : 'inactive') : existing.status || 'active');
+      const isExplicitVisible = body.visible !== undefined ? Boolean(body.visible) : null;
+      const status = isExplicitVisible !== null
+        ? (isExplicitVisible ? 'active' : 'inactive')
+        : (body.status || (body.isActive !== undefined ? (body.isActive ? 'active' : 'inactive') : existing.status || 'active'));
+      const isActive = status === 'active';
+      const visible = isExplicitVisible !== null ? isExplicitVisible : isActive;
 
       const updateData = {
         ...body,
@@ -1199,7 +1205,8 @@ export async function PUT(request) {
         images,
         thumbnail,
         status,
-        isActive: status === 'active',
+        isActive,
+        visible,
         updatedAt: new Date().toISOString()
       };
       delete updateData._id;
@@ -1477,14 +1484,22 @@ export async function PATCH(request) {
         updateSet.stock = Math.max(0, parseInt(body.stock, 10));
       }
 
+      if (body.visible !== undefined) {
+        updateSet.visible = Boolean(body.visible);
+        updateSet.isActive = updateSet.visible;
+        updateSet.status = updateSet.visible ? 'active' : 'inactive';
+      }
+
       if (body.status !== undefined) {
         updateSet.status = body.status;
         updateSet.isActive = body.status === 'active';
+        updateSet.visible = body.status === 'active';
       }
 
       if (body.isActive !== undefined) {
         updateSet.isActive = Boolean(body.isActive);
         updateSet.status = updateSet.isActive ? 'active' : 'inactive';
+        updateSet.visible = updateSet.isActive;
       }
 
       if (body.isFeatured !== undefined) updateSet.isFeatured = Boolean(body.isFeatured);

@@ -18,6 +18,11 @@ export default function Navbar() {
   const { getCartCount } = useCart();
   const { wishlist } = useWishlist();
 
+  // Do not render public storefront navbar inside Admin Panel
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 8);

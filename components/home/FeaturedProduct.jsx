@@ -15,11 +15,11 @@ export default function FeaturedProduct() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/products?limit=1&sort=newest&_t=${Date.now()}`, { cache: 'no-store' })
+    fetch(`/api/products/featured?_t=${Date.now()}`, { cache: 'no-store' })
       .then(res => (res.ok ? res.json() : { products: [] }))
       .then(data => {
         const prods = data?.products || [];
-        const feat = prods.find(p => p.slug === 'burhan-pro-2') || prods[0] || null;
+        const feat = prods[0] || null;
         setProduct(feat);
         setLoading(false);
       })

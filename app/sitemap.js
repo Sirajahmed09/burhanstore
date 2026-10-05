@@ -11,7 +11,8 @@ export default async function sitemap() {
     const productsCol = await getCollection('products');
     const products = await productsCol.find({
       status: { $nin: ['inactive', 'hidden', 'draft'] },
-      isActive: { $ne: false }
+      isActive: { $ne: false },
+      visible: { $ne: false }
     }).toArray();
 
     // Get all categories

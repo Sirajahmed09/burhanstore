@@ -474,6 +474,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
 
         status: formData.status,
         isActive: formData.status === 'active',
+        visible: formData.status === 'active',
         isFeatured: formData.isFeatured,
         isTrending: formData.isTrending,
         isNew: formData.isNew,

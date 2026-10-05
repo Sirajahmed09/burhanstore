@@ -39,13 +39,15 @@ function errorResponse(message, status = 500) {
 // Active product visibility filter: strictly excludes inactive, hidden, or draft products
 const ACTIVE_PRODUCT_FILTER = {
   status: { $nin: ['inactive', 'hidden', 'draft'] },
-  isActive: { $ne: false }
+  isActive: { $ne: false },
+  visible: { $ne: false }
 };
 
 function isProductActive(product) {
   if (!product) return false;
   if (product.status === 'inactive' || product.status === 'hidden' || product.status === 'draft') return false;
   if (product.isActive === false) return false;
+  if (product.visible === false) return false;
   return true;
 }
 

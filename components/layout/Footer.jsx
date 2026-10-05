@@ -1,10 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 
 export default function Footer() {
+  const pathname = usePathname();
   const currentYear = new Date().getFullYear();
+
+  // Do not render public footer inside Admin Panel
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   const companyLinks = [
     { name: 'About Us', href: '/about' },

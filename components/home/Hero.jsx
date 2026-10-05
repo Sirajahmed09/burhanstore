@@ -1,11 +1,26 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, ShieldCheck, Truck, Headphones, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export default function Hero() {
+  const [featuredProduct, setFeaturedProduct] = useState(null);
+
+  useEffect(() => {
+    fetch(`/api/products/featured?limit=1&_t=${Date.now()}`, { cache: 'no-store' })
+      .then(res => (res.ok ? res.json() : { products: [] }))
+      .then(data => {
+        const prods = data?.products || [];
+        if (prods.length > 0) {
+          setFeaturedProduct(prods[0]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <section className="relative pt-24 md:pt-32 pb-14 md:pb-20 overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50 border-b border-slate-200/80">
       <div className="container mx-auto px-4 max-w-6xl relative z-10">
@@ -38,13 +53,23 @@ export default function Hero() {
 
             {/* Primary CTAs */}
             <div className="flex flex-col sm:flex-row gap-3.5 justify-center lg:justify-start mb-8">
-              <Link
-                href="/shop/burhan-pro-2"
-                className="bg-cyan-500 hover:bg-cyan-600 active:scale-98 text-slate-950 font-bold px-8 py-3.5 rounded-xl text-base shadow-sm hover:shadow-md transition-all flex items-center justify-center space-x-2"
-              >
-                <span>Discover BURHAN Pro 2</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {featuredProduct ? (
+                <Link
+                  href={`/shop/${featuredProduct.slug}`}
+                  className="bg-cyan-500 hover:bg-cyan-600 active:scale-98 text-slate-950 font-bold px-8 py-3.5 rounded-xl text-base shadow-sm hover:shadow-md transition-all flex items-center justify-center space-x-2"
+                >
+                  <span>Discover {featuredProduct.name}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <Link
+                  href="/shop"
+                  className="bg-cyan-500 hover:bg-cyan-600 active:scale-98 text-slate-950 font-bold px-8 py-3.5 rounded-xl text-base shadow-sm hover:shadow-md transition-all flex items-center justify-center space-x-2"
+                >
+                  <span>Explore Collection</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
               <Link
                 href="/shop"
                 className="bg-white hover:bg-slate-50 active:scale-98 text-slate-800 border border-slate-300 font-semibold px-6 py-3.5 rounded-xl text-base transition-colors flex items-center justify-center shadow-2xs"

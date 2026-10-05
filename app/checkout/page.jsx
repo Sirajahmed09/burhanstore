@@ -407,7 +407,7 @@ export default function CheckoutPage() {
                     </div>
                   </label>
 
-                  {/* Card / Bank Transfer */}
+                  {/* Debit / Credit Card */}
                   <label className={`flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     formData.paymentMethod === 'card'
                       ? 'border-cyan-500 bg-cyan-50/30'
@@ -423,10 +423,10 @@ export default function CheckoutPage() {
                     />
                     <div className="ml-3.5">
                       <div className="font-bold text-sm sm:text-base text-slate-900">
-                        Debit / Credit Card & Bank Transfer
+                        Debit / Credit Card (Card on Delivery / POS)
                       </div>
                       <div className="text-xs text-slate-600 mt-0.5">
-                        Direct bank account transfer or portable card POS machine on delivery.
+                        Swipe or tap your Visa / Mastercard debit or credit card securely via rider POS terminal upon delivery.
                       </div>
                     </div>
                   </label>
@@ -434,8 +434,8 @@ export default function CheckoutPage() {
 
                 {formData.paymentMethod === 'card' && (
                   <div className="p-4 rounded-xl bg-cyan-50/70 border border-cyan-200 text-xs text-slate-700 leading-relaxed">
-                    <strong className="text-cyan-900 block mb-1">Payment Instructions:</strong>
-                    No online credit/debit card numbers are entered on this website. Once your order is placed, our support team will reach out via WhatsApp/phone with official bank transfer account details or arrange a portable card machine for doorstep delivery.
+                    <strong className="text-cyan-900 block mb-1">Card Payment Information:</strong>
+                    No online credit/debit card numbers are entered on this website. Our courier rider will present a secure bank-authorized card machine (POS terminal) for tap or chip PIN verification when handing over your parcel.
                   </div>
                 )}
               </div>

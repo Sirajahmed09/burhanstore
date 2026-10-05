@@ -36,21 +36,15 @@ export default function CartPage() {
               Your Shopping Cart is Empty
             </h1>
             <p className="text-slate-600 text-sm sm:text-base mb-8 leading-relaxed">
-              Looks like you haven't added anything yet. Explore our flagship BURHAN Pro 2 earbuds or browse our full store.
+              Looks like you haven't added anything yet. Discover our latest wireless earbuds and tech accessories.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
-                href="/shop/burhan-pro-2"
-                className="bg-cyan-500 hover:bg-cyan-600 active:scale-98 text-slate-950 px-6 py-3.5 rounded-xl font-bold text-sm shadow-xs transition-all flex items-center justify-center space-x-2"
-              >
-                <span>View BURHAN Pro 2</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
                 href="/shop"
-                className="bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-6 py-3.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center shadow-2xs"
+                className="bg-cyan-500 hover:bg-cyan-600 active:scale-98 text-slate-950 px-8 py-3.5 rounded-xl font-bold text-sm shadow-xs transition-all flex items-center justify-center space-x-2"
               >
-                Browse Shop
+                <span>Start Shopping</span>
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
