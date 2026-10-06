@@ -56,9 +56,20 @@ export default function AdminSettingsPage() {
     fetchSettings();
   }, []);
 
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   const fetchSettings = async () => {
     try {
-      const response = await fetch('/api/admin/settings');
+      const response = await fetch('/api/admin/settings', {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          ...getAuthHeaders()
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         if (data.settings) {

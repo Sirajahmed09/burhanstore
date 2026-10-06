@@ -1,16 +1,26 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Lock, Mail, LogIn, ShieldAlert } from 'lucide-react';
 import { trackLogin } from '@/lib/analytics/gtag';
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('clear') === 'true') {
+      try {
+        localStorage.removeItem('admin_token');
+        document.cookie = 'admin_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      } catch (e) {}
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,10 +45,18 @@ export default function AdminLoginPage() {
       const data = await response.json();
       
       if (data.user) {
+        if (data.token) {
+          localStorage.setItem('admin_token', data.token);
+        }
         // Track successful admin sign-in
         trackLogin('admin_dashboard');
-        // Successfully logged in
-        window.location.href = '/admin/dashboard'; // Force navigation
+
+        const redirectParam = searchParams.get('redirect');
+        const destination = (redirectParam && redirectParam.startsWith('/admin') && redirectParam !== '/admin/login')
+          ? redirectParam
+          : '/admin/dashboard';
+
+        window.location.href = destination; // Force navigation
       } else {
         setError('Login failed - no user data received');
         setLoading(false);
@@ -147,5 +165,17 @@ export default function AdminLoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
+        Loading...
+      </div>
+    }>
+      <AdminLoginForm />
+    </Suspense>
   );
 }

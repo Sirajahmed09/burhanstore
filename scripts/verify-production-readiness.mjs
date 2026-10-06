@@ -39,7 +39,7 @@ async function verifyAll() {
     const hasOwner = Boolean(owner && owner.role === 'owner');
     
     // Check correct password
-    const validPass = hasOwner ? await verifyPassword('admin123', owner.password) : false;
+    const validPass = hasOwner ? await verifyPassword('Admin@123', owner.password) : false;
     // Check wrong password rejection
     const invalidPass = hasOwner ? await verifyPassword('bad-password', owner.password) : true;
     

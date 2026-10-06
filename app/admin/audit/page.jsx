@@ -26,7 +26,14 @@ export default function AdminAuditLogsPage() {
       if (targetTypeFilter) params.append('targetType', targetTypeFilter);
       params.append('limit', '150');
 
-      const res = await fetch(`/api/admin/audit-logs?${params.toString()}`);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      const res = await fetch(`/api/admin/audit-logs?${params.toString()}`, {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setLogs(data.logs || []);

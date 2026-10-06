@@ -41,14 +41,21 @@ export default function AdminCategoriesPage() {
     fetchCategories();
   }, []);
 
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   const fetchCategories = async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/admin/categories?_t=${Date.now()}`, {
         cache: 'no-store',
+        credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
+          'Pragma': 'no-cache',
+          ...getAuthHeaders()
         }
       });
       if (response.ok) {

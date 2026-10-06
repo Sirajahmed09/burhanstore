@@ -117,7 +117,7 @@ export default function Hero() {
                 {/* Overlaid Micro-Badge */}
                 <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
                   <div>
-                    <div className="text-[11px] font-bold text-cyan-700 uppercase tracking-wider">Flagship Release</div>
+                    <div className="text-[11px] font-bold text-cyan-700 uppercase tracking-wider">Featured Release</div>
                     <div className="text-base font-extrabold text-slate-900">BURHAN Pro 2</div>
                   </div>
                   <div className="text-right">

@@ -41,12 +41,21 @@ export default function AdminEmployeesPage() {
     fetchInitialData();
   }, []);
 
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   const fetchInitialData = async () => {
     try {
       setLoading(true);
+      const headers = {
+        'Cache-Control': 'no-cache',
+        ...getAuthHeaders()
+      };
       const [meRes, empRes] = await Promise.all([
-        fetch('/api/admin/auth/me'),
-        fetch('/api/admin/employees')
+        fetch('/api/admin/auth/me', { headers, credentials: 'include' }),
+        fetch('/api/admin/employees', { headers, credentials: 'include' })
       ]);
 
       if (meRes.ok) {

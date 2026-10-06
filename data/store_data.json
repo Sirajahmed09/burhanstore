@@ -68,33 +68,33 @@
       "description": "Experience balanced high-fidelity sound with BURHAN Pro 2. Features Active Noise Cancellation (ANC), Ambient Transparency Mode, 12mm High-Definition Dynamic Drivers, and Low-Latency Gaming Mode. Offers extended playtime with the wireless charging case and fast USB-C recharging.",
       "features": [
         {
-          "title": "35dB Hybrid ANC",
-          "description": "Reduce unwanted background noise with up to 35dB Active Noise Cancellation for deep musical immersion.",
+          "title": "Active Noise Cancellation",
+          "description": "Reduce ambient background distractions for focused listening and clearer music playback.",
           "icon": "Volume2"
         },
         {
-          "title": "36H Battery",
-          "description": "Up to 8H per charge on earbuds and up to 36H total playtime with the compact wireless charging case.",
+          "title": "Extended Battery Life",
+          "description": "Up to 6-8H per charge on earbuds and extended playtime with the compact wireless charging case.",
           "icon": "BatteryCharging"
         },
         {
-          "title": "40ms Low Latency",
-          "description": "Ultra-fast audio sync for mobile gaming (PUBG, COD) and video streaming without perceptible delay.",
+          "title": "Low Latency Gaming Mode",
+          "description": "Audio sync optimization for mobile gaming and video streaming with responsive sound delivery.",
           "icon": "Zap"
         },
         {
-          "title": "Clear Calls (Quad-Mic ENC)",
-          "description": "Quad-Mic ENC environmental noise reduction isolates your voice from traffic and wind noise during calls.",
+          "title": "Clear Voice Microphones",
+          "description": "Environmental noise reduction isolates your voice from traffic and ambient noise during calls.",
           "icon": "Mic"
         },
         {
-          "title": "Bluetooth 5.3 + EDR",
-          "description": "Instant pairing, stable connection, and extended range with high data transfer rate.",
+          "title": "Bluetooth 5.3 Wireless",
+          "description": "Fast pairing, stable connection, and extended range with broad device compatibility.",
           "icon": "Radio"
         },
         {
-          "title": "USB-C + Qi Wireless",
-          "description": "Fast USB-C cable charging plus convenient Qi wireless pad charging for effortless daily replenishment.",
+          "title": "USB-C & Wireless Charging",
+          "description": "Fast USB-C cable charging plus convenient Qi wireless pad replenishment for daily ease.",
           "icon": "Radio"
         }
       ],
@@ -136,7 +136,7 @@
         ]
       },
       "createdAt": "2026-09-29T23:58:02.303Z",
-      "updatedAt": "2026-10-05T23:26:51.796Z",
+      "updatedAt": "2026-10-06T00:33:47.354Z",
       "status": "active",
       "isActive": true,
       "badge": "Premium Audio",
@@ -167,7 +167,7 @@
         },
         {
           "question": "Does it have low-latency gaming mode for PUBG and COD?",
-          "answer": "Yes, it features a dedicated 40ms ultra-low latency mode that ensures audio and visuals are in sync for competitive mobile gaming."
+          "answer": "Yes, it features a dedicated low-latency gaming mode that helps ensure audio and visuals stay responsive and synchronized for mobile gaming."
         },
         {
           "question": "How does the 6-Month Replacement Warranty work?",
@@ -179,8 +179,8 @@
         }
       ],
       "seo": {
-        "title": "BURHAN Pro 2 Wireless Earbuds | 35dB ANC, 36H Battery & 40ms Gaming Latency",
-        "description": "Buy authentic BURHAN Pro 2 Wireless Earbuds in Pakistan. Features 35dB Hybrid ANC, 36H battery life, 40ms low latency, and 6-month replacement warranty with COD.",
+        "title": "BURHAN Pro 2 Wireless Earbuds | Active Noise Cancellation & Low-Latency Audio",
+        "description": "Buy authentic BURHAN Pro 2 Wireless Earbuds in Pakistan. Features Active Noise Cancellation, extended battery life, responsive low-latency audio, and 6-month store replacement warranty with COD.",
         "ogImage": "https://images.unsplash.com/photo-1606220838315-056192d5e927?w=800"
       },
       "visible": true
@@ -234,7 +234,7 @@
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "inactive",
       "isActive": false,
-      "updatedAt": "2026-10-05T23:26:50.918Z",
+      "updatedAt": "2026-10-06T00:33:47.347Z",
       "visible": false
     },
     {
@@ -2224,6 +2224,28 @@
       "timestamp": "2026-10-05T23:26:51.798Z",
       "createdAt": "2026-10-05T23:26:51.798Z",
       "updatedAt": "2026-10-05T23:26:51.798Z"
+    },
+    {
+      "_id": "354011fd-1765-4ada-b0fb-4ec2e7a4123f",
+      "action": "ADMIN_LOGIN",
+      "actor": {
+        "id": "admin-superadmin",
+        "email": "admin@burhan.com",
+        "name": "Super Admin",
+        "role": "owner"
+      },
+      "targetType": "employee",
+      "targetId": "admin-superadmin",
+      "targetName": "Super Admin",
+      "details": {
+        "email": "admin@burhan.com",
+        "role": "owner"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T00:19:26.803Z",
+      "createdAt": "2026-10-06T00:19:26.803Z",
+      "updatedAt": "2026-10-06T00:19:26.803Z"
     }
   ],
   "settings": [
@@ -2236,8 +2258,8 @@
       "currency": "PKR",
       "currencySymbol": "Rs.",
       "freeShippingThreshold": 5000,
-      "shippingFee": 250,
-      "updatedAt": "2026-10-05T23:26:28.001Z"
+      "shippingFee": 200,
+      "updatedAt": "2026-10-06T00:33:47.359Z"
     },
     {
       "type": "auth_security_config",

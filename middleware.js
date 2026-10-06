@@ -13,9 +13,16 @@ export function middleware(request) {
     }
   }
 
-  // Redirect to dashboard if logged-in admin visits login page
+  // Handle logged-in admin visiting login page
   if (pathname === '/admin/login' && adminToken) {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    const isLogoutOrClear = request.nextUrl.searchParams.get('clear') || request.nextUrl.searchParams.get('logout');
+    if (!isLogoutOrClear) {
+      const redirectParam = request.nextUrl.searchParams.get('redirect');
+      const destination = (redirectParam && redirectParam.startsWith('/admin') && redirectParam !== '/admin/login')
+        ? redirectParam
+        : '/admin/dashboard';
+      return NextResponse.redirect(new URL(destination, request.url));
+    }
   }
 
   return NextResponse.next();

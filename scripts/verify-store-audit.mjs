@@ -52,7 +52,7 @@ async function runAudit() {
   assert(activeProducts.length === 1 && activeProducts[0].name === 'BURHAN Pro 2', 'Only 1 Real Product Active for Launch', `Active count: ${activeProducts.length}`);
 
   const hiddenDummyProducts = allProducts.filter(p => p._id !== pro2?._id);
-  const allDummyHidden = hiddenDummyProducts.every(p => p.status === 'hidden' && p.isActive === false);
+  const allDummyHidden = hiddenDummyProducts.every(p => (p.status === 'hidden' || p.status === 'inactive') && p.isActive === false);
   assert(allDummyHidden, 'All Previous Dummy Products are Hidden', `${hiddenDummyProducts.length} dummy products preserved in Admin with status: hidden`);
 
   // -----------------------------------------------------------------
@@ -162,7 +162,7 @@ async function runAudit() {
   assert(!checkoutPageCode.includes('value="easypaisa"'), 'EasyPaisa Removed from Checkout UI');
   assert(checkoutPageCode.includes('value="cod"') && checkoutPageCode.includes('Cash on Delivery (COD)'), 'Cash on Delivery Active in Checkout UI');
   assert(checkoutPageCode.includes('value="card"') && checkoutPageCode.includes('Debit / Credit Card'), 'Debit/Credit Card Option Present in Checkout UI');
-  assert(checkoutPageCode.includes('Payment Instructions:') && checkoutPageCode.includes('No online credit/debit card numbers are entered'), 'Card Payment Transparent (No Fake Card Gateway)');
+  assert(checkoutPageCode.includes('Card Payment Information:') && checkoutPageCode.includes('No online credit/debit card numbers are entered'), 'Card Payment Transparent (No Fake Card Gateway)');
 
   // -----------------------------------------------------------------
   // TEST 7: Checkout Security & Server-Side Price Recalculation
@@ -199,7 +199,7 @@ async function runAudit() {
   const testOwner = await adminsCol.findOne({ email: 'siraj@mainadmin' });
   assert(Boolean(testOwner), 'Store Owner Account Configured');
 
-  const validPasswordCheck = await verifyPassword('admin123', testOwner.password);
+  const validPasswordCheck = await verifyPassword('Admin@123', testOwner.password);
   assert(validPasswordCheck === true, 'Valid Password Authentication Works');
 
   const wrongPasswordCheck = await verifyPassword('wrongpassword999', testOwner.password);

@@ -9,42 +9,81 @@ import {
   FileText, Shield, UserCircle, Bell
 } from 'lucide-react';
 
+let cachedAdminUser = null;
+
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(cachedAdminUser);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [pathname]);
 
   const checkAuth = async () => {
     try {
-      const res = await fetch('/api/admin/auth/me');
+      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch('/api/admin/auth/me', {
+        headers,
+        credentials: 'include'
+      });
+
       if (!res.ok) {
-        router.push('/admin/login');
+        if (res.status === 401) {
+          cachedAdminUser = null;
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('admin_token');
+            document.cookie = 'admin_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          }
+          router.push(`/admin/login?clear=true&redirect=${encodeURIComponent(pathname)}`);
+          return;
+        }
+        // For non-401 errors, do not trigger a redirect loop
         return;
       }
-      const data = await res.json();
-      setUser(data.user);
 
-      // Fetch pending approvals count if owner or manager
-      if (['owner', 'superadmin', 'manager'].includes(data.user?.role)) {
-        const statsRes = await fetch('/api/admin/dashboard/stats');
-        if (statsRes.ok) {
-          const statsData = await statsRes.json();
-          setPendingApprovalsCount(statsData.pendingApprovalsCount || 0);
+      const data = await res.json();
+      if (data?.user) {
+        cachedAdminUser = data.user;
+        setUser(data.user);
+
+        // Fetch pending approvals count if owner or manager
+        if (['owner', 'superadmin', 'manager'].includes(data.user?.role)) {
+          try {
+            const statsRes = await fetch('/api/admin/dashboard/stats', {
+              headers,
+              credentials: 'include'
+            });
+            if (statsRes.ok) {
+              const statsData = await statsRes.json();
+              setPendingApprovalsCount(statsData.pendingApprovalsCount || 0);
+            }
+          } catch (e) {
+            // Non-fatal approvals count fetch
+          }
         }
       }
     } catch (error) {
-      router.push('/admin/login');
+      console.warn('AdminLayout checkAuth notice:', error?.message);
     }
   };
 
   const handleLogout = async () => {
-    await fetch('/api/admin/auth/logout', { method: 'POST' });
+    cachedAdminUser = null;
+    try {
+      await fetch('/api/admin/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch (e) {}
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('admin_token');
+      document.cookie = 'admin_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    }
     router.push('/admin/login');
   };
 

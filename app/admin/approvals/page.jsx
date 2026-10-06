@@ -24,12 +24,21 @@ export default function AdminApprovalsPage() {
     fetchApprovals();
   }, [filterStatus]);
 
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   const fetchApprovals = async () => {
     try {
       setLoading(true);
+      const headers = {
+        'Cache-Control': 'no-cache',
+        ...getAuthHeaders()
+      };
       const [meRes, appRes] = await Promise.all([
-        fetch('/api/admin/auth/me'),
-        fetch(`/api/admin/approvals${filterStatus ? `?status=${filterStatus}` : ''}`)
+        fetch('/api/admin/auth/me', { headers, credentials: 'include' }),
+        fetch(`/api/admin/approvals${filterStatus ? `?status=${filterStatus}` : ''}`, { headers, credentials: 'include' })
       ]);
 
       if (meRes.ok) {
@@ -58,7 +67,11 @@ export default function AdminApprovalsPage() {
       setActionLoading(approvalId);
       const res = await fetch(`/api/admin/approvals/${approvalId}/${action}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ reviewNote: note })
       });
 

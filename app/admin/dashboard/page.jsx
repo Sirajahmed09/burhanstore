@@ -31,10 +31,21 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/dashboard/stats');
+      const response = await fetch('/api/admin/dashboard/stats', {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          ...getAuthHeaders()
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setStats(data);

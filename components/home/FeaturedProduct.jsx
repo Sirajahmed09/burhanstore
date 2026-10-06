@@ -59,11 +59,11 @@ export default function FeaturedProduct() {
   };
 
   const keyBenefits = [
-    { text: 'Up to 35dB Hybrid Active Noise Cancellation' },
-    { text: 'Up to 36 Hours Total Battery Playback with Case' },
-    { text: '40ms Ultra-Low Latency for Gaming & Media' },
-    { text: 'Bluetooth 5.3 + EDR with Quad-Mic ENC Array' },
-    { text: 'Fast USB-C + Qi Wireless Charging Compatibility' },
+    { text: 'Active Noise Cancellation (Environmental Sound Reduction)' },
+    { text: 'Long-Lasting Battery Playback with Portable Charging Case' },
+    { text: 'Low-Latency Gaming & Media Audio Synchronization' },
+    { text: 'Bluetooth 5.3 Wireless Connectivity with Noise-Reducing Microphones' },
+    { text: 'Fast USB-C Charging & Wireless Pad Compatibility' },
     { text: '6-Month Replacement Warranty* (Internal Issues; Terms Apply)' },
   ];
 
@@ -73,15 +73,15 @@ export default function FeaturedProduct() {
         {/* Section Header */}
         <div className="text-center md:text-left mb-8 md:mb-12">
           <div className="inline-flex items-center space-x-2 text-cyan-800 text-xs font-bold uppercase tracking-wider mb-2 px-3 py-1 bg-cyan-50 border border-cyan-200/70 rounded-md">
-            <span>Flagship Release</span>
+            <span>Featured Product</span>
             <span aria-hidden="true">·</span>
-            <span>Official Audio</span>
+            <span>Wireless Audio</span>
           </div>
           <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-slate-950 tracking-tight">
             Meet the BURHAN Pro 2
           </h2>
           <p className="text-slate-600 text-base sm:text-lg max-w-2xl mt-1 leading-relaxed">
-            Powerful sound, Hybrid ANC, clear calls and ultra-low latency — built for music, gaming and everyday use.
+            Dynamic sound, Active Noise Cancellation, clear voice calls and low-latency audio — designed for music, gaming, and everyday commuting.
           </p>
         </div>
 

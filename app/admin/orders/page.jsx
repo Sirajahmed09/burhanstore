@@ -16,13 +16,24 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, [statusFilter]);
 
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   const fetchOrders = async () => {
     try {
       setLoading(true);
       const url = statusFilter 
         ? `/api/admin/orders?status=${statusFilter}`
         : '/api/admin/orders';
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          ...getAuthHeaders()
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setOrders(data.orders || []);
@@ -39,7 +50,11 @@ export default function AdminOrdersPage() {
     try {
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ status: newStatus })
       });
 
