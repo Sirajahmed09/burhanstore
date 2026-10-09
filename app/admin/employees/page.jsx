@@ -80,7 +80,13 @@ export default function AdminEmployeesPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      const res = await fetch('/api/admin/employees');
+      const res = await fetch('/api/admin/employees', {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          ...getAuthHeaders()
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setEmployees(data.employees || []);
@@ -130,7 +136,11 @@ export default function AdminEmployeesPage() {
       if (modalMode === 'create') {
         const res = await fetch('/api/admin/employees', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+          },
           body: JSON.stringify(formData)
         });
 
@@ -146,7 +156,11 @@ export default function AdminEmployeesPage() {
         // Edit mode
         const res = await fetch(`/api/admin/employees/${activeEmployee._id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+          },
           body: JSON.stringify(formData)
         });
 
@@ -182,7 +196,11 @@ export default function AdminEmployeesPage() {
 
     try {
       const res = await fetch(`/api/admin/employees/${emp._id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          ...getAuthHeaders()
+        }
       });
 
       const data = await res.json();

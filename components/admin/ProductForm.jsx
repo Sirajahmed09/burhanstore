@@ -120,9 +120,20 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
     seoOgImage: initialData?.seo?.ogImage || ''
   });
 
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   // Load categories
   useEffect(() => {
-    fetch('/api/admin/categories')
+    fetch('/api/admin/categories', {
+      credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache',
+        ...getAuthHeaders()
+      }
+    })
       .then(res => res.json())
       .then(data => {
         const list = data?.categories || [];
@@ -236,6 +247,10 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
         uploadFormData.append('file', file);
         const res = await fetch('/api/admin/upload', {
           method: 'POST',
+          credentials: 'include',
+          headers: {
+            ...getAuthHeaders()
+          },
           body: uploadFormData
         });
         if (!res.ok) {
@@ -520,7 +535,11 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify(payload)
       });
 

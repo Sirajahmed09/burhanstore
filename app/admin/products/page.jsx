@@ -121,7 +121,11 @@ export default function AdminProductsPage() {
     try {
       const res = await fetch(`/api/admin/products/${product._id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ status: nextStatus, isActive: nextStatus === 'active', visible: nextStatus === 'active' })
       });
 
@@ -166,7 +170,11 @@ export default function AdminProductsPage() {
       const parsedOld = newOldPrice ? parseFloat(newOldPrice) : null;
       const res = await fetch(`/api/admin/products/${priceModalProduct._id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           price: parsedPrice,
           oldPrice: parsedOld
@@ -220,7 +228,11 @@ export default function AdminProductsPage() {
     try {
       const res = await fetch(`/api/admin/products/${stockModalProduct._id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ stock: parsedStock })
       });
 
@@ -267,7 +279,11 @@ export default function AdminProductsPage() {
     setDeleting(true);
     try {
       const res = await fetch(`/api/admin/products/${deleteProductTarget._id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          ...getAuthHeaders()
+        }
       });
 
       const data = await res.json().catch(() => ({}));

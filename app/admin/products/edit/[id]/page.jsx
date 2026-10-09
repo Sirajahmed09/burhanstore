@@ -18,7 +18,13 @@ export default function EditProductPage() {
   useEffect(() => {
     if (!id) return;
 
-    fetch(`/api/admin/products/${id}`)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+    fetch(`/api/admin/products/${id}`, {
+      credentials: 'include',
+      headers
+    })
       .then(res => {
         if (!res.ok) throw new Error('Product not found or failed to load');
         return res.json();

@@ -5,22 +5,27 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import ProductCard from '@/components/product/ProductCard';
 
-export default function BestSellers() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function BestSellers({ products: initialProducts = null }) {
+  const [products, setProducts] = useState(initialProducts || []);
+  const [loading, setLoading] = useState(!initialProducts);
 
   useEffect(() => {
-    fetch(`/api/products/best-sellers?_t=${Date.now()}`, { cache: 'no-store' })
-      .then(res => (res.ok ? res.json() : { products: [] }))
-      .then(data => {
-        setProducts(data?.products || []);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to load products:', err);
-        setLoading(false);
-      });
-  }, []);
+    if (!initialProducts) {
+      fetch(`/api/products/best-sellers?_t=${Date.now()}`, { cache: 'no-store' })
+        .then(res => (res.ok ? res.json() : { products: [] }))
+        .then(data => {
+          setProducts(data?.products || []);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('Failed to load products:', err);
+          setLoading(false);
+        });
+    } else {
+      setProducts(initialProducts);
+      setLoading(false);
+    }
+  }, [initialProducts]);
 
   if (loading) {
     return (
@@ -44,7 +49,8 @@ export default function BestSellers() {
     );
   }
 
-  if (products.length === 0) return null;
+  // If no additional active products exist, do not render duplicate or empty section
+  if (!products || products.length === 0) return null;
 
   return (
     <section className="py-16 md:py-24 bg-white border-b border-slate-200/80">

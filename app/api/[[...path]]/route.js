@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCollection, getDatabaseStatus } from '@/lib/db/mongodb';
+import { getCollection, getDatabaseStatus, buildIdQuery } from '@/lib/db/mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 
@@ -213,7 +213,7 @@ export async function GET(request) {
     if (path.startsWith('products/')) {
       const slug = path.split('/')[1];
       const productsCol = await getCollection('products');
-      const product = await productsCol.findOne({ slug });
+      const product = await productsCol.findOne(buildIdQuery(slug));
       
       if (!product || !isProductActive(product)) {
         return errorResponse('Product not found or is currently unavailable', 404);
@@ -394,7 +394,7 @@ export async function POST(request) {
 
       for (const item of items) {
         const prodId = item.productId || item._id;
-        const product = await productsCol.findOne({ _id: prodId });
+        const product = await productsCol.findOne(buildIdQuery(prodId));
 
         if (!product) {
           issues.push({
@@ -491,7 +491,7 @@ export async function POST(request) {
         }
         
         // Fetch actual product price and status from database
-        const product = await productsCol.findOne({ _id: prodId });
+        const product = await productsCol.findOne(buildIdQuery(prodId));
         if (!product) {
           return errorResponse(`Product not found: ${item.name || prodId}`, 404);
         }
@@ -552,7 +552,7 @@ export async function POST(request) {
       // Decrement stock for purchased items
       for (const item of validatedItems) {
         await productsCol.updateOne(
-          { _id: item.productId },
+          buildIdQuery(item.productId),
           { $inc: { stock: -item.quantity } }
         );
       }

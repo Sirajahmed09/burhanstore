@@ -15,7 +15,20 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [user, setUser] = useState(cachedAdminUser);
+  const [user, setUser] = useState(() => {
+    if (cachedAdminUser) return cachedAdminUser;
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('burhan_admin_user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          cachedAdminUser = parsed;
+          return parsed;
+        }
+      } catch (e) {}
+    }
+    return null;
+  });
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
 
   useEffect(() => {
@@ -40,6 +53,7 @@ export default function AdminLayout({ children }) {
           cachedAdminUser = null;
           if (typeof window !== 'undefined') {
             localStorage.removeItem('admin_token');
+            localStorage.removeItem('burhan_admin_user');
             document.cookie = 'admin_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
           }
           router.push(`/admin/login?clear=true&redirect=${encodeURIComponent(pathname)}`);
@@ -53,6 +67,9 @@ export default function AdminLayout({ children }) {
       if (data?.user) {
         cachedAdminUser = data.user;
         setUser(data.user);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('burhan_admin_user', JSON.stringify(data.user));
+        }
 
         // Fetch pending approvals count if owner or manager
         if (['owner', 'superadmin', 'manager'].includes(data.user?.role)) {
@@ -82,6 +99,7 @@ export default function AdminLayout({ children }) {
     } catch (e) {}
     if (typeof window !== 'undefined') {
       localStorage.removeItem('admin_token');
+      localStorage.removeItem('burhan_admin_user');
       document.cookie = 'admin_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     }
     router.push('/admin/login');

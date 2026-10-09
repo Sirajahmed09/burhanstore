@@ -115,7 +115,11 @@ export default function AdminCategoriesPage() {
     try {
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           ...formData,
           name: formData.name.trim(),
@@ -144,7 +148,11 @@ export default function AdminCategoriesPage() {
     setDeleting(true);
     try {
       const response = await fetch(`/api/admin/categories/${deleteTarget._id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          ...getAuthHeaders()
+        }
       });
 
       if (!response.ok) {

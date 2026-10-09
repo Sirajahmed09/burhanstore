@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getCollection } from '@/lib/db/mongodb';
+import { getCollection, buildIdQuery } from '@/lib/db/mongodb';
 import { ProductSchema, BreadcrumbSchema } from '@/components/seo/StructuredData';
 import ProductDetailClient from '@/components/product/ProductDetailClient';
 
@@ -16,8 +16,9 @@ function serialize(doc) {
 async function getProductBySlug(slug) {
   try {
     const productsCol = await getCollection('products');
+    const idQuery = buildIdQuery(slug);
     const product = await productsCol.findOne({
-      slug,
+      ...idQuery,
       status: { $nin: ['inactive', 'hidden', 'draft'] },
       isActive: { $ne: false }
     });

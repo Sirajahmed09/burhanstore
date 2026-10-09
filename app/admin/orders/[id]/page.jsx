@@ -32,10 +32,21 @@ export default function OrderDetailsPage({ params }) {
   const [newStatus, setNewStatus] = useState('');
   const [updateToast, setUpdateToast] = useState(null);
 
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   const fetchOrderDetails = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/admin/orders/${orderId}`);
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          ...getAuthHeaders()
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setOrder(data.order);
@@ -71,7 +82,11 @@ export default function OrderDetailsPage({ params }) {
       setUpdating(true);
       const res = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           status: newStatus,
           message: statusMessage.trim() || `Status changed to ${newStatus}`

@@ -6,8 +6,8 @@
       "slug": "wireless-earbuds",
       "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500",
       "description": "Premium wireless earbuds with superior sound quality",
-      "productCount": 1,
-      "updatedAt": "2026-10-05T23:26:51.035Z"
+      "productCount": 3,
+      "updatedAt": "2026-10-06T01:39:30.403Z"
     },
     {
       "_id": "3db0599c-87fd-43cc-bb63-a7e79842024e",
@@ -136,7 +136,7 @@
         ]
       },
       "createdAt": "2026-09-29T23:58:02.303Z",
-      "updatedAt": "2026-10-06T00:33:47.354Z",
+      "updatedAt": "2026-10-09T04:11:28.814Z",
       "status": "active",
       "isActive": true,
       "badge": "Premium Audio",
@@ -234,7 +234,7 @@
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "inactive",
       "isActive": false,
-      "updatedAt": "2026-10-06T00:33:47.347Z",
+      "updatedAt": "2026-10-09T04:11:28.808Z",
       "visible": false
     },
     {
@@ -2246,6 +2246,340 @@
       "timestamp": "2026-10-06T00:19:26.803Z",
       "createdAt": "2026-10-06T00:19:26.803Z",
       "updatedAt": "2026-10-06T00:19:26.803Z"
+    },
+    {
+      "_id": "8714afc7-053e-416c-a799-3dc65bb067a3",
+      "action": "SETTINGS_UPDATED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "settings",
+      "targetId": "general",
+      "targetName": "Store Settings",
+      "details": {
+        "businessName": "Burhan",
+        "shippingFee": 200
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:07.914Z",
+      "createdAt": "2026-10-06T01:39:07.914Z",
+      "updatedAt": "2026-10-06T01:39:07.914Z"
+    },
+    {
+      "_id": "b50a0ca4-3f4b-4e71-b349-bf4371175cd7",
+      "action": "CATEGORY_CREATED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "category",
+      "targetId": "26160417-8aa6-40c3-8964-29a8165fe79e",
+      "targetName": "Mutation Test Category",
+      "details": {
+        "name": "Mutation Test Category",
+        "slug": "mutation-test-cat"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:07.980Z",
+      "createdAt": "2026-10-06T01:39:07.980Z",
+      "updatedAt": "2026-10-06T01:39:07.980Z"
+    },
+    {
+      "_id": "6118ef18-a6f0-4fa2-8ca1-e8fc64c9a0a1",
+      "action": "CATEGORY_UPDATED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "category",
+      "targetId": "26160417-8aa6-40c3-8964-29a8165fe79e",
+      "targetName": "Mutation Test Category",
+      "details": {
+        "name": "Mutation Test Cat (Edited)",
+        "slug": "mutation-test-cat",
+        "updatedAt": "2026-10-06T01:39:08.097Z"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:08.099Z",
+      "createdAt": "2026-10-06T01:39:08.099Z",
+      "updatedAt": "2026-10-06T01:39:08.099Z"
+    },
+    {
+      "_id": "15f962e8-34f6-44e9-a5c3-8524c3a6f997",
+      "action": "CATEGORY_DELETED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "category",
+      "targetId": "26160417-8aa6-40c3-8964-29a8165fe79e",
+      "targetName": "Mutation Test Cat (Edited)",
+      "details": {
+        "name": "Mutation Test Cat (Edited)"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:08.140Z",
+      "createdAt": "2026-10-06T01:39:08.140Z",
+      "updatedAt": "2026-10-06T01:39:08.140Z"
+    },
+    {
+      "_id": "652fed56-124f-469a-be0f-fcefcdaa820f",
+      "action": "EMPLOYEE_CREATED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "employee",
+      "targetId": "0b67c6f4-e996-45d2-8ca5-f28dd96f3b77",
+      "targetName": "Mutation Staff",
+      "details": {
+        "email": "mutationstaff@test.com",
+        "role": "employee"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:08.498Z",
+      "createdAt": "2026-10-06T01:39:08.498Z",
+      "updatedAt": "2026-10-06T01:39:08.498Z"
+    },
+    {
+      "_id": "8d725a3a-e1e9-491c-8f0b-d5dc32ba165a",
+      "action": "EMPLOYEE_UPDATED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "employee",
+      "targetId": "0b67c6f4-e996-45d2-8ca5-f28dd96f3b77",
+      "targetName": "Mutation Staff Updated",
+      "details": {
+        "changes": {
+          "updatedAt": "2026-10-06T01:39:08.528Z",
+          "name": "Mutation Staff Updated",
+          "role": "employee"
+        }
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:08.530Z",
+      "createdAt": "2026-10-06T01:39:08.530Z",
+      "updatedAt": "2026-10-06T01:39:08.530Z"
+    },
+    {
+      "_id": "e35654d1-cc71-4521-b4f4-a7ea72ca317a",
+      "action": "EMPLOYEE_DELETED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "employee",
+      "targetId": "0b67c6f4-e996-45d2-8ca5-f28dd96f3b77",
+      "targetName": "Mutation Staff Updated",
+      "details": {
+        "email": "mutationstaff@test.com",
+        "role": "employee"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:08.554Z",
+      "createdAt": "2026-10-06T01:39:08.554Z",
+      "updatedAt": "2026-10-06T01:39:08.554Z"
+    },
+    {
+      "_id": "c7e84d6c-8666-4812-8fce-8090dcc70259",
+      "action": "PRODUCT_CREATED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "product",
+      "targetId": "23e1e724-3ef9-4252-8d22-136de2e07140",
+      "targetName": "Mutation Test Product",
+      "details": {
+        "price": 4999,
+        "stock": 20,
+        "category": "Wireless Earbuds"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:08.623Z",
+      "createdAt": "2026-10-06T01:39:08.623Z",
+      "updatedAt": "2026-10-06T01:39:08.623Z"
+    },
+    {
+      "_id": "83ec3394-aa56-4b03-af0f-e2c980f33efa",
+      "action": "PRODUCT_CREATED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "product",
+      "targetId": "710aecd6-3eb8-4275-9285-68dad9ddbc2d",
+      "targetName": "Mutation Test Product",
+      "details": {
+        "price": 4999,
+        "stock": 20,
+        "category": "Wireless Earbuds"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:18.655Z",
+      "createdAt": "2026-10-06T01:39:18.655Z",
+      "updatedAt": "2026-10-06T01:39:18.655Z"
+    },
+    {
+      "_id": "e63cf1dc-512e-44e4-b803-dba0677cd7c4",
+      "action": "PRODUCT_CREATED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "product",
+      "targetId": "f3c3f1f6-f07a-4728-85af-99c27f752c74",
+      "targetName": "Mutation Test Product",
+      "details": {
+        "price": 4999,
+        "stock": 20,
+        "category": "Wireless Earbuds"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:29.925Z",
+      "createdAt": "2026-10-06T01:39:29.925Z",
+      "updatedAt": "2026-10-06T01:39:29.925Z"
+    },
+    {
+      "_id": "41625d49-662b-4700-a3b9-e1f2be945077",
+      "action": "PRODUCT_QUICK_UPDATED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "product",
+      "targetId": "f3c3f1f6-f07a-4728-85af-99c27f752c74",
+      "targetName": "Mutation Test Product",
+      "details": {
+        "previous": {
+          "price": 4999,
+          "stock": 20
+        },
+        "updated": {
+          "updatedAt": "2026-10-06T01:39:30.011Z",
+          "price": 4499
+        }
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:30.014Z",
+      "createdAt": "2026-10-06T01:39:30.014Z",
+      "updatedAt": "2026-10-06T01:39:30.014Z"
+    },
+    {
+      "_id": "a1354837-82d9-42db-8b8c-37be1ad8725a",
+      "action": "PRODUCT_QUICK_UPDATED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "product",
+      "targetId": "f3c3f1f6-f07a-4728-85af-99c27f752c74",
+      "targetName": "Mutation Test Product",
+      "details": {
+        "previous": {
+          "price": 4499,
+          "stock": 20
+        },
+        "updated": {
+          "updatedAt": "2026-10-06T01:39:30.101Z",
+          "stock": 35
+        }
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:30.104Z",
+      "createdAt": "2026-10-06T01:39:30.104Z",
+      "updatedAt": "2026-10-06T01:39:30.104Z"
+    },
+    {
+      "_id": "11b56fae-45cd-443a-9f61-02d7b2acca5d",
+      "action": "PRODUCT_QUICK_UPDATED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "product",
+      "targetId": "f3c3f1f6-f07a-4728-85af-99c27f752c74",
+      "targetName": "Mutation Test Product",
+      "details": {
+        "previous": {
+          "price": 4499,
+          "stock": 35
+        },
+        "updated": {
+          "updatedAt": "2026-10-06T01:39:30.297Z",
+          "visible": false,
+          "isActive": false,
+          "status": "inactive"
+        }
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:30.300Z",
+      "createdAt": "2026-10-06T01:39:30.300Z",
+      "updatedAt": "2026-10-06T01:39:30.300Z"
+    },
+    {
+      "_id": "67fd1933-a42b-4f2e-9257-f33f93b1eec3",
+      "action": "PRODUCT_DELETED",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "System",
+        "role": "owner"
+      },
+      "targetType": "product",
+      "targetId": "f3c3f1f6-f07a-4728-85af-99c27f752c74",
+      "targetName": "Mutation Test Product",
+      "details": {
+        "category": "Wireless Earbuds",
+        "price": 4499
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-06T01:39:30.407Z",
+      "createdAt": "2026-10-06T01:39:30.407Z",
+      "updatedAt": "2026-10-06T01:39:30.407Z"
     }
   ],
   "settings": [
@@ -2259,7 +2593,8 @@
       "currencySymbol": "Rs.",
       "freeShippingThreshold": 5000,
       "shippingFee": 200,
-      "updatedAt": "2026-10-06T00:33:47.359Z"
+      "updatedAt": "2026-10-09T04:11:28.820Z",
+      "businessName": "Burhan"
     },
     {
       "type": "auth_security_config",
