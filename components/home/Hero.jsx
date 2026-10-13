@@ -7,9 +7,25 @@ import { ArrowRight, ShieldCheck, Truck, Sparkles, CheckCircle2, ShoppingBag } f
 import { useCart } from '@/lib/contexts/CartContext';
 import { useRouter } from 'next/navigation';
 
-export default function Hero({ flagshipProduct }) {
+export default function Hero({ flagshipProduct, databaseUnavailable = false }) {
   const router = useRouter();
   const { addToCart } = useCart();
+
+  if (databaseUnavailable) {
+    return (
+      <section className="relative pt-32 pb-24 overflow-hidden bg-slate-950 text-white border-b border-slate-800">
+        <div className="container mx-auto px-4 max-w-4xl text-center relative z-10">
+          <p className="text-cyan-400 text-xs font-bold uppercase tracking-wider mb-4">BURHAN STORE</p>
+          <h1 className="font-heading text-4xl sm:text-5xl font-extrabold tracking-tight mb-5">
+            Store catalog temporarily unavailable
+          </h1>
+          <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
+            We are reconnecting the product catalog. Please try again shortly.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   const product = flagshipProduct || {
     _id: 'burhan-pro-2-flagship',

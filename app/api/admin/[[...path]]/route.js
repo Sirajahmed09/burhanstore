@@ -19,6 +19,7 @@ import {
   ALL_PERMISSIONS
 } from '@/lib/admin/permissions';
 import { logAuditEvent } from '@/lib/admin/audit';
+import { findApprovalConflicts, snapshotApprovalFields } from '@/lib/admin/approvalIntegrity';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -72,6 +73,21 @@ function slugify(text) {
     .replace(/\-\-+/g, '-')
     .replace(/^-+/, '')
     .replace(/-+$/, '');
+}
+
+const APPROVAL_SAFE_PRODUCT_FIELDS = [
+  'name', 'slug', 'sku', 'category', 'brand', 'badge', 'shortDescription', 'description',
+  'oldPrice', 'costPrice', 'lowStockThreshold', 'images', 'thumbnail', 'highlights',
+  'features', 'specifications', 'inBox', 'warranty', 'deliveryInfo', 'faqs', 'seo',
+  'isFeatured', 'isTrending', 'isNew'
+];
+
+function getSafeProductApprovalChanges(body) {
+  const changes = {};
+  for (const field of APPROVAL_SAFE_PRODUCT_FIELDS) {
+    if (body[field] !== undefined) changes[field] = body[field];
+  }
+  return changes;
 }
 
 // =========================================================================
@@ -287,9 +303,7 @@ export async function GET(request) {
     if (path.startsWith('products/') && path.split('/').length === 2) {
       const id = path.split('/')[1];
       const productsCol = await getCollection('products');
-      const product = await productsCol.findOne({
-        $or: [{ _id: id }, { slug: id }]
-      });
+      const product = await productsCol.findOne(buildIdQuery(id));
 
       if (!product) {
         return errorResponse('Product not found', 404);
@@ -403,7 +417,7 @@ export async function GET(request) {
     if (path.startsWith('orders/') && path.split('/').length === 2) {
       const id = path.split('/')[1];
       const ordersCol = await getCollection('orders');
-      const order = await ordersCol.findOne({ _id: id });
+      const order = await ordersCol.findOne(buildIdQuery(id));
 
       if (!order) {
         return errorResponse('Order not found', 404);
@@ -693,6 +707,19 @@ export async function POST(request) {
 
       if (actionType === 'PRODUCT_PRICE_CHANGE' || actionType === 'PRODUCT_STOCK_CHANGE' || actionType === 'PRODUCT_UPDATE' || actionType === 'PRODUCT_STATUS_CHANGE') {
         const productsCol = await getCollection('products');
+        const currentProduct = await productsCol.findOne(buildIdQuery(targetId));
+        if (!currentProduct) {
+          return errorResponse('Product no longer exists; approval cannot be applied', 404);
+        }
+
+        const conflicts = findApprovalConflicts(currentProduct, approval);
+        if (conflicts.length > 0) {
+          return errorResponse(
+            `Product changed after this request was submitted. Review the current product before approving again. Conflicting fields: ${conflicts.join(', ')}`,
+            409
+          );
+        }
+
         const updateSet = {
           ...proposedChanges,
           updatedAt: now
@@ -1115,7 +1142,7 @@ export async function PUT(request) {
       if (requiresPriceApproval || requiresStockApproval || requiresStatusApproval) {
         // Intercept and create an Approval Request
         const approvalsCol = await getCollection('approvals');
-        const proposedChanges = {};
+        const proposedChanges = getSafeProductApprovalChanges(body);
         if (isPriceChanged) proposedChanges.price = parseFloat(body.price);
         if (body.oldPrice !== undefined) proposedChanges.oldPrice = parseFloat(body.oldPrice);
         if (isStockChanged) proposedChanges.stock = parseInt(body.stock, 10);
@@ -1123,6 +1150,7 @@ export async function PUT(request) {
           const nextStatus = body.status || (body.isActive ? 'active' : 'inactive');
           proposedChanges.status = nextStatus;
           proposedChanges.isActive = nextStatus === 'active';
+          proposedChanges.visible = nextStatus === 'active';
         }
 
         let actionType = 'PRODUCT_UPDATE';
@@ -1137,11 +1165,7 @@ export async function PUT(request) {
           targetId: existing._id,
           targetName: existing.name,
           currentData: {
-            price: existing.price,
-            oldPrice: existing.oldPrice,
-            stock: existing.stock,
-            status: existing.status,
-            isActive: existing.isActive
+            ...snapshotApprovalFields(existing, proposedChanges)
           },
           proposedChanges,
           status: 'PENDING',
@@ -1393,7 +1417,7 @@ export async function PATCH(request) {
 
       if (requiresPriceApproval || requiresStockApproval || requiresStatusApproval) {
         const approvalsCol = await getCollection('approvals');
-        const proposedChanges = {};
+        const proposedChanges = getSafeProductApprovalChanges(body);
 
         if (isPriceChanged) {
           proposedChanges.price = parseFloat(body.price);
@@ -1411,6 +1435,7 @@ export async function PATCH(request) {
           const nextStatus = body.status || (body.isActive ? 'active' : 'inactive');
           proposedChanges.status = nextStatus;
           proposedChanges.isActive = nextStatus === 'active';
+          proposedChanges.visible = nextStatus === 'active';
         }
 
         let actionType = 'PRODUCT_UPDATE';
@@ -1425,11 +1450,7 @@ export async function PATCH(request) {
           targetId: existing._id,
           targetName: existing.name,
           currentData: {
-            price: existing.price,
-            oldPrice: existing.oldPrice,
-            stock: existing.stock,
-            status: existing.status,
-            isActive: existing.isActive
+            ...snapshotApprovalFields(existing, proposedChanges)
           },
           proposedChanges,
           status: 'PENDING',

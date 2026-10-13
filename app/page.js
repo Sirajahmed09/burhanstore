@@ -36,15 +36,15 @@ async function getHomepageProducts() {
       visible: { $ne: false }
     };
     const products = await productsCol.find(ACTIVE_FILTER).toArray();
-    return JSON.parse(JSON.stringify(products));
+    return { products: JSON.parse(JSON.stringify(products)), databaseError: false };
   } catch (err) {
     console.error('Failed to load active products for homepage:', err);
-    return [];
+    return { products: [], databaseError: true };
   }
 }
 
 export default async function Home() {
-  const activeProducts = await getHomepageProducts();
+  const { products: activeProducts, databaseError } = await getHomepageProducts();
 
   // Find BURHAN Pro 2 or primary active product
   const flagship = activeProducts.find(p => p.name === 'BURHAN Pro 2') || activeProducts[0] || null;
@@ -54,7 +54,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-slate-950">
       {/* 1. Premium 3D-Style Headphone Hero with Dynamic Flagship Product Data */}
-      <Hero flagshipProduct={flagship} />
+      <Hero flagshipProduct={flagship} databaseUnavailable={databaseError} />
 
       {/* 2. Flagship In-Depth Showcase (BURHAN Pro 2) */}
       {flagship && <FeaturedProduct initialProduct={flagship} />}

@@ -118,9 +118,24 @@ try {
   const rawWithSecret = 'mongodb+srv://admin_siraj:P@ssw0rd!#%26@cluster0.net/burhanstore?retryWrites=true';
   const sanitized = sanitizeMongoUri(rawWithSecret);
   assert(
-    !sanitized.includes('P@ssw0rd!#%26') && sanitized.includes('****') && sanitized.includes('admin_siraj'),
+    !sanitized.includes('P@ssw0rd!#%26') && sanitized.endsWith('****@cluster0.net/burhanstore?retryWrites=true') && sanitized.includes('admin_siraj'),
     '7. URI Password Masking',
     sanitized
+  );
+
+  const standardMongoUri = 'mongodb://user:pa:ss@localhost:27017/burhanstore?authSource=admin';
+  const sanitizedStandard = sanitizeMongoUri(standardMongoUri);
+  assert(
+    sanitizedStandard === 'mongodb://user:****@localhost:27017/burhanstore?authSource=admin',
+    '7a. Standard MongoDB URI Masking',
+    'standard mongodb:// credentials masked'
+  );
+
+  const noCredentialsUri = 'mongodb+srv://cluster0.net/burhanstore';
+  assert(
+    sanitizeMongoUri(noCredentialsUri) === noCredentialsUri,
+    '7b. URI Without Credentials Preserved',
+    'no credential segment was altered'
   );
 
   // Test 8: Error message sanitization

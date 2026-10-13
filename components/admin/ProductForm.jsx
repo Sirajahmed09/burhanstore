@@ -550,13 +550,16 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
 
       if (data.approvalRequired) {
         setSuccessMsg(data.message || 'Submitted for Store Owner approval!');
+        setLoading(false);
+        setTimeout(() => {
+          window.location.href = '/admin/approvals';
+        }, 2000);
       } else {
         setSuccessMsg(isEdit ? 'Product updated successfully in database!' : 'Product created successfully in database!');
+        setTimeout(() => {
+          window.location.href = '/admin/products';
+        }, 700);
       }
-
-      setTimeout(() => {
-        window.location.href = '/admin/products';
-      }, 700);
     } catch (err) {
       setError(err.message || 'An error occurred while saving.');
       setLoading(false);
