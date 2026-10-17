@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCollection, getDatabaseStatus, buildIdQuery } from '@/lib/db/mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
+import { notifyOrderCustomer } from '@/lib/notifications/orderNotifications';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -56,6 +57,33 @@ function sanitizePublicProduct(product) {
   if (!product) return null;
   const { costPrice: _, adminNotes: __, internalMargin: ___, createdBy: ____, ...publicData } = product;
   return publicData;
+}
+
+function sanitizeTrackedOrder(order) {
+  if (!order) return null;
+  return {
+    _id: order._id,
+    orderNumber: order.orderNumber || order._id,
+    status: order.status || 'pending',
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+    items: Array.isArray(order.items) ? order.items.map(({ productId, name, price, quantity, image }) => ({ productId, name, price, quantity, image })) : [],
+    subtotal: order.subtotal || order.pricing?.subtotal || 0,
+    shipping: order.shipping || order.pricing?.shipping || 0,
+    total: order.total || order.pricing?.total || 0,
+    paymentMethod: order.paymentMethod || 'cod',
+    timeline: Array.isArray(order.timeline) ? order.timeline.map(({ status, timestamp, message }) => ({ status, timestamp, message })) : [],
+    shipment: order.shipment ? {
+      courier: order.shipment.courier,
+      trackingNumber: order.shipment.trackingNumber,
+      trackingUrl: order.shipment.trackingUrl,
+      bookedAt: order.shipment.bookedAt,
+    } : null,
+    customer: {
+      name: order.customer?.name || '',
+      city: order.customer?.city || '',
+    },
+  };
 }
 
 // Helper function to create slug from name
@@ -279,7 +307,7 @@ export async function GET(request) {
         return errorResponse('Order not found. Please check your Order ID and phone number.', 404);
       }
 
-      return NextResponse.json({ order: matchedOrder }, { headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ order: sanitizeTrackedOrder(matchedOrder) }, { headers: NO_CACHE_HEADERS });
     }
 
     // Orders confirmation receipt endpoint (Public view sanitized)
@@ -297,17 +325,12 @@ export async function GET(request) {
         orderNumber: order.orderNumber || order._id,
         status: order.status || 'pending',
         createdAt: order.createdAt,
-        items: Array.isArray(order.items) ? order.items : [],
+        // This endpoint is addressable by order ID from a browser URL. Do not
+        // expose customer PII or line-item details without phone verification.
         subtotal: order.subtotal || order.pricing?.subtotal || 0,
         shipping: order.shipping !== undefined ? order.shipping : (order.pricing?.shipping || 200),
         total: order.total || order.pricing?.total || 0,
-        paymentMethod: order.paymentMethod || 'cod',
-        customer: {
-          name: order.customer?.name || '',
-          city: order.customer?.city || '',
-          address: order.customer?.address || '',
-          phone: order.customer?.phone || ''
-        }
+        paymentMethod: order.paymentMethod || 'cod'
       };
 
       return NextResponse.json({ order: safeOrder }, { headers: NO_CACHE_HEADERS });
@@ -479,10 +502,13 @@ export async function POST(request) {
         return errorResponse('Please provide a valid Pakistani contact phone number (at least 10 digits)', 400);
       }
       
-      // Recalculate subtotal from actual product prices in database
+      // Recalculate subtotal from actual product prices in database and coalesce
+      // duplicate lines so one order cannot bypass aggregate stock validation.
       let calculatedSubtotal = 0;
       const validatedItems = [];
-      
+      const quantitiesByProduct = new Map();
+      const productsById = new Map();
+
       for (const item of body.items) {
         const prodId = item.productId || item._id;
         const requestedQty = parseInt(item.quantity);
@@ -500,21 +526,29 @@ export async function POST(request) {
           return errorResponse(`Product "${product.name}" is currently unavailable for purchase.`, 400);
         }
         
+        const productKey = String(product._id);
+        const totalRequestedQty = (quantitiesByProduct.get(productKey) || 0) + requestedQty;
+        quantitiesByProduct.set(productKey, totalRequestedQty);
+        productsById.set(productKey, product);
+        
+        // Use server-side price, never client-provided price
+      }
+
+      for (const [productKey, requestedQty] of quantitiesByProduct) {
+        const product = productsById.get(productKey);
         const availableStock = Number(product.stock) || 0;
         if (availableStock < requestedQty) {
           return errorResponse(`Insufficient stock for "${product.name}". Only ${availableStock} unit(s) remaining.`, 400);
         }
-        
-        // Use server-side price, never client-provided price
+
         const itemTotal = Number(product.price) * requestedQty;
         calculatedSubtotal += itemTotal;
-        
         validatedItems.push({
           productId: product._id,
           name: product.name,
-          price: product.price, // Server-side price
+          price: product.price,
           quantity: requestedQty,
-          image: product.image || product.thumbnail || product.images?.[0] || item.image || ''
+          image: product.image || product.thumbnail || product.images?.[0] || ''
         });
       }
       
@@ -547,14 +581,31 @@ export async function POST(request) {
         ]
       };
 
+      // Reserve inventory atomically before creating the order. The stock predicate
+      // prevents two concurrent checkouts from reserving the same final units.
+      const reservedItems = [];
+      try {
+        for (const item of validatedItems) {
+          const result = await productsCol.updateOne(
+            { $and: [buildIdQuery(item.productId), { stock: { $gte: item.quantity } }] },
+            { $inc: { stock: -item.quantity } }
+          );
+          if (!result || result.matchedCount !== 1) {
+            throw new Error(`Inventory changed for "${item.name}". Please review your cart and try again.`);
+          }
+          reservedItems.push(item);
+        }
+
       await ordersCol.insertOne(order);
 
-      // Decrement stock for purchased items
-      for (const item of validatedItems) {
-        await productsCol.updateOne(
-          buildIdQuery(item.productId),
-          { $inc: { stock: -item.quantity } }
-        );
+      // Notify only after the order and inventory reservation are persisted.
+      // A Resend outage is recorded/logged but never invalidates the order.
+      const notification = await notifyOrderCustomer(order, 'order_confirmation');
+      } catch (inventoryError) {
+        for (const item of reservedItems) {
+          await productsCol.updateOne(buildIdQuery(item.productId), { $inc: { stock: item.quantity } });
+        }
+        return errorResponse(inventoryError.message || 'Unable to reserve inventory. Please try again.', 409);
       }
 
       // Revalidate storefront cache immediately so stock changes reflect publicly
@@ -562,7 +613,7 @@ export async function POST(request) {
         revalidateStorefront('', '');
       }
 
-      return NextResponse.json({ order, success: true }, { status: 201, headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ order, success: true, notification }, { status: 201, headers: NO_CACHE_HEADERS });
     }
 
     // Track order - WITH INPUT SANITIZATION & FLEXIBLE MATCHING
@@ -604,7 +655,7 @@ export async function POST(request) {
         return errorResponse('Order not found. Please check your Order ID and phone number.', 404);
       }
       
-      return NextResponse.json({ order: matchedOrder }, { headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ order: sanitizeTrackedOrder(matchedOrder) }, { headers: NO_CACHE_HEADERS });
     }
 
     // Customer review submission: POST /api/reviews

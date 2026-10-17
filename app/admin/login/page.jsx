@@ -14,6 +14,11 @@ function AdminLoginForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Remove tokens written by older releases; authentication now uses the
+    // HTTP-only cookie exclusively.
+    try {
+      localStorage.removeItem('admin_token');
+    } catch (e) {}
     if (searchParams.get('clear') === 'true') {
       try {
         localStorage.removeItem('admin_token');
@@ -45,9 +50,6 @@ function AdminLoginForm() {
       const data = await response.json();
       
       if (data.user) {
-        if (data.token) {
-          localStorage.setItem('admin_token', data.token);
-        }
         // Track successful admin sign-in
         trackLogin('admin_dashboard');
 

@@ -14,10 +14,18 @@ function SuccessContent() {
 
   useEffect(() => {
     if (orderId) {
+      let sessionOrder = null;
+      try {
+        const saved = sessionStorage.getItem(`burhan_order_${orderId}`);
+        sessionOrder = saved ? JSON.parse(saved) : null;
+      } catch (err) {}
+
       fetch(`/api/orders/${orderId}`)
         .then(res => (res.ok ? res.json() : { order: null }))
         .then(data => {
-          const ord = data?.order || null;
+          const ord = sessionOrder
+            ? { ...data?.order, ...sessionOrder }
+            : data?.order || null;
           setOrder(ord);
           if (ord && ord._id && typeof window !== 'undefined') {
             const key = `burhan_ga_purchased_${ord._id}`;
@@ -62,7 +70,7 @@ function SuccessContent() {
 
           {/* Delivery Details */}
           {order?.customer && (
-            <div className="grid sm:grid-cols-2 gap-4 text-left mb-8">
+          <div className="grid sm:grid-cols-2 gap-4 text-left mb-8">
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
                 <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Recipient Details

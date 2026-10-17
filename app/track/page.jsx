@@ -140,7 +140,7 @@ function TrackOrderContent() {
               </div>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Mobile Number (Optional)
+                   Registered Mobile Number *
                 </label>
                 <input
                   type="tel"
@@ -201,7 +201,6 @@ function TrackOrderContent() {
                 </div>
                 <div className="text-sm font-bold text-slate-900">{order.customer?.name}</div>
                 <div className="text-xs text-slate-600 mt-0.5">{order.customer?.city}</div>
-                <div className="text-xs text-slate-600 mt-1">{order.customer?.address}</div>
               </div>
 
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
@@ -216,6 +215,19 @@ function TrackOrderContent() {
                 </div>
               </div>
             </div>
+
+            {order.shipment?.courier && (
+              <div className="p-4 rounded-xl bg-cyan-50 border border-cyan-200">
+                <div className="text-xs font-bold uppercase tracking-wider text-cyan-800 mb-2">Shipment Details</div>
+                <div className="text-sm font-semibold text-slate-900">{order.shipment.courier}</div>
+                <div className="text-xs text-slate-700 mt-1">AWB / Tracking: {order.shipment.trackingNumber}</div>
+                {order.shipment.trackingUrl && (
+                  <a href={order.shipment.trackingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center mt-2 text-xs font-bold text-cyan-800 hover:underline">
+                    Open official courier tracking <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                  </a>
+                )}
+              </div>
+            )}
 
             {/* Ordered Items Mini-list */}
             {order.items && order.items.length > 0 && (

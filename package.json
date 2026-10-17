@@ -9,6 +9,8 @@
     "build": "cross-env NODE_ENV=production next build",
     "start": "next start",
     "lint": "node -e 'console.log(\"Lint passed\")'",
+    "test:api-client": "node scripts/test-api-client.mjs",
+    "test:email": "node scripts/test-email-service.mjs",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
