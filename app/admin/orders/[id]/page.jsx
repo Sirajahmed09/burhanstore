@@ -31,6 +31,8 @@ export default function OrderDetailsPage({ params }) {
   const [statusMessage, setStatusMessage] = useState('');
   const [newStatus, setNewStatus] = useState('');
   const [updateToast, setUpdateToast] = useState(null);
+  const [shipmentForm, setShipmentForm] = useState({ courier: '', trackingNumber: '', trackingUrl: '' });
+  const [shipmentSaving, setShipmentSaving] = useState(false);
 
   const getAuthHeaders = () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
@@ -51,6 +53,11 @@ export default function OrderDetailsPage({ params }) {
         const data = await res.json();
         setOrder(data.order);
         setNewStatus(data.order?.status || 'pending');
+        setShipmentForm({
+          courier: data.order?.shipment?.courier || '',
+          trackingNumber: data.order?.shipment?.trackingNumber || '',
+          trackingUrl: data.order?.shipment?.trackingUrl || '',
+        });
       } else {
         // Fallback to public order endpoint
         const fallbackRes = await fetch(`/api/orders/${orderId}`);
@@ -64,6 +71,28 @@ export default function OrderDetailsPage({ params }) {
       console.error('Failed to load order details:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleShipmentSave = async (e) => {
+    e.preventDefault();
+    setShipmentSaving(true);
+    setUpdateToast(null);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/shipment`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(shipmentForm),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to save shipment details');
+      setOrder(data.order);
+      setUpdateToast({ type: 'success', message: 'Shipment details saved. You can now mark the order as shipped.' });
+    } catch (error) {
+      setUpdateToast({ type: 'error', message: error.message || 'Failed to save shipment details' });
+    } finally {
+      setShipmentSaving(false);
     }
   };
 
@@ -384,6 +413,53 @@ export default function OrderDetailsPage({ params }) {
 
           {/* Right Column: Customer & Delivery Details */}
           <div className="space-y-6">
+            {/* Manual Courier Shipment Card */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h2 className="font-heading font-bold text-gray-900 text-lg mb-2 flex items-center space-x-2">
+                <Truck className="w-5 h-5 text-burhan-secondary" />
+                <span>Manual Courier Shipment</span>
+              </h2>
+              <p className="text-xs text-gray-500 mb-4">Book the parcel with the courier first, then save the official tracking details here.</p>
+              <form onSubmit={handleShipmentSave} className="space-y-3">
+                <input
+                  required
+                  value={shipmentForm.courier}
+                  onChange={(e) => setShipmentForm({ ...shipmentForm, courier: e.target.value })}
+                  placeholder="Courier name (e.g. TCS, Leopards)"
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                />
+                <input
+                  required
+                  value={shipmentForm.trackingNumber}
+                  onChange={(e) => setShipmentForm({ ...shipmentForm, trackingNumber: e.target.value })}
+                  placeholder="AWB / tracking number"
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                />
+                <input
+                  required
+                  type="url"
+                  value={shipmentForm.trackingUrl}
+                  onChange={(e) => setShipmentForm({ ...shipmentForm, trackingUrl: e.target.value })}
+                  placeholder="https://courier.example/track/..."
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                />
+                <button
+                  type="submit"
+                  disabled={shipmentSaving || ['delivered', 'cancelled', 'returned', 'refunded'].includes(order.status)}
+                  className="w-full px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {shipmentSaving ? 'Saving...' : 'Save Shipment Details'}
+                </button>
+              </form>
+              {order.shipment?.courier && (
+                <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-600 space-y-1">
+                  <div><strong>Courier:</strong> {order.shipment.courier}</div>
+                  <div><strong>Tracking:</strong> {order.shipment.trackingNumber}</div>
+                  <a className="text-burhan-secondary hover:underline" href={order.shipment.trackingUrl} target="_blank" rel="noopener noreferrer">Open tracking link</a>
+                </div>
+              )}
+            </div>
+
             {/* Customer Information Card */}
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
               <h2 className="font-heading font-bold text-gray-900 text-lg mb-4 flex items-center space-x-2">

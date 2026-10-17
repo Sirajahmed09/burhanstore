@@ -144,6 +144,11 @@ export default function CheckoutPage() {
 
       if (response.ok && data.success) {
         clearCart();
+        if (typeof window !== 'undefined') {
+          // Keep the confirmation details in this browser session only. The
+          // public receipt endpoint intentionally does not return customer PII.
+          sessionStorage.setItem(`burhan_order_${data.order._id}`, JSON.stringify(data.order));
+        }
         router.push(`/success?orderId=${data.order._id}`);
       } else {
         setSubmitError(data.error || 'Failed to place order. Please try again.');

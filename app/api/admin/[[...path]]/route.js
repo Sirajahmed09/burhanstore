@@ -19,7 +19,11 @@ import {
   ALL_PERMISSIONS
 } from '@/lib/admin/permissions';
 import { logAuditEvent } from '@/lib/admin/audit';
+import { findApprovalConflicts, snapshotApprovalFields } from '@/lib/admin/approvalIntegrity';
 import { revalidatePath } from 'next/cache';
+import { validateOrderStatusTransition } from '@/lib/orders/lifecycle';
+import { validateShipmentDetails } from '@/lib/orders/shipment';
+import { notifyOrderCustomer } from '@/lib/notifications/orderNotifications';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -48,9 +52,9 @@ function revalidateStorefront(slug = '', category = '') {
   }
 }
 
-function errorResponse(message, status = 500) {
+function errorResponse(message, status = 500, details = undefined) {
   return NextResponse.json(
-    { success: false, error: message },
+    { success: false, error: message, ...(details ? { details } : {}) },
     { status, headers: NO_CACHE_HEADERS }
   );
 }
@@ -72,6 +76,34 @@ function slugify(text) {
     .replace(/\-\-+/g, '-')
     .replace(/^-+/, '')
     .replace(/-+$/, '');
+}
+
+async function notifyForOrderTransition(order, status, extra = {}) {
+  if (status === 'confirmed') {
+    return notifyOrderCustomer(order, 'status', { status });
+  }
+  if (status === 'shipped') {
+    return notifyOrderCustomer(order, 'shipment', extra);
+  }
+  if (status === 'delivered') {
+    return notifyOrderCustomer(order, 'delivery', { status });
+  }
+  return { status: 'not_required' };
+}
+
+const APPROVAL_SAFE_PRODUCT_FIELDS = [
+  'name', 'slug', 'sku', 'category', 'brand', 'badge', 'shortDescription', 'description',
+  'oldPrice', 'costPrice', 'lowStockThreshold', 'images', 'thumbnail', 'highlights',
+  'features', 'specifications', 'inBox', 'warranty', 'deliveryInfo', 'faqs', 'seo',
+  'isFeatured', 'isTrending', 'isNew'
+];
+
+function getSafeProductApprovalChanges(body) {
+  const changes = {};
+  for (const field of APPROVAL_SAFE_PRODUCT_FIELDS) {
+    if (body[field] !== undefined) changes[field] = body[field];
+  }
+  return changes;
 }
 
 // =========================================================================
@@ -287,9 +319,7 @@ export async function GET(request) {
     if (path.startsWith('products/') && path.split('/').length === 2) {
       const id = path.split('/')[1];
       const productsCol = await getCollection('products');
-      const product = await productsCol.findOne({
-        $or: [{ _id: id }, { slug: id }]
-      });
+      const product = await productsCol.findOne(buildIdQuery(id));
 
       if (!product) {
         return errorResponse('Product not found', 404);
@@ -403,7 +433,7 @@ export async function GET(request) {
     if (path.startsWith('orders/') && path.split('/').length === 2) {
       const id = path.split('/')[1];
       const ordersCol = await getCollection('orders');
-      const order = await ordersCol.findOne({ _id: id });
+      const order = await ordersCol.findOne(buildIdQuery(id));
 
       if (!order) {
         return errorResponse('Order not found', 404);
@@ -472,11 +502,10 @@ export async function POST(request) {
         ]
       });
 
-      // Auto-seed siraj@mainadmin or burhan@store if not present
-      if (!admin && (cleanEmail === 'siraj@mainadmin' || cleanEmail === 'burhan@store' || cleanEmail === 'admin@burhan.com')) {
-        const passwordHash = process.env.ADMIN_INITIAL_PASSWORD
-          ? await hashPassword(process.env.ADMIN_INITIAL_PASSWORD)
-          : '$2a$10$i5EEGpbK71v11OWUrbUvReoj/ICRfnYaT59KfMskeTcWX/5qLV7ES';
+      // Optional bootstrap: never create a privileged account from a public/default password.
+      if (!admin && process.env.ADMIN_INITIAL_PASSWORD &&
+        (cleanEmail === 'siraj@mainadmin' || cleanEmail === 'burhan@store' || cleanEmail === 'admin@burhan.com')) {
+        const passwordHash = await hashPassword(process.env.ADMIN_INITIAL_PASSWORD);
 
         const newAdmin = {
           _id: cleanEmail === 'siraj@mainadmin' ? 'admin-owner-siraj' : (cleanEmail === 'burhan@store' ? 'admin-burhan-owner' : 'admin-superadmin'),
@@ -533,7 +562,6 @@ export async function POST(request) {
 
       const response = successResponse({
         success: true,
-        token,
         user: {
           id: admin._id,
           email: admin.email,
@@ -693,6 +721,19 @@ export async function POST(request) {
 
       if (actionType === 'PRODUCT_PRICE_CHANGE' || actionType === 'PRODUCT_STOCK_CHANGE' || actionType === 'PRODUCT_UPDATE' || actionType === 'PRODUCT_STATUS_CHANGE') {
         const productsCol = await getCollection('products');
+        const currentProduct = await productsCol.findOne(buildIdQuery(targetId));
+        if (!currentProduct) {
+          return errorResponse('Product no longer exists; approval cannot be applied', 404);
+        }
+
+        const conflicts = findApprovalConflicts(currentProduct, approval);
+        if (conflicts.length > 0) {
+          return errorResponse(
+            `Product changed after this request was submitted. Review the current product before approving again. Conflicting fields: ${conflicts.join(', ')}`,
+            409
+          );
+        }
+
         const updateSet = {
           ...proposedChanges,
           updatedAt: now
@@ -917,6 +958,14 @@ export async function POST(request) {
         return errorResponse('Order not found', 404);
       }
 
+      const transition = validateOrderStatusTransition(order.status || 'pending', status);
+      if (!transition.valid) {
+        return errorResponse(transition.error, 409);
+      }
+      if (status === 'shipped' && !order.shipment?.courier) {
+        return errorResponse('Shipment details must be saved before marking this order as shipped', 400);
+      }
+
       const timeline = Array.isArray(order.timeline) ? order.timeline : [];
       timeline.push({
         status,
@@ -924,10 +973,15 @@ export async function POST(request) {
         message: message || `Status updated to ${status} by ${auth.user.name} (${auth.user.role})`
       });
 
-      await ordersCol.updateOne(
-        { _id: order._id },
+      const updateResult = await ordersCol.updateOne(
+        { _id: order._id, status: order.status || 'pending' },
         { $set: { status, timeline, updatedAt: new Date().toISOString() } }
       );
+      if (updateResult?.matchedCount !== 1) {
+        return errorResponse('Order changed while updating. Refresh and try again.', 409);
+      }
+
+      const updated = await ordersCol.findOne({ _id: order._id });
 
       await logAuditEvent({
         action: 'ORDER_STATUS_UPDATED',
@@ -938,7 +992,50 @@ export async function POST(request) {
         details: { previousStatus: order.status, newStatus: status, message }
       });
 
-      return successResponse({ success: true, message: 'Order status updated' });
+      const notification = await notifyForOrderTransition(updated, status);
+      return successResponse({ success: true, message: 'Order status updated', order: updated, notification });
+    }
+
+    // Save manually booked shipment details. This does not claim a courier API
+    // booking; staff must book the parcel externally first.
+    if (path.startsWith('orders/') && path.endsWith('/shipment')) {
+      const permCheck = await requirePermission(request, 'orders:update_status');
+      if (!permCheck.authorized) return errorResponse('Forbidden: You do not have permission to update shipment details', 403);
+
+      const orderId = path.split('/')[1];
+      const body = await request.json();
+      const validation = validateShipmentDetails(body);
+      if (!validation.valid) return errorResponse('Invalid shipment details', 400, validation.errors);
+
+      const ordersCol = await getCollection('orders');
+      const order = await ordersCol.findOne(buildIdQuery(orderId));
+      if (!order) return errorResponse('Order not found', 404);
+      if (['delivered', 'cancelled', 'returned', 'refunded'].includes(order.status)) {
+        return errorResponse('Shipment details cannot be changed for a completed or closed order', 409);
+      }
+
+      const shipment = {
+        ...validation.value,
+        bookedAt: order.shipment?.bookedAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        bookedBy: { id: auth.user.id, name: auth.user.name, role: auth.user.role },
+      };
+      const result = await ordersCol.updateOne(
+        { _id: order._id },
+        { $set: { shipment, updatedAt: new Date().toISOString() } },
+      );
+      if (result?.matchedCount !== 1) return errorResponse('Shipment details could not be saved', 409);
+
+      const updated = await ordersCol.findOne({ _id: order._id });
+      await logAuditEvent({
+        action: 'ORDER_SHIPMENT_UPDATED',
+        actor: auth.user,
+        targetType: 'order',
+        targetId: order._id,
+        targetName: `Order #${String(order._id).slice(0, 8)}`,
+        details: { courier: shipment.courier, trackingNumber: shipment.trackingNumber },
+      });
+      return successResponse({ success: true, shipment, order: updated });
     }
 
     // 8. Save Settings (Owner & Superadmin only)
@@ -1060,6 +1157,12 @@ export async function PUT(request) {
         return errorResponse('Order not found', 404);
       }
 
+      const transition = validateOrderStatusTransition(order.status || 'pending', status);
+      if (!transition.valid) return errorResponse(transition.error, 409);
+      if (status === 'shipped' && !order.shipment?.courier) {
+        return errorResponse('Shipment details must be saved before marking this order as shipped', 400);
+      }
+
       const timeline = Array.isArray(order.timeline) ? [...order.timeline] : [];
       timeline.push({
         status,
@@ -1067,10 +1170,11 @@ export async function PUT(request) {
         message: message || `Status updated to ${status} by ${auth.user.name}`
       });
 
-      await ordersCol.updateOne(
-        { _id: order._id },
+      const updateResult = await ordersCol.updateOne(
+        { _id: order._id, status: order.status || 'pending' },
         { $set: { status, timeline, updatedAt: new Date().toISOString() } }
       );
+      if (updateResult?.matchedCount !== 1) return errorResponse('Order changed while updating. Refresh and try again.', 409);
 
       await logAuditEvent({
         action: 'ORDER_STATUS_UPDATED',
@@ -1082,7 +1186,8 @@ export async function PUT(request) {
       });
 
       const updated = await ordersCol.findOne({ _id: order._id });
-      return successResponse({ success: true, message: 'Order status updated', order: updated });
+      const notification = await notifyForOrderTransition(updated, status);
+      return successResponse({ success: true, message: 'Order status updated', order: updated, notification });
     }
 
     // 3. Update product (Full edit)
@@ -1115,7 +1220,7 @@ export async function PUT(request) {
       if (requiresPriceApproval || requiresStockApproval || requiresStatusApproval) {
         // Intercept and create an Approval Request
         const approvalsCol = await getCollection('approvals');
-        const proposedChanges = {};
+        const proposedChanges = getSafeProductApprovalChanges(body);
         if (isPriceChanged) proposedChanges.price = parseFloat(body.price);
         if (body.oldPrice !== undefined) proposedChanges.oldPrice = parseFloat(body.oldPrice);
         if (isStockChanged) proposedChanges.stock = parseInt(body.stock, 10);
@@ -1123,6 +1228,7 @@ export async function PUT(request) {
           const nextStatus = body.status || (body.isActive ? 'active' : 'inactive');
           proposedChanges.status = nextStatus;
           proposedChanges.isActive = nextStatus === 'active';
+          proposedChanges.visible = nextStatus === 'active';
         }
 
         let actionType = 'PRODUCT_UPDATE';
@@ -1137,11 +1243,7 @@ export async function PUT(request) {
           targetId: existing._id,
           targetName: existing.name,
           currentData: {
-            price: existing.price,
-            oldPrice: existing.oldPrice,
-            stock: existing.stock,
-            status: existing.status,
-            isActive: existing.isActive
+            ...snapshotApprovalFields(existing, proposedChanges)
           },
           proposedChanges,
           status: 'PENDING',
@@ -1321,6 +1423,12 @@ export async function PATCH(request) {
         return errorResponse('Order not found', 404);
       }
 
+      const patchTransition = validateOrderStatusTransition(order.status || 'pending', status);
+      if (!patchTransition.valid) return errorResponse(patchTransition.error, 409);
+      if (status === 'shipped' && !order.shipment?.courier) {
+        return errorResponse('Shipment details must be saved before marking this order as shipped', 400);
+      }
+
       const timeline = Array.isArray(order.timeline) ? [...order.timeline] : [];
       timeline.push({
         status,
@@ -1328,10 +1436,11 @@ export async function PATCH(request) {
         message: message || `Status updated to ${status} by ${auth.user.name}`
       });
 
-      await ordersCol.updateOne(
-        { _id: order._id },
+      const updateResult = await ordersCol.updateOne(
+        { _id: order._id, status: order.status || 'pending' },
         { $set: { status, timeline, updatedAt: new Date().toISOString() } }
       );
+      if (updateResult?.matchedCount !== 1) return errorResponse('Order changed while updating. Refresh and try again.', 409);
 
       await logAuditEvent({
         action: 'ORDER_STATUS_UPDATED',
@@ -1343,7 +1452,8 @@ export async function PATCH(request) {
       });
 
       const updated = await ordersCol.findOne({ _id: order._id });
-      return successResponse({ success: true, message: 'Order status updated', order: updated });
+      const notification = await notifyForOrderTransition(updated, status);
+      return successResponse({ success: true, message: 'Order status updated', order: updated, notification });
     }
 
     // Review moderation (Approve / Hide): PATCH /api/admin/reviews/:id
@@ -1393,7 +1503,7 @@ export async function PATCH(request) {
 
       if (requiresPriceApproval || requiresStockApproval || requiresStatusApproval) {
         const approvalsCol = await getCollection('approvals');
-        const proposedChanges = {};
+        const proposedChanges = getSafeProductApprovalChanges(body);
 
         if (isPriceChanged) {
           proposedChanges.price = parseFloat(body.price);
@@ -1411,6 +1521,7 @@ export async function PATCH(request) {
           const nextStatus = body.status || (body.isActive ? 'active' : 'inactive');
           proposedChanges.status = nextStatus;
           proposedChanges.isActive = nextStatus === 'active';
+          proposedChanges.visible = nextStatus === 'active';
         }
 
         let actionType = 'PRODUCT_UPDATE';
@@ -1425,11 +1536,7 @@ export async function PATCH(request) {
           targetId: existing._id,
           targetName: existing.name,
           currentData: {
-            price: existing.price,
-            oldPrice: existing.oldPrice,
-            stock: existing.stock,
-            status: existing.status,
-            isActive: existing.isActive
+            ...snapshotApprovalFields(existing, proposedChanges)
           },
           proposedChanges,
           status: 'PENDING',
