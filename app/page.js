@@ -5,6 +5,7 @@ import WhyBurhan from '@/components/home/WhyBurhan';
 import BestSellers from '@/components/home/BestSellers';
 import FeaturedCategories from '@/components/home/FeaturedCategories';
 import WhatsAppCTA from '@/components/home/WhatsAppCTA';
+import CinematicIntro from '@/components/layout/CinematicIntro';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -53,6 +54,16 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950">
+      <CinematicIntro
+        product={flagship ? {
+          name: flagship.name,
+          price: Number(flagship.price),
+          oldPrice: Number(flagship.oldPrice),
+          // Use the existing local product asset so the intro is reliable on
+          // the first frame and does not add another remote image dependency.
+          image: '/images/burhan_pro2_earbuds.jpg',
+        } : undefined}
+      />
       {/* 1. Premium 3D-Style Headphone Hero with Dynamic Flagship Product Data */}
       <Hero flagshipProduct={flagship} databaseUnavailable={databaseError} />
 

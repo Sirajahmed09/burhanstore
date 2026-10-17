@@ -2,7 +2,6 @@ import './globals.css'
 import { Providers } from './providers'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import LoadingScreen from '@/components/layout/LoadingScreen'
 import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
 import { OrganizationSchema, WebsiteSchema } from '@/components/seo/StructuredData'
 
@@ -77,7 +76,6 @@ export default function RootLayout({ children }) {
       <body>
         <GoogleAnalytics />
         <Providers>
-          <LoadingScreen />
           <Navbar />
           <main>{children}</main>
           <Footer />
