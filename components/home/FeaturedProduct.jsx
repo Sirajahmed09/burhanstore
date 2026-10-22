@@ -4,15 +4,34 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Check, ShoppingBag, ShieldCheck, Zap, BatteryCharging, Radio, Volume2, Mic } from 'lucide-react';
+import { ArrowRight, Check, ShoppingBag, ShieldCheck } from 'lucide-react';
 import { useCart } from '@/lib/contexts/CartContext';
 import { trackAddToCart as gaAddToCart } from '@/lib/analytics/gtag';
 
+const DEFAULT_FLAGSHIP = {
+  _id: 'burhan-pro-2-flagship',
+  name: 'BURHAN Pro 2',
+  slug: 'burhan-pro-2',
+  category: 'Wireless Earbuds',
+  price: 7499,
+  oldPrice: 9999,
+  discount: 25,
+  images: [
+    '/images/burhan_pro2_earbuds.jpg',
+    '/images/burhan_audio_flagship.jpg'
+  ],
+  thumbnail: '/images/burhan_pro2_earbuds.jpg',
+  stock: 50,
+  rating: 5,
+  reviewCount: 38,
+  isFeatured: true
+};
+
 export default function FeaturedProduct({ initialProduct = null }) {
   const router = useRouter();
-  const { addToCart } = useCart();
-  const [product, setProduct] = useState(initialProduct);
-  const [loading, setLoading] = useState(!initialProduct);
+  const { cart, addToCart } = useCart();
+  const [product, setProduct] = useState(initialProduct || DEFAULT_FLAGSHIP);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!initialProduct) {
@@ -21,7 +40,7 @@ export default function FeaturedProduct({ initialProduct = null }) {
         .then(data => {
           const prods = data?.products || [];
           const feat = prods[0] || null;
-          setProduct(feat);
+          if (feat) setProduct(feat);
           setLoading(false);
         })
         .catch(err => {
@@ -36,16 +55,16 @@ export default function FeaturedProduct({ initialProduct = null }) {
 
   if (loading) {
     return (
-      <section className="py-16 md:py-24 bg-white border-b border-slate-200/80">
+      <section className="py-16 md:py-24 bg-[#F4F2ED] border-b border-[#E2DDD5]">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="grid md:grid-cols-2 gap-8 items-center animate-pulse">
-            <div className="aspect-square bg-slate-100 rounded-3xl" />
+            <div className="aspect-square bg-[#EAE6DF] rounded-3xl" />
             <div className="space-y-4">
-              <div className="h-4 bg-slate-100 rounded w-28" />
-              <div className="h-10 bg-slate-100 rounded w-3/4" />
-              <div className="h-6 bg-slate-100 rounded w-1/3" />
-              <div className="h-20 bg-slate-100 rounded" />
-              <div className="h-12 bg-slate-100 rounded w-1/2" />
+              <div className="h-4 bg-[#EAE6DF] rounded w-28" />
+              <div className="h-10 bg-[#EAE6DF] rounded w-3/4" />
+              <div className="h-6 bg-[#EAE6DF] rounded w-1/3" />
+              <div className="h-20 bg-[#EAE6DF] rounded" />
+              <div className="h-12 bg-[#EAE6DF] rounded w-1/2" />
             </div>
           </div>
         </div>
@@ -53,21 +72,23 @@ export default function FeaturedProduct({ initialProduct = null }) {
     );
   }
 
-  if (!product) return null;
-
-  const imageSrc = product.thumbnail || product.images?.[0] || '/images/burhan_pro2_earbuds.jpg';
-  const hasDiscount = product.oldPrice && product.oldPrice > product.price;
+  const displayProduct = product || DEFAULT_FLAGSHIP;
+  const imageSrc = displayProduct.thumbnail || displayProduct.images?.[0] || '/images/burhan_pro2_earbuds.jpg';
+  const hasDiscount = displayProduct.oldPrice && displayProduct.oldPrice > displayProduct.price;
   const discountPercent = hasDiscount
-    ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
+    ? Math.round(((displayProduct.oldPrice - displayProduct.price) / displayProduct.oldPrice) * 100)
     : 0;
 
-  const isOutOfStock = (Number(product.stock) || 0) <= 0;
+  const isOutOfStock = (Number(displayProduct.stock) || 0) <= 0;
 
   const handleBuyNow = () => {
     if (isOutOfStock) return;
-    addToCart(product, 1);
-    gaAddToCart(product, 1);
-    router.push('/cart');
+    const alreadyInCart = cart && cart.some(item => item._id === displayProduct._id);
+    if (!alreadyInCart) {
+      addToCart(displayProduct, 1);
+      gaAddToCart(displayProduct, 1);
+    }
+    router.push('/checkout');
   };
 
   const keyBenefits = [
@@ -80,39 +101,39 @@ export default function FeaturedProduct({ initialProduct = null }) {
   ];
 
   return (
-    <section className="py-16 md:py-24 bg-white border-b border-slate-200/80">
+    <section className="py-16 md:py-24 bg-[#F4F2ED] border-b border-[#E2DDD5]">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Section Header */}
         <div className="text-center md:text-left mb-8 md:mb-12">
-          <div className="inline-flex items-center space-x-2 text-cyan-800 text-xs font-bold uppercase tracking-wider mb-2 px-3 py-1 bg-cyan-50 border border-cyan-200/70 rounded-md">
-            <span>Flagship Hardware</span>
+          <div className="inline-flex items-center space-x-2 text-[#8E7B56] text-xs font-bold uppercase tracking-wider mb-2 px-3 py-1 bg-white border border-[#E2DDD5] rounded-full">
+            <span>Flagship Release</span>
             <span aria-hidden="true">·</span>
             <span>Wireless Audio</span>
           </div>
-          <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-slate-950 tracking-tight">
-            Meet the {product.name}
+          <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#171A20] tracking-tight">
+            Meet the {displayProduct.name}
           </h2>
-          <p className="text-slate-600 text-base sm:text-lg max-w-2xl mt-1 leading-relaxed">
+          <p className="text-[#5A606A] text-base sm:text-lg max-w-2xl mt-1 leading-relaxed">
             Balanced acoustic performance, Active Noise Cancellation, clear voice calls and low-latency audio — engineered for music, mobile gaming, and daily travel across Pakistan.
           </p>
         </div>
 
         {/* Featured Card */}
-        <div className="bg-slate-50 border border-slate-200/80 rounded-3xl p-6 sm:p-8 md:p-12 shadow-xs">
+        <div className="bg-white border border-[#E2DDD5] rounded-3xl p-6 sm:p-8 md:p-12 shadow-sm">
           <div className="grid md:grid-cols-12 gap-8 lg:gap-12 items-center">
             {/* Product Image Column */}
             <div className="md:col-span-6 lg:col-span-5">
-              <Link href={`/shop/${product.slug}`} className="block group">
-                <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-white shadow-md border border-slate-200/80 p-3 sm:p-4">
+              <Link href={`/shop/${displayProduct.slug}`} className="block group">
+                <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[#F4F2ED] shadow-sm border border-[#E2DDD5] p-3 sm:p-4">
                   <Image
                     src={imageSrc}
-                    alt={`${product.name} - BURHAN STORE`}
+                    alt={`${displayProduct.name} - BURHAN STORE`}
                     fill
                     referrerPolicy="no-referrer"
                     className="object-cover rounded-xl group-hover:scale-105 transition-transform duration-500"
                   />
                   {discountPercent > 0 && (
-                    <div className="absolute top-4 left-4 bg-red-600 text-white text-xs font-extrabold px-3 py-1 rounded-md uppercase tracking-wider shadow-2xs">
+                    <div className="absolute top-4 left-4 bg-[#B9A47C] text-[#0B0D10] text-xs font-extrabold px-3 py-1 rounded-md uppercase tracking-wider shadow-sm">
                       {discountPercent}% OFF
                     </div>
                   )}
@@ -123,31 +144,31 @@ export default function FeaturedProduct({ initialProduct = null }) {
             {/* Product Details Column */}
             <div className="md:col-span-6 lg:col-span-7 flex flex-col justify-center">
               <div className="flex items-center space-x-2 mb-2 text-xs">
-                <span className="font-bold text-cyan-800 bg-cyan-50 border border-cyan-200/60 px-2 py-0.5 rounded">
+                <span className="font-bold text-[#8E7B56] bg-[#F4F2ED] border border-[#E2DDD5] px-2.5 py-0.5 rounded-full">
                   Official Store Device
                 </span>
-                <span className="text-slate-400">·</span>
-                <span className="text-slate-600 font-medium">Verified Authenticity</span>
+                <span className="text-[#A09D96]">·</span>
+                <span className="text-[#5A606A] font-medium">Verified Authenticity</span>
               </div>
 
-              <div className="text-xs uppercase tracking-wider font-bold text-cyan-700 mb-1">
-                {product.category || 'Wireless Earbuds'}
+              <div className="text-xs uppercase tracking-wider font-bold text-[#8E7B56] mb-1">
+                {displayProduct.category || 'Wireless Earbuds'}
               </div>
 
-              <h3 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-950 mb-3 tracking-tight">
-                <Link href={`/shop/${product.slug}`} className="hover:text-cyan-700 transition-colors">
-                  {product.name}
+              <h3 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#171A20] mb-3 tracking-tight">
+                <Link href={`/shop/${displayProduct.slug}`} className="hover:text-[#B9A47C] transition-colors">
+                  {displayProduct.name}
                 </Link>
               </h3>
 
               {/* Price Row */}
               <div className="flex items-baseline space-x-3 mb-4">
-                <span className="text-3xl sm:text-4xl font-extrabold text-slate-950 tracking-tight">
-                  PKR {Number(product.price).toLocaleString()}
+                <span className="text-3xl sm:text-4xl font-extrabold text-[#171A20] tracking-tight">
+                  PKR {Number(displayProduct.price).toLocaleString()}
                 </span>
                 {hasDiscount && (
-                  <span className="text-lg text-slate-400 line-through">
-                    PKR {Number(product.oldPrice).toLocaleString()}
+                  <span className="text-lg text-[#A09D96] line-through">
+                    PKR {Number(displayProduct.oldPrice).toLocaleString()}
                   </span>
                 )}
                 {isOutOfStock ? (
@@ -155,21 +176,21 @@ export default function FeaturedProduct({ initialProduct = null }) {
                     Out of Stock
                   </span>
                 ) : (
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    In Stock ({product.stock} units)
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    In Stock ({displayProduct.stock} units)
                   </span>
                 )}
               </div>
 
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
-                {product.shortDescription || product.description || 'Dynamic acoustic drivers, Active Noise Cancellation, and extended playtime for your everyday digital audio experience.'}
+              <p className="text-[#5A606A] text-sm sm:text-base leading-relaxed mb-6">
+                {displayProduct.shortDescription || displayProduct.description || 'Dynamic acoustic drivers, Active Noise Cancellation, and extended playtime for your everyday digital audio experience.'}
               </p>
 
               {/* Key Benefits Grid */}
               <div className="grid sm:grid-cols-2 gap-2.5 mb-8">
                 {keyBenefits.map((item, idx) => (
-                  <div key={idx} className="flex items-center space-x-2 text-xs sm:text-sm text-slate-800">
-                    <Check className="w-4 h-4 text-cyan-600 shrink-0" />
+                  <div key={idx} className="flex items-center space-x-2 text-xs sm:text-sm text-[#171A20]">
+                    <Check className="w-4 h-4 text-[#8E7B56] shrink-0" />
                     <span className="font-medium">{item.text}</span>
                   </div>
                 ))}
@@ -181,32 +202,24 @@ export default function FeaturedProduct({ initialProduct = null }) {
                   type="button"
                   onClick={handleBuyNow}
                   disabled={isOutOfStock}
-                  className={`px-8 py-3.5 rounded-xl text-base font-bold transition-all flex items-center justify-center space-x-2 shadow-sm ${
+                  className={`px-8 py-3.5 rounded-xl text-base font-bold transition-all flex items-center justify-center space-x-2 shadow-xs ${
                     isOutOfStock
-                      ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                      : 'bg-cyan-500 hover:bg-cyan-600 active:scale-98 text-slate-950 shadow-cyan-500/10'
+                      ? 'bg-[#EAE6DF] text-[#A09D96] cursor-not-allowed'
+                      : 'bg-[#171A20] hover:bg-[#0B0D10] active:scale-98 text-white'
                   }`}
                 >
-                  <ShoppingBag className="w-4 h-4" />
+                  <ShoppingBag className="w-4 h-4 text-[#B9A47C]" />
                   <span>
-                    {isOutOfStock ? 'Sold Out' : `Buy Now — PKR ${Number(product.price).toLocaleString()}`}
+                    {isOutOfStock ? 'Sold Out' : `Buy Now — PKR ${Number(displayProduct.price).toLocaleString()}`}
                   </span>
                 </button>
                 <Link
-                  href={`/shop/${product.slug}`}
-                  className="bg-white hover:bg-slate-100 active:scale-98 text-slate-800 border border-slate-300 font-semibold px-6 py-3.5 rounded-xl text-base transition-colors flex items-center justify-center space-x-2 shadow-2xs"
+                  href={`/shop/${displayProduct.slug}`}
+                  className="bg-white hover:bg-[#F4F2ED] active:scale-98 text-[#171A20] border border-[#D6D1C7] font-semibold px-6 py-3.5 rounded-xl text-base transition-colors flex items-center justify-center space-x-2 shadow-2xs"
                 >
                   <span>Full Specifications</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 text-[#5A606A]" />
                 </Link>
-              </div>
-
-              {/* Micro-signals */}
-              <div className="mt-5 pt-4 border-t border-slate-200/60 text-xs text-slate-500 flex flex-wrap items-center gap-4">
-                <span>✓ Flat Rs. 200 Cash on Delivery</span>
-                <span>✓ 6-Month Store Replacement Warranty*</span>
-                <span>✓ Open Parcel Allowed</span>
-                <span>✓ 1-3 Business Days Delivery</span>
               </div>
             </div>
           </div>

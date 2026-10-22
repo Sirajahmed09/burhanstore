@@ -165,24 +165,24 @@ export default function CheckoutPage() {
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-50 pt-24 pb-16 flex items-center justify-center text-slate-900">
+      <div className="min-h-screen bg-[#F4F2ED] pt-24 pb-16 flex items-center justify-center text-[#171A20]">
         <div className="container mx-auto px-4 max-w-md text-center">
-          <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xs">
-            <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-4">
-              <ShoppingBag className="w-8 h-8" />
+          <div className="bg-white rounded-3xl p-8 border border-[#E2DDD5] shadow-sm">
+            <div className="w-16 h-16 rounded-full bg-[#F4F2ED] text-[#5A606A] flex items-center justify-center mx-auto mb-4">
+              <ShoppingBag className="w-8 h-8 text-[#8E7B56]" />
             </div>
-            <h1 className="font-heading text-2xl font-extrabold text-slate-950 mb-2">
+            <h1 className="font-heading text-2xl font-extrabold text-[#171A20] mb-2">
               Your cart is empty
             </h1>
-            <p className="text-slate-600 text-sm mb-6">
+            <p className="text-[#5A606A] text-sm mb-6">
               Add items before checking out.
             </p>
             <Link
               href="/shop"
-              className="inline-flex items-center space-x-2 bg-slate-900 text-white font-bold px-6 py-3 rounded-xl text-sm hover:bg-cyan-600 transition-colors"
+              className="inline-flex items-center space-x-2 bg-[#171A20] text-white font-bold px-6 py-3 rounded-xl text-sm hover:bg-[#0B0D10] transition-colors"
             >
               <span>Continue Shopping</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 text-[#B9A47C]" />
             </Link>
           </div>
         </div>
@@ -191,17 +191,17 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20 md:pt-24 pb-20 text-slate-900">
+    <div className="min-h-screen bg-[#F4F2ED] pt-20 md:pt-24 pb-20 text-[#171A20]">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Page Header */}
-        <div className="py-6 border-b border-slate-200/80 mb-8">
-          <div className="text-xs font-bold uppercase tracking-wider text-cyan-700 mb-1">
-            Fast & Safe Checkout
+        <div className="py-6 border-b border-[#E2DDD5] mb-8">
+          <div className="inline-flex items-center space-x-2 text-[#8E7B56] text-xs font-bold uppercase tracking-wider mb-2 px-3 py-1 bg-white border border-[#E2DDD5] rounded-full">
+            <span>Fast & Safe Checkout</span>
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-slate-950 tracking-tight">
+          <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#171A20] tracking-tight">
             Checkout
           </h1>
-          <p className="text-slate-600 text-sm mt-1">
+          <p className="text-[#5A606A] text-sm mt-1">
             Complete your order with cash on delivery across Pakistan
           </p>
         </div>

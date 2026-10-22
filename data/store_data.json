@@ -136,7 +136,7 @@
         ]
       },
       "createdAt": "2026-09-29T23:58:02.303Z",
-      "updatedAt": "2026-10-09T04:11:28.814Z",
+      "updatedAt": "2026-10-09T04:38:37.987Z",
       "status": "active",
       "isActive": true,
       "badge": "Premium Audio",
@@ -234,7 +234,7 @@
       "createdAt": "2026-09-10T19:40:07.655Z",
       "status": "inactive",
       "isActive": false,
-      "updatedAt": "2026-10-09T04:11:28.808Z",
+      "updatedAt": "2026-10-09T04:38:37.981Z",
       "visible": false
     },
     {
@@ -2580,6 +2580,160 @@
       "timestamp": "2026-10-06T01:39:30.407Z",
       "createdAt": "2026-10-06T01:39:30.407Z",
       "updatedAt": "2026-10-06T01:39:30.407Z"
+    },
+    {
+      "_id": "172dd0d8-02e7-4523-9982-4f840ff2d22c",
+      "action": "ADMIN_LOGIN",
+      "actor": {
+        "id": "admin-superadmin",
+        "email": "admin@burhan.com",
+        "name": "Super Admin",
+        "role": "owner"
+      },
+      "targetType": "employee",
+      "targetId": "admin-superadmin",
+      "targetName": "Super Admin",
+      "details": {
+        "email": "admin@burhan.com",
+        "role": "owner"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-21T10:31:35.738Z",
+      "createdAt": "2026-10-21T10:31:35.738Z",
+      "updatedAt": "2026-10-21T10:31:35.738Z"
+    },
+    {
+      "_id": "62326c1e-8452-4e3f-9bab-672635f832d5",
+      "action": "ADMIN_LOGIN",
+      "actor": {
+        "id": "admin-owner-siraj",
+        "email": "siraj@mainadmin",
+        "name": "Siraj Ahmed (Store Owner)",
+        "role": "owner"
+      },
+      "targetType": "employee",
+      "targetId": "admin-owner-siraj",
+      "targetName": "Siraj Ahmed (Store Owner)",
+      "details": {
+        "email": "siraj@mainadmin",
+        "role": "owner"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-21T10:31:39.486Z",
+      "createdAt": "2026-10-21T10:31:39.486Z",
+      "updatedAt": "2026-10-21T10:31:39.486Z"
+    },
+    {
+      "_id": "6c26cbbc-54f1-4d1b-a7b2-65c91567e236",
+      "action": "ADMIN_LOGIN",
+      "actor": {
+        "id": "admin-superadmin",
+        "email": "admin@burhan.com",
+        "name": "Super Admin",
+        "role": "owner"
+      },
+      "targetType": "employee",
+      "targetId": "admin-superadmin",
+      "targetName": "Super Admin",
+      "details": {
+        "email": "admin@burhan.com",
+        "role": "owner"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-21T10:33:11.498Z",
+      "createdAt": "2026-10-21T10:33:11.498Z",
+      "updatedAt": "2026-10-21T10:33:11.498Z"
+    },
+    {
+      "_id": "cbd58f44-62f3-4b91-96e5-6782307b8641",
+      "action": "ADMIN_LOGIN",
+      "actor": {
+        "id": "admin-superadmin",
+        "email": "admin@burhan.com",
+        "name": "Super Admin",
+        "role": "owner"
+      },
+      "targetType": "employee",
+      "targetId": "admin-superadmin",
+      "targetName": "Super Admin",
+      "details": {
+        "email": "admin@burhan.com",
+        "role": "owner"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-21T10:33:22.321Z",
+      "createdAt": "2026-10-21T10:33:22.321Z",
+      "updatedAt": "2026-10-21T10:33:22.321Z"
+    },
+    {
+      "_id": "653851f1-b96a-49b4-b5e9-d486bc73a59d",
+      "action": "ADMIN_LOGIN",
+      "actor": {
+        "id": "admin-superadmin",
+        "email": "admin@burhan.com",
+        "name": "Super Admin",
+        "role": "owner"
+      },
+      "targetType": "employee",
+      "targetId": "admin-superadmin",
+      "targetName": "Super Admin",
+      "details": {
+        "email": "admin@burhan.com",
+        "role": "owner"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-21T10:33:28.458Z",
+      "createdAt": "2026-10-21T10:33:28.458Z",
+      "updatedAt": "2026-10-21T10:33:28.458Z"
+    },
+    {
+      "_id": "968b3b5f-9cbf-47aa-a8ee-5980e9656dfa",
+      "action": "ADMIN_LOGIN",
+      "actor": {
+        "id": "admin-superadmin",
+        "email": "admin@burhan.com",
+        "name": "Super Admin",
+        "role": "owner"
+      },
+      "targetType": "employee",
+      "targetId": "admin-superadmin",
+      "targetName": "Super Admin",
+      "details": {
+        "email": "admin@burhan.com",
+        "role": "owner"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-21T10:33:35.980Z",
+      "createdAt": "2026-10-21T10:33:35.980Z",
+      "updatedAt": "2026-10-21T10:33:35.980Z"
+    },
+    {
+      "_id": "a9ffc3de-e10e-414b-9e8a-a340ca633c88",
+      "action": "ADMIN_LOGIN",
+      "actor": {
+        "id": "admin-superadmin",
+        "email": "admin@burhan.com",
+        "name": "Super Admin",
+        "role": "owner"
+      },
+      "targetType": "employee",
+      "targetId": "admin-superadmin",
+      "targetName": "Super Admin",
+      "details": {
+        "email": "admin@burhan.com",
+        "role": "owner"
+      },
+      "status": "SUCCESS",
+      "ipAddress": "internal",
+      "timestamp": "2026-10-22T21:35:22.099Z",
+      "createdAt": "2026-10-22T21:35:22.099Z",
+      "updatedAt": "2026-10-22T21:35:22.099Z"
     }
   ],
   "settings": [
@@ -2593,7 +2747,7 @@
       "currencySymbol": "Rs.",
       "freeShippingThreshold": 5000,
       "shippingFee": 200,
-      "updatedAt": "2026-10-09T04:11:28.820Z",
+      "updatedAt": "2026-10-09T04:38:37.993Z",
       "businessName": "Burhan"
     },
     {

@@ -82,7 +82,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
   // FAQ Accordion State (all open by default or index 0 open)
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
 
-  const { addToCart } = useCart();
+  const { cart, addToCart, updateQuantity } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
 
   // Load related products & real reviews
@@ -126,9 +126,14 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
 
   const handleBuyNow = () => {
     if (product && product.stock > 0) {
-      addToCart(product, quantity);
-      gaAddToCart(product, quantity);
-      router.push('/cart');
+      const existing = cart && cart.find(item => item._id === product._id);
+      if (!existing) {
+        addToCart(product, quantity);
+        gaAddToCart(product, quantity);
+      } else if (existing.quantity !== quantity) {
+        updateQuantity(product._id, quantity);
+      }
+      router.push('/checkout');
     }
   };
 

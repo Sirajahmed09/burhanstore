@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Search, ShoppingBag, Heart, Menu, X, ShieldCheck, Truck, Sparkles } from 'lucide-react';
+import { Search, ShoppingBag, Heart, Menu, X, Truck, ShieldCheck } from 'lucide-react';
 import { useCart } from '@/lib/contexts/CartContext';
 import { useWishlist } from '@/lib/contexts/WishlistContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -46,7 +46,7 @@ export default function Navbar() {
 
   const navLinks = [
     { name: 'Home', href: '/' },
-    { name: 'Products', href: '/shop' },
+    { name: 'Shop', href: '/shop' },
     { name: 'Track Order', href: '/track' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
@@ -54,44 +54,44 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-200">
-      {/* Top Announcement Bar */}
-      <div className="bg-slate-950 text-white text-[11px] sm:text-xs py-1.5 px-4 text-center font-medium flex items-center justify-center space-x-2">
-        <span className="flex items-center space-x-1 text-cyan-400">
+      {/* Top Announcement Bar - Quiet Luxury Obsidian */}
+      <div className="bg-[#0B0D10] text-white text-[11px] sm:text-xs py-1.5 px-4 text-center font-medium flex items-center justify-center space-x-2 border-b border-white/5">
+        <span className="flex items-center space-x-1.5 text-[#B9A47C]">
           <Truck className="w-3.5 h-3.5" />
           <span>Nationwide Cash on Delivery Across Pakistan</span>
         </span>
-        <span className="hidden sm:inline text-slate-500">·</span>
-        <span className="hidden sm:inline text-slate-300">
+        <span className="hidden sm:inline text-white/30">·</span>
+        <span className="hidden sm:inline text-white/80">
           6-Month Replacement Warranty*
         </span>
-        <span className="hidden md:inline text-slate-500">·</span>
-        <span className="hidden md:inline text-emerald-400 font-semibold">
+        <span className="hidden md:inline text-white/30">·</span>
+        <span className="hidden md:inline text-emerald-400/90 font-medium">
           Open Parcel Verification
         </span>
       </div>
 
       {/* Main Navigation Bar */}
       <div
-        className={`bg-white/95 backdrop-blur-md border-b transition-all duration-200 ${
+        className={`bg-[#F4F2ED]/95 backdrop-blur-md border-b transition-all duration-200 ${
           isScrolled
-            ? 'border-slate-200/90 shadow-xs py-0'
-            : 'border-slate-200/60 py-0.5'
+            ? 'border-[#E2DDD5] shadow-sm py-0'
+            : 'border-[#EAE6DF] py-0.5'
         }`}
       >
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="flex items-center justify-between h-14 sm:h-16 md:h-18">
-            {/* Brand Logo */}
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            {/* Brand Logo - Quiet Luxury Wordmark */}
             <Link href="/" className="flex items-center space-x-2.5 group">
-              <span className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 group-hover:text-cyan-700 transition-colors">
+              <span className="font-heading text-xl sm:text-2xl font-black tracking-tight text-[#171A20] group-hover:text-[#B9A47C] transition-colors">
                 BURHAN
               </span>
-              <span className="hidden lg:inline-block text-[11px] font-semibold text-slate-500 border-l border-slate-200 pl-2.5 uppercase tracking-wider">
-                Official Store
+              <span className="hidden sm:inline-block text-[10px] font-semibold text-[#5A606A] border-l border-[#D6D1C7] pl-2 uppercase tracking-[0.2em]">
+                Store
               </span>
             </Link>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center space-x-1 lg:space-x-1.5" aria-label="Main Navigation">
+            <nav className="hidden md:flex items-center space-x-1 lg:space-x-2" aria-label="Main Navigation">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
 
@@ -99,10 +99,10 @@ export default function Navbar() {
                   <Link
                     key={link.name}
                     href={link.href}
-                    className={`px-3 py-1.5 rounded-lg text-xs lg:text-sm font-bold transition-colors ${
+                    className={`px-3 py-1.5 rounded-lg text-xs lg:text-sm font-semibold transition-colors ${
                       isActive
-                        ? 'text-cyan-700 bg-cyan-50'
-                        : 'text-slate-700 hover:text-slate-950 hover:bg-slate-50'
+                        ? 'text-[#171A20] bg-white border border-[#E2DDD5] shadow-2xs'
+                        : 'text-[#5A606A] hover:text-[#171A20] hover:bg-white/60'
                     }`}
                   >
                     {link.name}
@@ -112,25 +112,26 @@ export default function Navbar() {
             </nav>
 
             {/* Right Action Icons */}
-            <div className="flex items-center space-x-1 sm:space-x-2">
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
               {/* Search Toggle Button */}
               <button
+                type="button"
                 onClick={() => setSearchOpen(!searchOpen)}
-                className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-slate-700 hover:text-slate-950 hover:bg-slate-100 rounded-full transition-colors"
+                className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-[#171A20] hover:bg-white/80 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#B9A47C]"
                 aria-label="Search products"
               >
-                <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Search className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
               </button>
 
               {/* Wishlist Button */}
               <Link
                 href="/wishlist"
-                className="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-slate-700 hover:text-slate-950 hover:bg-slate-100 rounded-full transition-colors"
+                className="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-[#171A20] hover:bg-white/80 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#B9A47C]"
                 aria-label={`Wishlist with ${wishlist.length} items`}
               >
-                <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Heart className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
                 {wishlist.length > 0 && (
-                  <span className="absolute top-1 right-1 bg-red-600 text-white text-[9px] font-extrabold w-4 h-4 flex items-center justify-center rounded-full">
+                  <span className="absolute top-1 right-1 bg-[#171A20] text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
                     {wishlist.length}
                   </span>
                 )}
@@ -139,13 +140,13 @@ export default function Navbar() {
               {/* Cart Button */}
               <Link
                 href="/cart"
-                className="relative flex items-center space-x-1.5 sm:space-x-2 bg-slate-950 text-white hover:bg-cyan-600 transition-colors px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-2xs"
+                className="relative flex items-center space-x-1.5 sm:space-x-2 bg-[#171A20] text-white hover:bg-[#0B0D10] transition-colors px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-xs focus:outline-none focus:ring-2 focus:ring-[#B9A47C]"
                 aria-label={`Shopping cart with ${getCartCount()} items`}
               >
-                <ShoppingBag className="w-4 h-4" />
+                <ShoppingBag className="w-4 h-4 text-[#B9A47C]" />
                 <span className="hidden sm:inline">Cart</span>
                 {getCartCount() > 0 && (
-                  <span className="bg-cyan-400 text-slate-950 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-4 text-center leading-none">
+                  <span className="bg-[#B9A47C] text-[#0B0D10] text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-4 text-center leading-none">
                     {getCartCount()}
                   </span>
                 )}
@@ -153,8 +154,9 @@ export default function Navbar() {
 
               {/* Mobile Hamburger Menu Button */}
               <button
+                type="button"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden w-9 h-9 flex items-center justify-center text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                className="md:hidden w-9 h-9 flex items-center justify-center text-[#171A20] hover:bg-white/80 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#B9A47C]"
                 aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={isMobileMenuOpen}
               >
@@ -175,68 +177,55 @@ export default function Navbar() {
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="overflow-hidden border-t border-slate-100"
+                className="overflow-hidden border-t border-[#E2DDD5]"
               >
                 <form onSubmit={handleSearchSubmit} className="py-3">
                   <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                     <input
-                      type="search"
+                      type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search BURHAN Pro 2, wireless earbuds, accessories..."
-                      className="w-full pl-10 pr-24 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:bg-white transition-all"
+                      placeholder="Search audio gear, wireless earbuds, accessories..."
+                      className="w-full bg-white border border-[#D6D1C7] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#171A20] placeholder-[#5A606A] focus:outline-none focus:ring-2 focus:ring-[#B9A47C]"
                       autoFocus
                     />
-                    <button
-                      type="submit"
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-cyan-600 transition-colors"
-                    >
-                      Search
-                    </button>
+                    <Search className="absolute left-3.5 top-3 w-4 h-4 text-[#5A606A]" />
                   </div>
                 </form>
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Mobile Drawer Navigation */}
-          <AnimatePresence>
-            {isMobileMenuOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                className="md:hidden overflow-hidden border-t border-slate-100"
-              >
-                <div className="py-3 space-y-1">
-                  {navLinks.map((link) => {
-                    const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
-                    return (
-                      <Link
-                        key={link.name}
-                        href={link.href}
-                        className={`block px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
-                          isActive
-                            ? 'text-cyan-700 bg-cyan-50'
-                            : 'text-slate-800 hover:bg-slate-50'
-                        }`}
-                      >
-                        {link.name}
-                      </Link>
-                    );
-                  })}
-
-                  <div className="pt-3 border-t border-slate-100 px-4 text-xs text-slate-500 flex flex-col gap-1">
-                    <span className="font-semibold text-slate-700">Fast Nationwide Cash on Delivery</span>
-                    <span>Direct WhatsApp: 0315-0693148</span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden border-t border-[#E2DDD5] bg-[#F4F2ED] px-4 py-4 space-y-1 shadow-lg"
+            >
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className={`block px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                      isActive
+                        ? 'text-[#171A20] bg-white border border-[#E2DDD5]'
+                        : 'text-[#5A606A] hover:text-[#171A20] hover:bg-white/60'
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </header>
   );

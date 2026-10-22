@@ -31,6 +31,25 @@ module.exports = {
             success: '#16A34A',
             warning: '#F59E0B',
           },
+          // Quiet Luxury Tech Tokens
+          'obsidian': '#0B0D10',
+          'graphite': {
+            DEFAULT: '#171A20',
+            light: '#232730',
+            border: '#2A2F3A',
+            muted: '#5A606A',
+          },
+          'porcelain': {
+            DEFAULT: '#F4F2ED',
+            dark: '#EAE6DF',
+            border: '#E2DDD5',
+          },
+          'champagne': {
+            DEFAULT: '#B9A47C',
+            light: '#D4C4A3',
+            dark: '#8E7B56',
+            subtle: '#B9A47C1F',
+          },
           // shadcn colors
           border: 'hsl(var(--border))',
           input: 'hsl(var(--input))',
