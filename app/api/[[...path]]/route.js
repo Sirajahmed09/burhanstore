@@ -3,6 +3,7 @@ import { getCollection, getDatabaseStatus, buildIdQuery } from '@/lib/db/mongodb
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { notifyOrderCustomer } from '@/lib/notifications/orderNotifications';
+import { areOrdersPayloadCompatible } from '@/lib/orders/idempotency';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -574,12 +575,27 @@ export async function POST(request) {
         paymentMethod: (body.paymentMethod === 'card' ? 'card' : 'cod'),
         status: 'pending',
         notes: body.notes ? String(body.notes).trim() : '',
+        clientReferenceId: body.clientReferenceId ? String(body.clientReferenceId).trim() : null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         timeline: [
           { status: 'pending', timestamp: new Date().toISOString(), message: 'Order placed successfully by customer via website' }
         ]
       };
+
+      // Idempotency: If client provides a clientReferenceId, prevent duplicate orders on network retry
+      if (order.clientReferenceId) {
+        const existingOrder = await ordersCol.findOne({ clientReferenceId: order.clientReferenceId });
+        if (existingOrder) {
+          if (!areOrdersPayloadCompatible(existingOrder, order)) {
+            return errorResponse('This checkout reference was already processed with different order details.', 409);
+          }
+          return NextResponse.json(
+            { order: existingOrder, success: true, notification: { ok: true, status: 'already_processed', dedupeKey: order.clientReferenceId } },
+            { status: 200, headers: NO_CACHE_HEADERS }
+          );
+        }
+      }
 
       // Reserve inventory atomically before creating the order. The stock predicate
       // prevents two concurrent checkouts from reserving the same final units.
@@ -595,17 +611,69 @@ export async function POST(request) {
           }
           reservedItems.push(item);
         }
-
-      await ordersCol.insertOne(order);
-
-      // Notify only after the order and inventory reservation are persisted.
-      // A Resend outage is recorded/logged but never invalidates the order.
-      const notification = await notifyOrderCustomer(order, 'order_confirmation');
       } catch (inventoryError) {
         for (const item of reservedItems) {
           await productsCol.updateOne(buildIdQuery(item.productId), { $inc: { stock: item.quantity } });
         }
         return errorResponse(inventoryError.message || 'Unable to reserve inventory. Please try again.', 409);
+      }
+
+      // Persist the order after inventory reservation succeeds
+      try {
+        await ordersCol.insertOne(order);
+      } catch (insertError) {
+        console.error('[Order Creation] Database insert error:', insertError?.message || insertError);
+
+        // Ambiguous write handling: Verify if the order actually persisted despite an error
+        let persistedOrder = null;
+        if (order.clientReferenceId) {
+          try {
+            persistedOrder = await ordersCol.findOne({ clientReferenceId: order.clientReferenceId });
+          } catch (findErr) {
+            console.error('[Order Creation] Could not verify order persistence after insert error:', findErr);
+          }
+        }
+
+        if (persistedOrder) {
+          const isDuplicateKey = insertError.code === 11000 ||
+            String(insertError.message || '').includes('E11000') ||
+            String(insertError.message || '').includes('duplicate key');
+
+          if (isDuplicateKey) {
+            // Rollback redundant reservation from this second concurrent attempt
+            for (const item of reservedItems) {
+              await productsCol.updateOne(buildIdQuery(item.productId), { $inc: { stock: item.quantity } });
+            }
+          }
+          // Note: If NOT duplicate key (e.g. socket timeout on first write), the order was persisted with
+          // this attempt's reserved stock; do NOT restore stock to prevent inventory leakage.
+
+          if (areOrdersPayloadCompatible(persistedOrder, order)) {
+            return NextResponse.json(
+              { order: persistedOrder, success: true, notification: { ok: true, status: 'already_processed', dedupeKey: order.clientReferenceId } },
+              { status: 200, headers: NO_CACHE_HEADERS }
+            );
+          } else {
+            return errorResponse('This checkout reference was already processed with different order details.', 409);
+          }
+        }
+
+        // The order was confirmed NOT persisted. Rollback reserved inventory.
+        for (const item of reservedItems) {
+          await productsCol.updateOne(buildIdQuery(item.productId), { $inc: { stock: item.quantity } });
+        }
+
+        return errorResponse('Failed to record order. Please try again.', 500);
+      }
+
+      // Notify only after the order and inventory reservation are persisted.
+      // A Resend outage is recorded/logged but never invalidates the order.
+      let notification = null;
+      try {
+        notification = await notifyOrderCustomer(order, 'order_confirmation');
+      } catch (notificationError) {
+        console.warn('[Order notification] Delivery attempt failed:', notificationError?.message || notificationError);
+        notification = { ok: false, status: 'failed', code: 'NOTIFICATION_EXCEPTION' };
       }
 
       // Revalidate storefront cache immediately so stock changes reflect publicly

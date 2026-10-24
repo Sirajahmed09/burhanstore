@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -12,6 +12,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { cart, getCartTotal, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
+  const submissionIdRef = useRef(null);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -90,6 +91,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setSubmitError('');
     
     if (!validateForm()) return;
@@ -97,6 +99,29 @@ export default function CheckoutPage() {
       setSubmitError('Your cart is empty');
       return;
     }
+
+    const cartFingerprint = cart.map(i => `${i._id}:${i.quantity}`).sort().join('|');
+    let submissionKey = submissionIdRef.current;
+    if (!submissionKey && typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('burhan_pending_checkout');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.fingerprint === cartFingerprint && parsed.key) {
+            submissionKey = parsed.key;
+          }
+        }
+      } catch (e) {}
+    }
+    if (!submissionKey) {
+      submissionKey = 'chk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('burhan_pending_checkout', JSON.stringify({ key: submissionKey, fingerprint: cartFingerprint, timestamp: Date.now() }));
+        } catch (e) {}
+      }
+    }
+    submissionIdRef.current = submissionKey;
 
     setLoading(true);
 
@@ -107,6 +132,7 @@ export default function CheckoutPage() {
         : '';
 
       const orderData = {
+        clientReferenceId: submissionIdRef.current,
         items: cart.map(item => ({
           productId: item._id,
           name: item.name,
@@ -145,18 +171,25 @@ export default function CheckoutPage() {
       if (response.ok && data.success) {
         clearCart();
         if (typeof window !== 'undefined') {
-          // Keep the confirmation details in this browser session only. The
-          // public receipt endpoint intentionally does not return customer PII.
+          sessionStorage.removeItem('burhan_pending_checkout');
           sessionStorage.setItem(`burhan_order_${data.order._id}`, JSON.stringify(data.order));
         }
         router.push(`/success?orderId=${data.order._id}`);
       } else {
+        // If server indicated an inventory or validation error, clear the reference so fresh cart edits can proceed
+        submissionIdRef.current = null;
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('burhan_pending_checkout');
+        }
         setSubmitError(data.error || 'Failed to place order. Please try again.');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (error) {
       console.error('Order error:', error);
-      setSubmitError('An unexpected network error occurred. Please try again.');
+      // Notice: Do NOT clear submissionKey from sessionStorage or submissionIdRef.
+      // This ensures if the order was created on the server before the connection dropped,
+      // retrying will securely recover the existing order without creating a duplicate.
+      setSubmitError('A network error occurred while confirming your order. Your cart is preserved. Please click "Place Order" again to safely verify and complete your order without duplicate billing.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
