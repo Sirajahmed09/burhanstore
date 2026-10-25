@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, Check, ShoppingBag, ShieldCheck } from 'lucide-react';
 import { useCart } from '@/lib/contexts/CartContext';
 import { trackAddToCart as gaAddToCart } from '@/lib/analytics/gtag';
+import { calculateValidDiscount } from '@/lib/utils/pricing';
 
 const DEFAULT_FLAGSHIP = {
   _id: 'burhan-pro-2-flagship',
@@ -74,10 +75,8 @@ export default function FeaturedProduct({ initialProduct = null }) {
 
   const displayProduct = product || DEFAULT_FLAGSHIP;
   const imageSrc = displayProduct.thumbnail || displayProduct.images?.[0] || '/images/burhan_pro2_earbuds.jpg';
-  const hasDiscount = displayProduct.oldPrice && displayProduct.oldPrice > displayProduct.price;
-  const discountPercent = hasDiscount
-    ? Math.round(((displayProduct.oldPrice - displayProduct.price) / displayProduct.oldPrice) * 100)
-    : 0;
+  const discountPercent = calculateValidDiscount(displayProduct.price, displayProduct.oldPrice);
+  const hasDiscount = discountPercent > 0;
 
   const isOutOfStock = (Number(displayProduct.stock) || 0) <= 0;
 

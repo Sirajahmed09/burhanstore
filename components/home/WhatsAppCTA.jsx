@@ -1,11 +1,31 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { MessageCircle, ArrowRight, ShieldCheck, Truck } from 'lucide-react';
 import Link from 'next/link';
+import { getWhatsAppUrl, formatDisplayPhone } from '@/lib/utils/whatsapp';
 
 export default function WhatsAppCTA() {
-  const whatsappNumber = '03150693148';
+  const [whatsappNumber, setWhatsappNumber] = useState('03150693148');
   const message = 'Hello BURHAN STORE! I would like to order BURHAN Pro 2 / inquire about your products.';
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.settings?.whatsapp) {
+          setWhatsappNumber(data.settings.whatsapp);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const whatsappUrl = getWhatsAppUrl(whatsappNumber, message);
+  const displayPhone = formatDisplayPhone(whatsappNumber);
 
   return (
     <section className="py-16 md:py-20 bg-[#0B0D10] text-white relative overflow-hidden border-t border-white/10">
@@ -23,15 +43,24 @@ export default function WhatsAppCTA() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <a
-            href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2.5 bg-emerald-500 hover:bg-emerald-600 active:scale-98 text-[#0B0D10] px-8 py-4 rounded-xl font-bold text-base transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          >
-            <MessageCircle className="w-5 h-5 fill-[#0B0D10]" />
-            <span>Chat on WhatsApp (0315-0693148)</span>
-          </a>
+          {whatsappUrl ? (
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2.5 bg-emerald-500 hover:bg-emerald-600 active:scale-98 text-[#0B0D10] px-8 py-4 rounded-xl font-bold text-base transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              <MessageCircle className="w-5 h-5 fill-[#0B0D10]" />
+              <span>Chat on WhatsApp {displayPhone ? `(${displayPhone})` : ''}</span>
+            </a>
+          ) : (
+            <Link
+              href="/contact"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2.5 bg-emerald-500 hover:bg-emerald-600 active:scale-98 text-[#0B0D10] px-8 py-4 rounded-xl font-bold text-base transition-all shadow-md"
+            >
+              <span>Contact Support</span>
+            </Link>
+          )}
 
           <Link
             href="/shop"

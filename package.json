@@ -12,6 +12,8 @@
     "test:api-client": "node scripts/test-api-client.mjs",
     "test:email": "node scripts/test-email-service.mjs",
     "test:checkout": "node scripts/test-checkout-notification-repair.mjs",
+    "test:part3-4": "node scripts/test-part3-part4.mjs",
+    "test:settings": "node scripts/test-settings-verification.mjs",
     "test:cinematic-intro": "node scripts/test-cinematic-intro.mjs",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",

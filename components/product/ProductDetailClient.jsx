@@ -34,6 +34,7 @@ import { useCart } from '@/lib/contexts/CartContext';
 import { useWishlist } from '@/lib/contexts/WishlistContext';
 import ProductCard from '@/components/product/ProductCard';
 import { trackViewItem, trackAddToCart as gaAddToCart } from '@/lib/analytics/gtag';
+import { calculateValidDiscount } from '@/lib/utils/pricing';
 
 // Icon dictionary for dynamic feature cards
 const ICON_MAP = {
@@ -185,9 +186,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
   // Dynamic Pricing & Discount Calculation
   const price = Number(product.price) || 0;
   const oldPrice = Number(product.oldPrice) || 0;
-  const discountPercent = product.discount || (oldPrice > price
-    ? Math.round(((oldPrice - price) / oldPrice) * 100)
-    : 0);
+  const discountPercent = calculateValidDiscount(price, oldPrice);
 
   // Dynamic Badge
   const badgeText = product.badge || (product.isFeatured ? 'Flagship Audio' : (product.isNew ? 'New Release' : ''));
@@ -481,7 +480,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                   className="w-full bg-cyan-500 hover:bg-cyan-600 active:scale-98 text-slate-950 font-bold py-3.5 px-6 rounded-xl text-base shadow-sm hover:shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Sparkles className="w-4 h-4 fill-slate-950" />
-                  <span>Buy Now — COD</span>
+                  <span>{product.stock <= 0 ? 'Out of Stock' : 'Buy Now — COD'}</span>
                 </button>
                 <button
                   onClick={handleAddToCart}
@@ -489,7 +488,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                   className="w-full bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-semibold py-3.5 px-6 rounded-xl text-base shadow-sm hover:shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ShoppingCart className="w-4 h-4" />
-                  <span>Add to Cart</span>
+                  <span>{product.stock <= 0 ? 'Unavailable' : 'Add to Cart'}</span>
                 </button>
               </div>
 
@@ -977,9 +976,9 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
         <button
           onClick={handleBuyNow}
           disabled={product.stock <= 0}
-          className="bg-cyan-500 hover:bg-cyan-600 active:scale-95 text-slate-950 text-xs sm:text-sm font-extrabold px-5 py-2.5 rounded-xl shadow-xs transition-all whitespace-nowrap disabled:opacity-50"
+          className="bg-cyan-500 hover:bg-cyan-600 active:scale-95 text-slate-950 text-xs sm:text-sm font-extrabold px-5 py-2.5 rounded-xl shadow-xs transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          BUY NOW
+          {product.stock <= 0 ? 'OUT OF STOCK' : 'BUY NOW'}
         </button>
       </aside>
     </div>

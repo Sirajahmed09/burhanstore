@@ -7,6 +7,7 @@ import { Heart, ShoppingBag, Star, Check } from 'lucide-react';
 import { useCart } from '@/lib/contexts/CartContext';
 import { useWishlist } from '@/lib/contexts/WishlistContext';
 import { trackAddToCart as gaAddToCart } from '@/lib/analytics/gtag';
+import { calculateValidDiscount } from '@/lib/utils/pricing';
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
@@ -18,9 +19,7 @@ export default function ProductCard({ product }) {
   const isOutOfStock = (Number(product?.stock) || 0) <= 0;
   const imageSrc = product?.thumbnail || product?.images?.[0] || product?.image || '/images/burhan_pro2_earbuds.jpg';
 
-  const discountPercent = product.discount || (product.oldPrice && product.oldPrice > product.price
-    ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
-    : 0);
+  const discountPercent = calculateValidDiscount(product.price, product.oldPrice);
 
   const handleAddToCart = (e) => {
     e.preventDefault();

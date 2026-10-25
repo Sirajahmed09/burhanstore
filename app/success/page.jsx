@@ -122,7 +122,11 @@ function SuccessContent() {
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
-              href="https://wa.me/03150693148?text=Hello%20BURHAN%20STORE,%20I%20just%20placed%20an%20order!"
+              href={`https://wa.me/923150693148?text=${encodeURIComponent(
+                order
+                  ? `Hello BURHAN STORE, I placed order #${(order.orderNumber || order._id).slice(0, 16)} and would like to confirm express dispatch.`
+                  : 'Hello BURHAN STORE, I just placed an order!'
+              )}`}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center space-x-2 shadow-xs"
@@ -130,6 +134,15 @@ function SuccessContent() {
               <MessageCircle className="w-4 h-4" />
               <span>WhatsApp Us for Fast Dispatch</span>
             </a>
+            {order && (
+              <Link
+                href={`/track?orderId=${encodeURIComponent(order.orderNumber || order._id)}${order.customer?.phone ? `&phone=${encodeURIComponent(order.customer.phone)}` : ''}`}
+                className="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold px-6 py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center space-x-2"
+              >
+                <Package className="w-4 h-4" />
+                <span>Track Order</span>
+              </Link>
+            )}
             <Link
               href="/"
               className="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center space-x-2"

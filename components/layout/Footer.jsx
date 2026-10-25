@@ -1,17 +1,39 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Youtube, Video, Mail, Phone, MapPin } from 'lucide-react';
+import { isValidSocialUrl } from '@/lib/utils/social';
 
 export default function Footer() {
   const pathname = usePathname();
   const currentYear = new Date().getFullYear();
+  const [settings, setSettings] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.settings) {
+          setSettings(data.settings);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Do not render public footer inside Admin Panel
   if (pathname?.startsWith('/admin')) {
     return null;
   }
+
+  const phoneDisplay = settings?.phone || '0301-3301830 / 0315-0693148';
+  const emailDisplay = settings?.email || 'infoburhancommunication@gmail.com';
+  const addressDisplay = settings?.address || 'Karachi, Sindh, Pakistan';
 
   const companyLinks = [
     { name: 'About Us', href: '/about' },
@@ -36,6 +58,26 @@ export default function Footer() {
     { name: 'Gaming Accessories', href: '/category/gaming-accessories' },
   ];
 
+  // Active verified social channels only
+  const activeSocials = [];
+  if (settings) {
+    if (settings.facebook && isValidSocialUrl('facebook', settings.facebook)) {
+      activeSocials.push({ platform: 'Facebook', url: settings.facebook, icon: Facebook });
+    }
+    if (settings.instagram && isValidSocialUrl('instagram', settings.instagram)) {
+      activeSocials.push({ platform: 'Instagram', url: settings.instagram, icon: Instagram });
+    }
+    if (settings.tiktok && isValidSocialUrl('tiktok', settings.tiktok)) {
+      activeSocials.push({ platform: 'TikTok', url: settings.tiktok, icon: Video });
+    }
+    if (settings.twitter && isValidSocialUrl('twitter', settings.twitter)) {
+      activeSocials.push({ platform: 'Twitter', url: settings.twitter, icon: Twitter });
+    }
+    if (settings.youtube && isValidSocialUrl('youtube', settings.youtube)) {
+      activeSocials.push({ platform: 'YouTube', url: settings.youtube, icon: Youtube });
+    }
+  }
+
   return (
     <footer className="bg-[#0B0D10] text-white border-t border-white/10">
       <div className="container mx-auto px-4 max-w-6xl py-14 sm:py-16">
@@ -51,15 +93,15 @@ export default function Footer() {
             <div className="space-y-2.5 text-xs text-white/80">
               <div className="flex items-center space-x-2.5">
                 <Phone className="w-4 h-4 text-[#B9A47C] flex-shrink-0" />
-                <span>0301-3301830 / 0315-0693148</span>
+                <span>{phoneDisplay}</span>
               </div>
               <div className="flex items-center space-x-2.5">
                 <Mail className="w-4 h-4 text-[#B9A47C] flex-shrink-0" />
-                <span className="break-all">infoburhancommunication@gmail.com</span>
+                <span className="break-all">{emailDisplay}</span>
               </div>
               <div className="flex items-center space-x-2.5">
                 <MapPin className="w-4 h-4 text-[#B9A47C] flex-shrink-0" />
-                <span>Karachi, Sindh, Pakistan</span>
+                <span>{addressDisplay}</span>
               </div>
             </div>
           </div>
@@ -120,47 +162,27 @@ export default function Footer() {
               ))}
             </ul>
 
-            <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-2.5">
-              Connect With Us
-            </h4>
-            <div className="flex space-x-2">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Visit BURHAN on Facebook"
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors border border-white/10"
-              >
-                <Facebook className="w-4 h-4" />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Visit BURHAN on Instagram"
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors border border-white/10"
-              >
-                <Instagram className="w-4 h-4" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Visit BURHAN on Twitter"
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors border border-white/10"
-              >
-                <Twitter className="w-4 h-4" />
-              </a>
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Visit BURHAN on YouTube"
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors border border-white/10"
-              >
-                <Youtube className="w-4 h-4" />
-              </a>
-            </div>
+            {activeSocials.length > 0 && (
+              <div>
+                <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-2.5">
+                  Connect With Us
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {activeSocials.map(({ platform, url, icon: IconComponent }) => (
+                    <a
+                      key={platform}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Visit BURHAN on ${platform}`}
+                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors border border-white/10"
+                    >
+                      <IconComponent className="w-4 h-4" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

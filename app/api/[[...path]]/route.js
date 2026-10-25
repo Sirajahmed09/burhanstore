@@ -394,6 +394,30 @@ export async function GET(request) {
       }, { headers: NO_CACHE_HEADERS });
     }
 
+    // Public store settings endpoint
+    if (path === 'settings') {
+      const settingsCol = await getCollection('settings');
+      const settings = (await settingsCol.findOne({ type: 'general' })) || {};
+      const safeSettings = {
+        businessName: settings.businessName || 'Burhan',
+        tagline: settings.tagline || 'Powering Your Digital Lifestyle',
+        logo: settings.logo || '',
+        favicon: settings.favicon || '',
+        phone: settings.phone || '03013301830',
+        whatsapp: settings.whatsapp || '03150693148',
+        email: settings.email || 'infoburhancommunication@gmail.com',
+        address: settings.address || 'Karachi, Sindh, Pakistan',
+        facebook: settings.facebook || '',
+        instagram: settings.instagram || '',
+        tiktok: settings.tiktok || '',
+        twitter: settings.twitter || '',
+        youtube: settings.youtube || '',
+        currency: settings.currency || 'PKR',
+        shippingFee: settings.shippingFee !== undefined ? Number(settings.shippingFee) : 200,
+      };
+      return NextResponse.json({ settings: safeSettings }, { headers: NO_CACHE_HEADERS });
+    }
+
     return errorResponse('Endpoint not found', 404);
   } catch (error) {
     console.error('API Error:', error);

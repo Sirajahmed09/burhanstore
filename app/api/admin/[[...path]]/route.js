@@ -1048,9 +1048,23 @@ export async function POST(request) {
       const body = await request.json();
       const settingsCol = await getCollection('settings');
 
+      // Strip immutable _id to prevent MongoServerError
+      const { _id, ...cleanSettings } = body;
+
+      // Validate optional social URLs if provided
+      const socialPlatforms = ['facebook', 'instagram', 'tiktok', 'twitter', 'youtube'];
+      for (const plat of socialPlatforms) {
+        if (cleanSettings[plat] && typeof cleanSettings[plat] === 'string' && cleanSettings[plat].trim()) {
+          const val = cleanSettings[plat].trim();
+          if (/^(javascript|data|vbscript):/i.test(val) || !val.startsWith('https://')) {
+            return errorResponse(`Invalid URL for ${plat}. Must be an HTTPS link.`, 400);
+          }
+        }
+      }
+
       await settingsCol.updateOne(
         { type: 'general' },
-        { $set: { ...body, updatedAt: new Date().toISOString() } },
+        { $set: { ...cleanSettings, updatedAt: new Date().toISOString() } },
         { upsert: true }
       );
 
@@ -1060,7 +1074,7 @@ export async function POST(request) {
         targetType: 'settings',
         targetId: 'general',
         targetName: 'Store Settings',
-        details: body
+        details: cleanSettings
       });
 
       return successResponse({ success: true, message: 'Settings saved successfully' });

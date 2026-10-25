@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Save, Globe, Image, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Youtube } from 'lucide-react';
+import { Save, Globe, Image, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Youtube, Video } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState({
@@ -21,6 +21,7 @@ export default function AdminSettingsPage() {
     // Social Media
     facebook: '',
     instagram: '',
+    tiktok: '',
     twitter: '',
     youtube: '',
     
@@ -73,7 +74,8 @@ export default function AdminSettingsPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.settings) {
-          setSettings({ ...settings, ...data.settings });
+          const { _id, ...cleanDataSettings } = data.settings;
+          setSettings({ ...settings, ...cleanDataSettings });
         }
       }
     } catch (error) {
@@ -87,6 +89,7 @@ export default function AdminSettingsPage() {
     setSaving(true);
     setNotification(null);
     try {
+      const { _id, ...cleanPayload } = settings;
       const response = await fetch('/api/admin/settings', {
         method: 'POST',
         credentials: 'include',
@@ -94,7 +97,7 @@ export default function AdminSettingsPage() {
           'Content-Type': 'application/json',
           ...getAuthHeaders()
         },
-        body: JSON.stringify(settings)
+        body: JSON.stringify(cleanPayload)
       });
 
       if (response.ok) {
@@ -329,6 +332,19 @@ export default function AdminSettingsPage() {
                   onChange={(e) => setSettings({ ...settings, youtube: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-burhan-secondary"
                   placeholder="https://youtube.com/@burhan"
+                />
+              </div>
+              <div>
+                <label className="block text-burhan-text-primary font-semibold mb-2 flex items-center space-x-2">
+                  <Video className="w-4 h-4" />
+                  <span>TikTok</span>
+                </label>
+                <input
+                  type="url"
+                  value={settings.tiktok || ''}
+                  onChange={(e) => setSettings({ ...settings, tiktok: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-burhan-secondary"
+                  placeholder="https://tiktok.com/@burhan"
                 />
               </div>
             </div>

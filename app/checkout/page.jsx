@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useCart } from '@/lib/contexts/CartContext';
 import { CheckCircle2, ShieldCheck, Truck, RotateCcw, AlertCircle, ShoppingBag, ArrowRight } from 'lucide-react';
+import { normalizePakistaniPhone } from '@/lib/utils/phone';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -64,18 +65,18 @@ export default function CheckoutPage() {
     
     // Normalize phone number (handle spaces, dashes, +92, 0092, 92)
     const rawPhone = String(formData.phone || '').trim();
-    const cleanPhone = rawPhone.replace(/[\s\-\(\)]/g, '').replace(/^(\+92|0092|92)/, '0');
+    const cleanPhone = normalizePakistaniPhone(rawPhone);
 
     if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
     if (!rawPhone) {
       newErrors.phone = 'Phone number is required';
-    } else if (!/^03\d{9}$/.test(cleanPhone)) {
+    } else if (!cleanPhone) {
       newErrors.phone = 'Please enter a valid Pakistani mobile number (e.g. 03001234567 or +92 300 1234567)';
     }
 
     if (formData.alternatePhone) {
-      const cleanAlt = String(formData.alternatePhone).trim().replace(/[\s\-\(\)]/g, '').replace(/^(\+92|0092|92)/, '0');
-      if (!/^03\d{9}$/.test(cleanAlt)) {
+      const cleanAlt = normalizePakistaniPhone(formData.alternatePhone);
+      if (!cleanAlt) {
         newErrors.alternatePhone = 'Invalid alternate phone number';
       }
     }
@@ -126,9 +127,9 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      const cleanPhone = String(formData.phone).trim().replace(/[\s\-\(\)]/g, '').replace(/^(\+92|0092|92)/, '0');
+      const cleanPhone = normalizePakistaniPhone(formData.phone) || String(formData.phone).trim();
       const cleanAltPhone = formData.alternatePhone
-        ? String(formData.alternatePhone).trim().replace(/[\s\-\(\)]/g, '').replace(/^(\+92|0092|92)/, '0')
+        ? (normalizePakistaniPhone(formData.alternatePhone) || String(formData.alternatePhone).trim())
         : '';
 
       const orderData = {
