@@ -14,6 +14,7 @@ export default function ShopContent() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [catalogueError, setCatalogueError] = useState('');
   const [filters, setFilters] = useState({
     category: initialCategory,
     minPrice: '',
@@ -62,8 +63,14 @@ export default function ShopContent() {
     params.append('_t', Date.now().toString());
 
     setLoading(true);
+    setCatalogueError('');
     fetch(`/api/products?${params.toString()}`, { cache: 'no-store' })
-      .then(res => (res.ok ? res.json() : { products: [] }))
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Catalogue request failed (${res.status})`);
+        }
+        return res.json();
+      })
       .then(data => {
         const prods = data?.products || [];
         setProducts(prods);
@@ -77,6 +84,8 @@ export default function ShopContent() {
       })
       .catch(err => {
         console.error('Failed to load products:', err);
+        setProducts([]);
+        setCatalogueError('The store catalogue is temporarily unavailable. Please try again shortly.');
         setLoading(false);
       });
   }, [filters]);
@@ -282,6 +291,18 @@ export default function ShopContent() {
                     <div className="h-9 bg-slate-200 rounded-xl" />
                   </div>
                 ))}
+              </div>
+            ) : catalogueError ? (
+              <div className="bg-white rounded-2xl p-8 sm:p-12 text-center border border-amber-200 shadow-xs">
+                <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4">
+                  <PackageOpen className="w-8 h-8" />
+                </div>
+                <h3 className="font-heading text-xl font-bold text-slate-950 mb-2">
+                  Store catalogue temporarily unavailable
+                </h3>
+                <p className="text-sm text-slate-600 max-w-sm mx-auto">
+                  We are reconnecting the product catalogue. Please try again shortly.
+                </p>
               </div>
             ) : products.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 sm:p-12 text-center border border-slate-200/80 shadow-xs">

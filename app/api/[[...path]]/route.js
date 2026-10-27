@@ -1,6 +1,6 @@
 import { publicProduct } from '@/lib/commerce/publicProduct';
 import { NextResponse } from 'next/server';
-import { getCollection, getDatabaseStatus, buildIdQuery } from '@/lib/db/mongodb';
+import { connectToDatabase, getCollection, getDatabaseStatus, buildIdQuery } from '@/lib/db/mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { notifyOrderCustomer } from '@/lib/notifications/orderNotifications';
@@ -107,16 +107,36 @@ export async function GET(request) {
 
     // Health check endpoint
     if (path === 'health') {
+      try {
+        // A status-only read can report "healthy" before a MongoDB connection
+        // has ever been attempted. Probe the real connection so deployment
+        // diagnostics reflect the same failure the catalogue would encounter.
+        await connectToDatabase();
+      } catch (dbError) {
+        const dbStatus = getDatabaseStatus();
+        return NextResponse.json({
+          status: 'unhealthy',
+          timestamp: new Date().toISOString(),
+          database: {
+            configured: dbStatus.isConfigured,
+            connected: false,
+            provider: dbStatus.provider,
+          },
+          error: 'Database unavailable',
+        }, { status: 503, headers: NO_CACHE_HEADERS });
+      }
+
       const dbStatus = getDatabaseStatus();
+      const healthy = dbStatus.isConnected;
       return NextResponse.json({
-        status: 'healthy',
+        status: healthy ? 'healthy' : 'unhealthy',
         timestamp: new Date().toISOString(),
         database: {
           configured: dbStatus.isConfigured,
           connected: dbStatus.isConnected,
           provider: dbStatus.provider,
         }
-      }, { headers: NO_CACHE_HEADERS });
+      }, { status: healthy ? 200 : 503, headers: NO_CACHE_HEADERS });
     }
 
     // Products endpoints

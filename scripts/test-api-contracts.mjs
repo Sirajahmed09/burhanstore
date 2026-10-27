@@ -5,6 +5,7 @@ const files = {
   productForm: fs.readFileSync('components/admin/ProductForm.jsx', 'utf8'),
   checkout: fs.readFileSync('app/checkout/page.jsx', 'utf8'),
   publicRoute: fs.readFileSync('app/api/[[...path]]/route.js', 'utf8'),
+  shopContent: fs.readFileSync('components/shop/ShopContent.jsx', 'utf8'),
 };
 
 const checks = [
@@ -25,6 +26,8 @@ const checks = [
   { name: 'Manual shipment endpoint validates and persists tracking details', passed: files.productRoute.includes('validateShipmentDetails(body)') && files.productRoute.includes('ORDER_SHIPMENT_UPDATED') },
   { name: 'Customer tracking returns shipment details without private phone/address', passed: files.publicRoute.includes('sanitizeTrackedOrder') && files.publicRoute.includes('trackingUrl') && files.publicRoute.includes("city: order.customer?.city") },
   { name: 'Admin order API reads the orders collection', passed: files.productRoute.includes("getCollection('orders')") && files.productRoute.includes('ordersCol.find(filter)') },
+  { name: 'Health endpoint probes the real database connection', passed: files.publicRoute.includes('await connectToDatabase()') && files.publicRoute.includes("status: 'unhealthy'") },
+  { name: 'Shop catalogue distinguishes API failure from an empty result', passed: files.shopContent?.includes('catalogueError') },
 ];
 
 let failed = 0;
