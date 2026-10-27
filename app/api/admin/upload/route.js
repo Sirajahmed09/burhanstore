@@ -1,5 +1,7 @@
+import { clientAddress } from '@/lib/security/requests';
+import { consumeRateLimit } from '@/lib/security/rate-limit';
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/admin/middleware';
+import { requireAuth, requirePermission } from '@/lib/admin/middleware';
 import { getCollection } from '@/lib/db/mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
@@ -23,6 +25,12 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const permission = await requirePermission(request, 'products:create');
+    if (!permission.authorized) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const origin = request.headers.get('origin');
+    if (origin && origin !== new URL(request.url).origin && origin !== (process.env.NEXT_PUBLIC_BASE_URL || 'https://burhanstore.com')) return NextResponse.json({ error: 'Request origin not allowed' }, { status: 403 });
+    if (Number(request.headers.get('content-length')) > 9 * 1024 * 1024) return NextResponse.json({ error: 'Upload too large' }, { status: 413 });
+    await consumeRateLimit('image-upload', String(auth.user.id) + ':' + clientAddress(request), 60, 60 * 60 * 1000);
     const formData = await request.formData();
     const files = formData.getAll('files');
     const singleFile = formData.get('file');
@@ -33,22 +41,23 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
+    if (fileList.length > 4) return NextResponse.json({ error: 'Upload at most 4 images at a time' }, { status: 400 });
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'products');
-    await ensureDir(uploadDir);
 
     let sharp;
     try {
       const sharpModule = await import('sharp');
       sharp = sharpModule.default || sharpModule;
     } catch (e) {
-      console.warn('Sharp not available, saving raw image buffer:', e?.message);
+      return NextResponse.json({ error: 'Image processing is temporarily unavailable' }, { status: 503 });
     }
 
     const uploadedFiles = [];
     const imagesCol = await getCollection('images');
 
     for (const file of fileList) {
-      if (!file || typeof file.arrayBuffer !== 'function') continue;
+      if (!file || typeof file.arrayBuffer !== 'function' || !['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) return NextResponse.json({ error: 'Only JPEG, PNG, WebP and AVIF images are supported' }, { status: 415 });
+      if (!file.size || file.size > 2 * 1024 * 1024) return NextResponse.json({ error: 'Each image must be smaller than 2 MB' }, { status: 413 });
 
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
@@ -66,7 +75,7 @@ export async function POST(request) {
 
       if (sharp) {
         try {
-          const image = sharp(buffer);
+          const image = sharp(buffer, { limitInputPixels: 16000000 });
           const metadata = await image.metadata();
           width = metadata.width;
           height = metadata.height;
@@ -84,8 +93,7 @@ export async function POST(request) {
 
           optimized = true;
         } catch (sharpError) {
-          console.error('Sharp processing error, falling back to original:', sharpError);
-          finalBuffer = buffer;
+          return NextResponse.json({ error: 'Invalid or oversized image' }, { status: 415 });
         }
       }
 
@@ -131,8 +139,8 @@ export async function POST(request) {
   } catch (error) {
     console.error('Upload API Error:', error);
     return NextResponse.json(
-      { error: error?.message || 'Failed to upload image' },
-      { status: 500 }
+      { error: error.status ? error.message : 'Failed to upload image' },
+      { status: error.status || 500 }
     );
   }
 }
@@ -145,6 +153,8 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const permission = await requirePermission(request, 'products:read');
+    if (!permission.authorized) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const imagesCol = await getCollection('images');
     const productsCol = await getCollection('products');
 
@@ -173,6 +183,6 @@ export async function GET(request) {
       unusedCount: annotatedImages.filter(i => !i.inUse).length
     });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to load images' }, { status: 500 });
   }
 }

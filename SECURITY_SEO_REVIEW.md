@@ -19,6 +19,7 @@ Safepay credit/debit-card integration is not present in the current repository. 
 - JSON content type, origin, actual streamed body size, nesting and operator-key checks protect mutation endpoints. Search input is treated literally and pagination is bounded.
 - Product/category/review responses use public field allowlists. Receipt totals require a random order-specific token; tracking requires a complete phone and a 12+ character order reference. Tracking no longer scans all orders or returns staff timeline notes.
 - Generic API errors replace database exception messages. Arbitrary client context/stacks/query strings are not persisted. Admin pages are excluded from analytics and public analytics strips query strings.
+- Image uploads now require catalogue permissions, enforce image type/size/pixel limits, reject malformed bytes instead of saving raw content, and use a generic error response. Serverless image-storage fallback no longer fails before it can run. Isolated upload rejection tests and Sharp decoding passed.
 - Added HSTS, frame denial and restrictive object/base/form directives; removed unnecessary CORS permission headers.
 
 ## Dependency remediation
