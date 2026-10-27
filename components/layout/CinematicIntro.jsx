@@ -71,7 +71,7 @@ export default function CinematicIntro({ product }) {
     const timer = window.setTimeout(() => {
       rememberCompletion();
       setIsVisible(false);
-    }, 3200);
+    }, 2000);
 
     return () => window.clearTimeout(timer);
   }, [reducedMotion]);

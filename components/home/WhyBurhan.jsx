@@ -6,23 +6,23 @@ export default function WhyBurhan() {
   const trustPoints = [
     {
       icon: ShieldCheck,
-      title: '6-Month Replacement Warranty*',
-      description: '100% authentic devices with replacement coverage for eligible internal product issues. Terms & Conditions apply.'
+      title: 'Direct Store Support',
+      description: 'Ask us about product details before buying and get help with your order afterwards.'
     },
     {
       icon: Truck,
       title: 'Nationwide Cash on Delivery',
-      description: 'Reliable doorstep delivery via TCS, Leopards, and Call Courier across 150+ cities in Pakistan.'
+      description: 'Estimated delivery in 2–5 business days, depending on location and courier coverage.'
     },
     {
       icon: PackageCheck,
-      title: 'Open Parcel Verification',
-      description: 'Check your package on delivery for complete confidence before payment. Absolute transparency.'
+      title: 'Delivery Guidance',
+      description: 'Confirm delivery and parcel inspection options with us before ordering; courier policies vary.'
     },
     {
       icon: Headphones,
       title: 'Direct WhatsApp Support',
-      description: 'Instant human assistance for setup, inquiries, and warranty claims from our Karachi service team.'
+      description: 'Message our Karachi store for product questions, order updates, and after-sales help.'
     }
   ];
 
@@ -37,7 +37,7 @@ export default function WhyBurhan() {
             Built on Trust, Quality & Service
           </h2>
           <p className="text-[#5A606A] text-sm sm:text-base leading-relaxed">
-            We eliminate the uncertainties of online electronics shopping in Pakistan with verified authenticity and full warranty coverage.
+            Shop with clear delivery charges, Cash on Delivery, and direct access to our support.
           </p>
         </div>
 

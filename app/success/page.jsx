@@ -115,7 +115,7 @@ function SuccessContent() {
             </div>
             <div className="flex items-start space-x-2">
               <span className="font-bold text-cyan-700">3.</span>
-              <span>You pay cash only upon receiving and inspecting your parcel at your doorstep.</span>
+              <span>Pay the courier in cash when your parcel is delivered. Parcel inspection follows the courier policy.</span>
             </div>
           </div>
 
@@ -124,7 +124,7 @@ function SuccessContent() {
             <a
               href={`https://wa.me/923150693148?text=${encodeURIComponent(
                 order
-                  ? `Hello BURHAN STORE, I placed order #${(order.orderNumber || order._id).slice(0, 16)} and would like to confirm express dispatch.`
+                  ? `Hello BURHAN STORE, I placed order #${(order.orderNumber || order._id).slice(0, 16)} and would like to confirm dispatch.`
                   : 'Hello BURHAN STORE, I just placed an order!'
               )}`}
               target="_blank"

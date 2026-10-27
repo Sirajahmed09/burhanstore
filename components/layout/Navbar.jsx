@@ -62,11 +62,11 @@ export default function Navbar() {
         </span>
         <span className="hidden sm:inline text-white/30">·</span>
         <span className="hidden sm:inline text-white/80">
-          6-Month Replacement Warranty*
+          Direct Store Support
         </span>
         <span className="hidden md:inline text-white/30">·</span>
         <span className="hidden md:inline text-emerald-400/90 font-medium">
-          Open Parcel Verification
+          Delivery Guidance
         </span>
       </div>
 

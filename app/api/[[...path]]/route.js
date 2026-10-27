@@ -1,8 +1,11 @@
+import { publicProduct } from '@/lib/commerce/publicProduct';
 import { NextResponse } from 'next/server';
 import { getCollection, getDatabaseStatus, buildIdQuery } from '@/lib/db/mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { notifyOrderCustomer } from '@/lib/notifications/orderNotifications';
+import { resolveShippingFee } from '@/lib/commerce/shipping';
+import { normalizePakistaniPhone } from '@/lib/utils/phone';
 import { areOrdersPayloadCompatible } from '@/lib/orders/idempotency';
 
 export const dynamic = 'force-dynamic';
@@ -56,8 +59,7 @@ function isProductActive(product) {
 // Safely sanitize product data to never expose costPrice, internal margins, or admin notes
 function sanitizePublicProduct(product) {
   if (!product) return null;
-  const { costPrice: _, adminNotes: __, internalMargin: ___, createdBy: ____, ...publicData } = product;
-  return publicData;
+  return publicProduct(product);
 }
 
 function sanitizeTrackedOrder(order) {
@@ -174,8 +176,8 @@ export async function GET(request) {
       }
 
       // Add pagination
-      const page = parseInt(searchParams.get('page')) || 1;
-      const limit = parseInt(searchParams.get('limit')) || 100;
+      const page = Math.max(1, parseInt(searchParams.get('page'), 10) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit'), 10) || 100));
       const skip = (page - 1) * limit;
 
       const products = await productsCol.find(filter).sort(sortOption).skip(skip).limit(limit).toArray();
@@ -389,7 +391,7 @@ export async function GET(request) {
 
       return NextResponse.json({ 
         suggestions: suggestions.map(s => s.name), 
-        products,
+        products: products.map(sanitizePublicProduct),
         query
       }, { headers: NO_CACHE_HEADERS });
     }
@@ -413,7 +415,9 @@ export async function GET(request) {
         twitter: settings.twitter || '',
         youtube: settings.youtube || '',
         currency: settings.currency || 'PKR',
-        shippingFee: settings.shippingFee !== undefined ? Number(settings.shippingFee) : 200,
+        shippingFee: resolveShippingFee(settings),
+        shippingRules: Array.isArray(settings.shippingRules) ? settings.shippingRules : [],
+        paymentMethods: ['cod'],
       };
       return NextResponse.json({ settings: safeSettings }, { headers: NO_CACHE_HEADERS });
     }
@@ -522,11 +526,33 @@ export async function POST(request) {
         return errorResponse('Customer information is required (name, phone, and complete shipping address)', 400);
       }
 
-      const cleanPhone = String(body.customer.phone).replace(/[^0-9]/g, '');
-      if (cleanPhone.length < 10) {
-        return errorResponse('Please provide a valid Pakistani contact phone number (at least 10 digits)', 400);
+      const cleanPhone = normalizePakistaniPhone(body.customer.phone);
+      if (!cleanPhone) {
+        return errorResponse('Please provide a valid Pakistani mobile number', 400);
       }
       
+      if (body.paymentMethod !== 'cod') return errorResponse('This payment method is unavailable. Please select Cash on Delivery.', 400);
+      if (!String(body.customer.name).trim() || !String(body.customer.address).trim() || !String(body.customer.city || '').trim() || !String(body.customer.province || '').trim()) return errorResponse('Name, province, city and complete delivery address are required', 400);
+      if (body.customer.alternatePhone && !normalizePakistaniPhone(body.customer.alternatePhone)) return errorResponse('Invalid alternate phone number', 400);
+      if (body.customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.customer.email))) return errorResponse('Invalid email address', 400);
+      if (body.items.length > 100) return errorResponse('Too many items in order', 400);
+      // Recover an accepted checkout before checking current stock or prices. Its
+      // own reservation may have consumed the final units; a retry must not fail.
+      if (body.clientReferenceId) {
+        const accepted = await ordersCol.findOne({ clientReferenceId: String(body.clientReferenceId).trim() });
+        if (accepted) {
+          const quantities = new Map();
+          for (const item of body.items) {
+            const id = String(item.productId || item._id || '');
+            const quantity = Number(item.quantity);
+            if (!id || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100) return errorResponse('Invalid item in order', 400);
+            quantities.set(id, (quantities.get(id) || 0) + quantity);
+          }
+          const retry = { customer: body.customer, paymentMethod: body.paymentMethod, items: [...quantities].map(([productId, quantity]) => ({ productId, quantity })), subtotal: accepted.subtotal, total: accepted.total };
+          if (!areOrdersPayloadCompatible(accepted, retry)) return errorResponse('This checkout reference was already processed with different order details.', 409);
+          return NextResponse.json({ order: accepted, success: true, notification: { ok: true, status: 'already_processed', dedupeKey: accepted.clientReferenceId } }, { headers: NO_CACHE_HEADERS });
+        }
+      }
       // Recalculate subtotal from actual product prices in database and coalesce
       // duplicate lines so one order cannot bypass aggregate stock validation.
       let calculatedSubtotal = 0;
@@ -536,8 +562,8 @@ export async function POST(request) {
 
       for (const item of body.items) {
         const prodId = item.productId || item._id;
-        const requestedQty = parseInt(item.quantity);
-        if (!prodId || !requestedQty || requestedQty < 1) {
+        const requestedQty = Number(item.quantity);
+        if (!prodId || !Number.isSafeInteger(requestedQty) || requestedQty < 1 || requestedQty > 100) {
           return errorResponse('Invalid item in order', 400);
         }
         
@@ -566,6 +592,7 @@ export async function POST(request) {
           return errorResponse(`Insufficient stock for "${product.name}". Only ${availableStock} unit(s) remaining.`, 400);
         }
 
+        if (!Number.isFinite(Number(product.price)) || Number(product.price) <= 0) return errorResponse('Product price is unavailable. Please contact support.', 409);
         const itemTotal = Number(product.price) * requestedQty;
         calculatedSubtotal += itemTotal;
         validatedItems.push({
@@ -577,7 +604,9 @@ export async function POST(request) {
         });
       }
       
-      const shipping = 200; // Flat shipping rate in PKR
+      const settingsCol = await getCollection('settings');
+      const settings = await settingsCol.findOne({ type: 'general' }) || {};
+      const shipping = resolveShippingFee(settings, body.customer);
       const calculatedTotal = calculatedSubtotal + shipping;
       
       const order = {
@@ -586,7 +615,7 @@ export async function POST(request) {
         customer: {
           name: String(body.customer.name).trim(),
           email: body.customer.email ? String(body.customer.email).trim() : '',
-          phone: String(body.customer.phone).trim(),
+          phone: cleanPhone,
           alternatePhone: body.customer.alternatePhone ? String(body.customer.alternatePhone).trim() : '',
           province: body.customer.province ? String(body.customer.province).trim() : '',
           city: body.customer.city ? String(body.customer.city).trim() : '',
@@ -596,10 +625,10 @@ export async function POST(request) {
         subtotal: calculatedSubtotal,
         shipping: shipping,
         total: calculatedTotal,
-        paymentMethod: (body.paymentMethod === 'card' ? 'card' : 'cod'),
+        paymentMethod: 'cod',
         status: 'pending',
         notes: body.notes ? String(body.notes).trim() : '',
-        clientReferenceId: body.clientReferenceId ? String(body.clientReferenceId).trim() : null,
+        ...(body.clientReferenceId ? { clientReferenceId: String(body.clientReferenceId).trim() } : {}),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         timeline: [

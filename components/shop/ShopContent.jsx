@@ -116,7 +116,7 @@ export default function ShopContent() {
                 Shop All Products
               </h1>
               <p className="text-sm sm:text-base text-slate-600 mt-1">
-                Authentic electronics with nationwide cash on delivery across Pakistan
+                Electronics with nationwide cash on delivery across Pakistan
               </p>
             </div>
             <div className="text-xs sm:text-sm font-semibold text-slate-500">

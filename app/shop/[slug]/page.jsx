@@ -1,3 +1,4 @@
+import { publicProduct, cleanStoreCopy } from '@/lib/commerce/publicProduct';
 import { notFound } from 'next/navigation';
 import { getCollection, buildIdQuery } from '@/lib/db/mongodb';
 import { ProductSchema, BreadcrumbSchema } from '@/components/seo/StructuredData';
@@ -20,9 +21,10 @@ async function getProductBySlug(slug) {
     const product = await productsCol.findOne({
       ...idQuery,
       status: { $nin: ['inactive', 'hidden', 'draft'] },
-      isActive: { $ne: false }
+      isActive: { $ne: false },
+      visible: { $ne: false }
     });
-    return product;
+    return publicProduct(product);
   } catch (error) {
     console.error('Error fetching product by slug:', error);
     return null;
@@ -35,13 +37,14 @@ async function getRelatedProducts(product) {
     const query = {
       _id: { $ne: product._id },
       status: { $nin: ['inactive', 'hidden', 'draft'] },
-      isActive: { $ne: false }
+      isActive: { $ne: false },
+      visible: { $ne: false }
     };
     if (product.category) {
       query.category = product.category;
     }
     const related = await productsCol.find(query).limit(4).toArray();
-    return related;
+    return related.map(publicProduct);
   } catch (error) {
     console.error('Error fetching related products:', error);
     return [];
@@ -64,7 +67,7 @@ export async function generateMetadata({ params }) {
   }
 
   const title = `${product.name} | Buy Online Pakistan`;
-  const rawDescription = product.description || `Buy authentic ${product.name} online in Pakistan at BURHAN STORE with official warranty and fast cash on delivery.`;
+  const rawDescription = product.description || `Buy ${product.name} online in Pakistan at BURHAN STORE with Cash on Delivery and direct support.`;
   const description = rawDescription.length > 160 ? rawDescription.slice(0, 157).trim() + '...' : rawDescription;
   const canonicalUrl = `${BASE_URL}/shop/${product.slug}`;
 

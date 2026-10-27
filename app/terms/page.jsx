@@ -78,10 +78,10 @@ export default function TermsPage() {
               5. Warranty and Liability
             </h2>
             <p className="mb-4">
-              Products are sold with manufacturer warranties where applicable. We:
+              For product issues, contact us with your order details and refer to our Refund & Return Policy. We:
             </p>
             <ul className="list-disc pl-6 space-y-2">
-              <li>Facilitate warranty claims with manufacturers</li>
+              <li>Help review product issues and eligible return requests</li>
               <li>Are not liable for manufacturer defects beyond our control</li>
               <li>Limit our liability to the purchase price of the product</li>
               <li>Do not guarantee uninterrupted website availability</li>

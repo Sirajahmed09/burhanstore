@@ -1,5 +1,6 @@
 'use client';
 
+import { publicProduct } from '@/lib/commerce/publicProduct';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -60,7 +61,8 @@ function getFeatureIcon(iconKey) {
   return Sparkles;
 }
 
-export default function ProductDetailClient({ product, initialRelated = [] }) {
+export default function ProductDetailClient({ product: rawProduct, initialRelated = [] }) {
+  const product = publicProduct(rawProduct);
   const router = useRouter();
   const [relatedProducts, setRelatedProducts] = useState(initialRelated);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -224,22 +226,6 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
   const faqs = Array.isArray(product.faqs) && product.faqs.length > 0
     ? product.faqs
     : [];
-
-  // Dynamic Warranty
-  const warrantyObj = typeof product.warranty === 'object' && product.warranty !== null
-    ? product.warranty
-    : {
-        duration: '6 Months',
-        type: 'Replacement Warranty',
-        description: typeof product.warranty === 'string' && product.warranty ? product.warranty : 'Your BURHAN product is covered for eligible internal product issues for 6 months from the date of purchase.',
-        terms: [
-          'The product must be reasonably clean and suitable for inspection.',
-          'The product must not have physical damage (cracks, broken parts, liquid damage, burn damage, or signs of misuse).',
-          'The issue must be verified as an eligible internal product fault.',
-          'Warranty claims are subject to inspection and verification by BURHAN.',
-          'Warranty does not cover physical or accidental damage, misuse, liquid damage, unauthorized modification or other externally caused damage.'
-        ]
-      };
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20 md:pt-24 pb-24 md:pb-16 text-slate-900">
@@ -500,11 +486,11 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                 </span>
                 <span className="flex items-center space-x-1.5">
                   <Check className="w-3.5 h-3.5 text-cyan-600" />
-                  <span>Open Parcel Allowed</span>
+                  <span>Order Support</span>
                 </span>
                 <span className="flex items-center space-x-1.5">
                   <Check className="w-3.5 h-3.5 text-cyan-600" />
-                  <span>6-Month Replacement Warranty*</span>
+                  <span>Direct Store Support</span>
                 </span>
               </div>
             </div>
@@ -522,7 +508,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
               </div>
               <h2 className="text-sm font-bold text-slate-900 mb-1">Fast Delivery</h2>
               <p className="text-xs text-slate-600 leading-snug">
-                1-3 days express courier with cash on delivery across Pakistan
+                Estimated 2–5 business days, depending on location and courier coverage
               </p>
             </div>
 
@@ -530,9 +516,9 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
               <div className="w-10 h-10 rounded-full bg-cyan-50 text-cyan-700 flex items-center justify-center mb-2.5">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h2 className="text-sm font-bold text-slate-900 mb-1">6-Month Warranty*</h2>
+              <h2 className="text-sm font-bold text-slate-900 mb-1">Store Support</h2>
               <p className="text-xs text-slate-600 leading-snug">
-                Replacement coverage for eligible internal product issues. Terms apply.
+                Contact us for order help and read our return policy for issue resolution.
               </p>
             </div>
 
@@ -540,9 +526,9 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
               <div className="w-10 h-10 rounded-full bg-cyan-50 text-cyan-700 flex items-center justify-center mb-2.5">
                 <RotateCcw className="w-5 h-5" />
               </div>
-              <h2 className="text-sm font-bold text-slate-900 mb-1">Open Parcel Check</h2>
+              <h2 className="text-sm font-bold text-slate-900 mb-1">Delivery Guidance</h2>
               <p className="text-xs text-slate-600 leading-snug">
-                Verify package contents on doorstep delivery before making payment
+                Contact us before ordering to confirm parcel inspection options with the courier
               </p>
             </div>
 
@@ -623,7 +609,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              Product Details & Warranty
+              Product Details & Support
             </button>
             <button
               onClick={() => setActiveTab('inbox')}
@@ -667,25 +653,8 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                 <p>{product.description || product.shortDescription}</p>
               </div>
 
-              {/* 6-Month Replacement Warranty Policy Box */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
-                <div className="flex items-center space-x-2 text-slate-900 font-bold mb-2">
-                  <ShieldCheck className="w-4 h-4 text-cyan-600" />
-                  <span>{warrantyObj.duration || '6 Months'} {warrantyObj.type || 'Replacement Warranty'} Policy*</span>
-                </div>
-                <p className="mb-2 leading-relaxed">
-                  {warrantyObj.description || 'Your BURHAN product is covered for eligible internal product issues for 6 months from the date of purchase.'}
-                </p>
-                {Array.isArray(warrantyObj.terms) && warrantyObj.terms.length > 0 && (
-                  <ul className="space-y-1 list-disc pl-5 text-slate-600 mb-2">
-                    {warrantyObj.terms.map((term, tIdx) => (
-                      <li key={tIdx}>{term}</li>
-                    ))}
-                  </ul>
-                )}
-                <p className="text-[11px] text-slate-500 italic">
-                  Warranty claims are subject to inspection and verification by BURHAN. Coverage does not apply to physical or accidental drops, liquid damage, misuse, or unauthorized tampering. Terms & Conditions Apply.
-                </p>
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 text-sm text-slate-700">
+                Need help after purchase? Contact us with your order number and issue details. <Link href="/refund" className="underline">Read our Refund & Return Policy</Link> for eligibility and next steps.
               </div>
             </div>
           )}
@@ -711,7 +680,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
                   </div>
                   <div className="flex items-center space-x-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs sm:text-sm text-slate-800 font-medium">
                     <Package className="w-4 h-4 text-cyan-600 flex-shrink-0" />
-                    <span>Official Warranty Card & User Documentation</span>
+                    <span>Package contents depend on the selected variant. Contact us to confirm.</span>
                   </div>
                 </div>
               )}
@@ -918,7 +887,7 @@ export default function ProductDetailClient({ product, initialRelated = [] }) {
               Ready to Order {product.name}?
             </h2>
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-              Order today with cash on delivery across Pakistan, 6-month replacement warranty* and free doorstep exchange support.
+              Order today with cash on delivery across Pakistan, direct support for product and order questions.
             </p>
             <div className="flex flex-col sm:flex-row gap-3.5 justify-center">
               <button

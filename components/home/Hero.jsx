@@ -11,7 +11,7 @@ export default function Hero({ flagshipProduct, databaseUnavailable = false }) {
   const router = useRouter();
   const { cart, addToCart } = useCart();
 
-  if (databaseUnavailable) {
+  if (databaseUnavailable || !flagshipProduct) {
     return (
       <section className="relative pt-32 pb-24 overflow-hidden bg-slate-950 text-white border-b border-slate-800">
         <div className="container mx-auto px-4 max-w-4xl text-center relative z-10">
@@ -27,15 +27,7 @@ export default function Hero({ flagshipProduct, databaseUnavailable = false }) {
     );
   }
 
-  const product = flagshipProduct || {
-    _id: 'burhan-pro-2-flagship',
-    name: 'BURHAN Pro 2',
-    slug: 'burhan-pro-2',
-    price: 7499,
-    oldPrice: 9999,
-    thumbnail: '/images/burhan_pro2_earbuds.jpg',
-    images: ['/images/burhan_pro2_earbuds.jpg']
-  };
+  const product = flagshipProduct;
 
   const imageSrc = product.thumbnail || product.images?.[0] || '/images/burhan_pro2_earbuds.jpg';
   const hasDiscount = product.oldPrice && product.oldPrice > product.price;
@@ -90,7 +82,7 @@ export default function Hero({ flagshipProduct, databaseUnavailable = false }) {
 
             {/* Subheading / Truthful Value Proposition */}
             <p className="text-base sm:text-lg text-white/70 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
-              High-definition acoustic drivers, Active Noise Cancellation, and low-latency audio synchronization. Backed by nationwide Cash on Delivery with open parcel inspection and 6 months store replacement warranty.
+              Explore wireless audio for your everyday routine. Order with Cash on Delivery and contact BURHAN STORE directly for product and delivery questions.
             </p>
 
             {/* Dynamic CTA Group */}
@@ -124,11 +116,11 @@ export default function Hero({ flagshipProduct, databaseUnavailable = false }) {
               </div>
               <div className="flex items-center space-x-2 text-white/80">
                 <ShieldCheck className="w-4 h-4 text-[#B9A47C] shrink-0" />
-                <span className="text-xs sm:text-sm font-medium">6-Month Warranty*</span>
+                <span className="text-xs sm:text-sm font-medium">Store Support</span>
               </div>
               <div className="flex items-center space-x-2 text-white/80">
                 <CheckCircle2 className="w-4 h-4 text-[#B9A47C] shrink-0" />
-                <span className="text-xs sm:text-sm font-medium">Open Parcel Allowed</span>
+                <span className="text-xs sm:text-sm font-medium">Order Support</span>
               </div>
             </div>
           </motion.div>

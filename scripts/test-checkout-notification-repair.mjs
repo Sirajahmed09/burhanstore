@@ -47,12 +47,12 @@ assert.ok(routeContent.includes('persistedOrder'), 'Route must verify whether or
 console.log('  [PASS] Ambiguous write recovery pattern verified in source code.');
 
 console.log('\n--- [STATIC CONTRACT CHECK 5]: Frontend Double-Click & Session Locking ---');
-assert.ok(checkoutContent.includes('if (loading) return;'), 'Frontend must prevent concurrent submissions if loading is true');
+assert.ok(checkoutContent.includes('submittingRef.current || loading || settingsLoading'), 'Frontend must prevent concurrent submissions if loading is true');
 assert.ok(checkoutContent.includes('submissionIdRef'), 'Frontend must track unique submission ID');
 assert.ok(checkoutContent.includes('clientReferenceId: submissionIdRef.current'), 'Frontend must send clientReferenceId in orderData');
 assert.ok(checkoutContent.includes('burhan_pending_checkout'), 'Frontend must persist pending submission key in sessionStorage');
 assert.ok(checkoutContent.includes('cartFingerprint'), 'Frontend must bind pending submission key to cart fingerprint');
-assert.ok(checkoutContent.includes('disabled={loading}'), 'Submit button must be disabled when loading is true');
+assert.ok(checkoutContent.includes('disabled={loading || settingsLoading || !!settingsError}'), 'Submit button must be disabled when loading is true');
 console.log('  [PASS] Frontend double-click protection and session persistence verified.');
 
 

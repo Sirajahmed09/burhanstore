@@ -1,3 +1,4 @@
+import { publicProduct, cleanStoreCopy } from '@/lib/commerce/publicProduct';
 import { getCollection } from '@/lib/db/mongodb';
 import Hero from '@/components/home/Hero';
 import FeaturedProduct from '@/components/home/FeaturedProduct';
@@ -14,13 +15,13 @@ export const metadata = {
   title: {
     absolute: 'BURHAN STORE | Premium Audio & Mobile Tech in Pakistan',
   },
-  description: 'Shop authentic BURHAN Pro 2 Wireless Earbuds, audio gear, and mobile accessories with nationwide cash on delivery, open parcel verification, and 6-month store replacement warranty.',
+  description: 'Shop BURHAN Pro 2 Wireless Earbuds, audio gear, and mobile accessories with nationwide cash on delivery, delivery guidance, and direct store support.',
   alternates: {
     canonical: 'https://burhanstore.com',
   },
   openGraph: {
     title: 'BURHAN STORE | Premium Audio & Mobile Tech in Pakistan',
-    description: 'Shop authentic BURHAN Pro 2 Wireless Earbuds, audio gear, and mobile accessories with nationwide cash on delivery, open parcel verification, and 6-month store replacement warranty.',
+    description: 'Shop BURHAN Pro 2 Wireless Earbuds, audio gear, and mobile accessories with nationwide cash on delivery, delivery guidance, and direct store support.',
     url: 'https://burhanstore.com',
     siteName: 'BURHAN STORE',
     locale: 'en_PK',
@@ -37,7 +38,7 @@ async function getHomepageProducts() {
       visible: { $ne: false }
     };
     const products = await productsCol.find(ACTIVE_FILTER).toArray();
-    return { products: JSON.parse(JSON.stringify(products)), databaseError: false };
+    return { products: JSON.parse(JSON.stringify(products.map(publicProduct))), databaseError: false };
   } catch (err) {
     console.error('Failed to load active products for homepage:', err);
     return { products: [], databaseError: true };
@@ -54,7 +55,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <CinematicIntro
+      {flagship && <CinematicIntro
         product={flagship ? {
           name: flagship.name,
           price: Number(flagship.price),
@@ -63,7 +64,7 @@ export default async function Home() {
           // the first frame and does not add another remote image dependency.
           image: '/images/burhan_pro2_earbuds.jpg',
         } : undefined}
-      />
+      />}
       {/* 1. Premium 3D-Style Headphone Hero with Dynamic Flagship Product Data */}
       <Hero flagshipProduct={flagship} databaseUnavailable={databaseError} />
 

@@ -8,13 +8,13 @@ export default function AboutPage() {
   const values = [
     {
       icon: ShieldCheck,
-      title: 'Authenticity Guarantee',
-      description: 'We strictly sell certified original devices with official 6-month replacement warranty*. No fakes or grey imports.'
+      title: 'Clear Product Information',
+      description: 'Clear product information and direct support, so you can make an informed purchase.'
     },
     {
       icon: Truck,
       title: 'Nationwide Delivery',
-      description: 'Reliable express courier delivery to 150+ cities across Pakistan with cash on delivery at your doorstep.'
+      description: 'Delivery across Pakistan where courier service is available, with Cash on Delivery.'
     },
     {
       icon: Headphones,
@@ -40,7 +40,7 @@ export default function AboutPage() {
             Powering Your Digital Lifestyle
           </h1>
           <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            Delivering authentic audio, smart gadgets, and mobile electronics across Pakistan with verified quality and honest service.
+            Delivering audio, smart gadgets, and mobile electronics across Pakistan with verified quality and honest service.
           </p>
         </div>
 
@@ -56,7 +56,7 @@ export default function AboutPage() {
             Our flagship <strong>BURHAN Pro 2</strong> is the culmination of customer feedback — pairing active noise cancellation, low gaming latency, and multi-day battery endurance into an ergonomic design built for Pakistani commuters, gamers, and professionals.
           </p>
           <p>
-            From our Karachi distribution hub to remote towns across Sindh, Punjab, KPK, Balochistan, and Gilgit-Baltistan, we back every product with open-parcel verification and 6-month replacement warranty* coverage.
+            We operate from Karachi and arrange delivery across Pakistan where courier service is available. Contact us for help with product details, your order, or a delivery issue.
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export default function AboutPage() {
             Experience the BURHAN Difference
           </h3>
           <p className="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mb-6">
-            Join customers across Pakistan enjoying authentic audio with full warranty protection.
+            Explore our available products and contact us with any questions before ordering.
           </p>
           <Link
             href="/shop"

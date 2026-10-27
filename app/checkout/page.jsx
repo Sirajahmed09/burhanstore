@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useCart } from '@/lib/contexts/CartContext';
 import { CheckCircle2, ShieldCheck, Truck, RotateCcw, AlertCircle, ShoppingBag, ArrowRight } from 'lucide-react';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { resolveShippingFee } from '@/lib/commerce/shipping';
 import { normalizePakistaniPhone } from '@/lib/utils/phone';
 
 export default function CheckoutPage() {
@@ -14,6 +16,7 @@ export default function CheckoutPage() {
   const { cart, getCartTotal, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
   const submissionIdRef = useRef(null);
+  const submittingRef = useRef(false);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -29,7 +32,8 @@ export default function CheckoutPage() {
   const [submitError, setSubmitError] = useState('');
   const [validationWarning, setValidationWarning] = useState('');
 
-  const shippingCost = 200;
+  const { settings, error: settingsError, loading: settingsLoading } = useStoreSettings();
+  const shippingCost = resolveShippingFee(settings || {}, formData);
   const subtotal = getCartTotal();
   const total = subtotal + shippingCost;
 
@@ -57,7 +61,8 @@ export default function CheckoutPage() {
     'Khyber Pakhtunkhwa',
     'Balochistan',
     'Gilgit-Baltistan',
-    'Azad Kashmir'
+    'Azad Kashmir',
+    'Islamabad Capital Territory'
   ];
 
   const validateForm = () => {
@@ -85,6 +90,7 @@ export default function CheckoutPage() {
     if (!formData.city.trim()) newErrors.city = 'City is required';
     if (!formData.address.trim()) newErrors.address = 'Delivery address is required';
     if (!formData.paymentMethod) newErrors.paymentMethod = 'Payment method is required';
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) newErrors.email = 'Please enter a valid email address';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -92,7 +98,8 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return;
+    if (submittingRef.current || loading || settingsLoading) return;
+    if (settingsError) { setSubmitError(settingsError); return; }
     setSubmitError('');
     
     if (!validateForm()) return;
@@ -101,8 +108,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    const cartFingerprint = cart.map(i => `${i._id}:${i.quantity}`).sort().join('|');
-    let submissionKey = submissionIdRef.current;
+    const cartFingerprint = JSON.stringify({ items: cart.map(i => `${i._id}:${i.quantity}`).sort(), customer: formData });
+    let submissionKey = null;
     if (!submissionKey && typeof window !== 'undefined') {
       try {
         const stored = sessionStorage.getItem('burhan_pending_checkout');
@@ -124,6 +131,7 @@ export default function CheckoutPage() {
     }
     submissionIdRef.current = submissionKey;
 
+    submittingRef.current = true;
     setLoading(true);
 
     try {
@@ -193,6 +201,7 @@ export default function CheckoutPage() {
       setSubmitError('A network error occurred while confirming your order. Your cart is preserved. Please click "Place Order" again to safely verify and complete your order without duplicate billing.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -446,37 +455,8 @@ export default function CheckoutPage() {
                     </div>
                   </label>
 
-                  {/* Debit / Credit Card */}
-                  <label className={`flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    formData.paymentMethod === 'card'
-                      ? 'border-cyan-500 bg-cyan-50/30'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="card"
-                      checked={formData.paymentMethod === 'card'}
-                      onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                      className="mt-1 w-4 h-4 accent-cyan-600"
-                    />
-                    <div className="ml-3.5">
-                      <div className="font-bold text-sm sm:text-base text-slate-900">
-                        Debit / Credit Card (Card on Delivery / POS)
-                      </div>
-                      <div className="text-xs text-slate-600 mt-0.5">
-                        Swipe or tap your Visa / Mastercard debit or credit card securely via rider POS terminal upon delivery.
-                      </div>
-                    </div>
-                  </label>
                 </div>
-
-                {formData.paymentMethod === 'card' && (
-                  <div className="p-4 rounded-xl bg-cyan-50/70 border border-cyan-200 text-xs text-slate-700 leading-relaxed">
-                    <strong className="text-cyan-900 block mb-1">Card Payment Information:</strong>
-                    No online credit/debit card numbers are entered on this website. Our courier rider will present a secure bank-authorized card machine (POS terminal) for tap or chip PIN verification when handing over your parcel.
-                  </div>
-                )}
+                <p className="text-xs text-slate-600">Online payment is currently unavailable. You can complete your order with Cash on Delivery.</p>
               </div>
             </div>
 
@@ -487,6 +467,8 @@ export default function CheckoutPage() {
                   Order Summary
                 </h2>
 
+                {settingsError && <p role="alert" className="text-sm text-red-700">{settingsError}</p>}
+                {settingsLoading && <p role="status" className="text-sm text-slate-600">Loading delivery charges...</p>}
                 {/* Items Mini-list */}
                 <div className="space-y-3 max-h-64 overflow-y-auto pr-1 divide-y divide-slate-100">
                   {cart.map((item) => (
@@ -522,7 +504,7 @@ export default function CheckoutPage() {
                     <span className="font-semibold text-slate-900">PKR {subtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-slate-600">
-                    <span>Standard Express Shipping</span>
+                    <span>Delivery</span>
                     <span className="font-semibold text-slate-900">PKR {shippingCost.toLocaleString()}</span>
                   </div>
                   <div className="pt-2 border-t border-slate-100 flex justify-between items-baseline">
@@ -536,7 +518,7 @@ export default function CheckoutPage() {
                 {/* Submit Order Button */}
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || settingsLoading || !!settingsError}
                   className="w-full bg-cyan-500 hover:bg-cyan-600 active:scale-98 text-slate-950 font-bold py-4 rounded-xl text-base shadow-sm hover:shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loading ? (
@@ -553,15 +535,15 @@ export default function CheckoutPage() {
                 <div className="pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-600">
                   <div className="flex items-center space-x-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>Open Parcel Verification on delivery</span>
+                    <span>Questions about delivery? Contact our store</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <ShieldCheck className="w-4 h-4 text-cyan-600 flex-shrink-0" />
-                    <span>6-Month Replacement Warranty* (Terms Apply)</span>
+                    <span>Direct Store Support</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Truck className="w-4 h-4 text-cyan-600 flex-shrink-0" />
-                    <span>1-3 business days express courier across Pakistan</span>
+                    <span>Estimated delivery: 2–5 business days, depending on location</span>
                   </div>
                 </div>
               </div>

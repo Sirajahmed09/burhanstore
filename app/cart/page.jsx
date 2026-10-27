@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { resolveShippingFee } from '@/lib/commerce/shipping';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Trash2, ShoppingBag, ArrowRight, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
@@ -9,7 +10,8 @@ import { trackRemoveFromCart, trackBeginCheckout } from '@/lib/analytics/gtag';
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, getCartTotal, getCartCount, clearCart } = useCart();
-  const [shippingCost] = useState(200); // PKR 200 flat shipping
+  const { settings } = useStoreSettings();
+  const shippingCost = resolveShippingFee(settings || {});
 
   const subtotal = getCartTotal();
   const total = subtotal > 0 ? subtotal + shippingCost : 0;
@@ -183,7 +185,7 @@ export default function CartPage() {
                   <span className="font-semibold text-[#171A20]">PKR {subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-[#5A606A]">
-                  <span>Standard Express Shipping</span>
+                  <span>Estimated Delivery (confirmed at checkout)</span>
                   <span className="font-semibold text-[#171A20]">PKR {shippingCost.toLocaleString()}</span>
                 </div>
                 <div className="pt-3 border-t border-[#F4F2ED] flex justify-between items-baseline">
@@ -208,11 +210,11 @@ export default function CartPage() {
               <div className="pt-4 border-t border-[#F4F2ED] space-y-2.5 text-xs text-[#5A606A]">
                 <div className="flex items-center space-x-2">
                   <Truck className="w-4 h-4 text-[#8E7B56] flex-shrink-0" />
-                  <span>Nationwide Express COD in 2-4 days</span>
+                  <span>Estimated delivery: 2–5 business days</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <ShieldCheck className="w-4 h-4 text-[#8E7B56] flex-shrink-0" />
-                  <span>6-Month Replacement Warranty* (Terms Apply)</span>
+                  <span>Direct Store Support</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RotateCcw className="w-4 h-4 text-[#8E7B56] flex-shrink-0" />

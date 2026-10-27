@@ -96,9 +96,9 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
     inBox: Array.isArray(initialData?.inBox) ? initialData.inBox : [],
 
     // Warranty
-    warrantyDuration: initialData?.warranty?.duration || (typeof initialData?.warranty === 'string' ? '6 Months' : '6 Months'),
+    warrantyDuration: initialData?.warranty?.duration || '',
     warrantyType: initialData?.warranty?.type || 'Replacement Warranty',
-    warrantyDescription: initialData?.warranty?.description || (typeof initialData?.warranty === 'string' ? initialData.warranty : 'Your BURHAN product is covered for eligible internal product issues for 6 months from the date of purchase.'),
+    warrantyDescription: initialData?.warranty?.description || (typeof initialData?.warranty === 'string' ? initialData.warranty : 'Contact us with your order details for after-sales support. See our Refund & Return Policy.'),
     warrantyTerms: Array.isArray(initialData?.warranty?.terms) ? initialData.warranty.terms : [
       'The product must be reasonably clean and suitable for inspection.',
       'The product must not have physical damage (cracks, broken parts, liquid damage, burn damage, or signs of misuse).',
@@ -108,8 +108,8 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
 
     // Delivery Info
     codAvailable: initialData?.deliveryInfo?.codAvailable !== undefined ? Boolean(initialData.deliveryInfo.codAvailable) : true,
-    estimatedDays: initialData?.deliveryInfo?.estimatedDays || '1-3 Business Days',
-    deliveryNotes: initialData?.deliveryInfo?.notes || 'Cash on delivery available across Pakistan with open parcel verification.',
+    estimatedDays: initialData?.deliveryInfo?.estimatedDays || '2-5 Business Days',
+    deliveryNotes: initialData?.deliveryInfo?.notes || 'Cash on delivery available across Pakistan with delivery guidance.',
 
     // FAQs (Array of { question, answer })
     faqs: Array.isArray(initialData?.faqs) ? initialData.faqs : [],
@@ -192,9 +192,9 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
           : [],
         inBox: Array.isArray(initialData.inBox) ? initialData.inBox : [],
 
-        warrantyDuration: initialData?.warranty?.duration || (typeof initialData?.warranty === 'string' ? '6 Months' : '6 Months'),
+        warrantyDuration: initialData?.warranty?.duration || '',
         warrantyType: initialData?.warranty?.type || 'Replacement Warranty',
-        warrantyDescription: initialData?.warranty?.description || (typeof initialData?.warranty === 'string' ? initialData.warranty : 'Your BURHAN product is covered for eligible internal product issues for 6 months from the date of purchase.'),
+        warrantyDescription: initialData?.warranty?.description || (typeof initialData?.warranty === 'string' ? initialData.warranty : 'Contact us with your order details for after-sales support. See our Refund & Return Policy.'),
         warrantyTerms: Array.isArray(initialData?.warranty?.terms) ? initialData.warranty.terms : [
           'The product must be reasonably clean and suitable for inspection.',
           'The product must not have physical damage (cracks, broken parts, liquid damage, burn damage, or signs of misuse).',
@@ -203,8 +203,8 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
         ],
 
         codAvailable: initialData?.deliveryInfo?.codAvailable !== undefined ? Boolean(initialData.deliveryInfo.codAvailable) : true,
-        estimatedDays: initialData?.deliveryInfo?.estimatedDays || '1-3 Business Days',
-        deliveryNotes: initialData?.deliveryInfo?.notes || 'Cash on delivery available across Pakistan with open parcel verification.',
+        estimatedDays: initialData?.deliveryInfo?.estimatedDays || '2-5 Business Days',
+        deliveryNotes: initialData?.deliveryInfo?.notes || 'Cash on delivery available across Pakistan with delivery guidance.',
 
         faqs: Array.isArray(initialData.faqs) ? initialData.faqs : [],
 
@@ -503,15 +503,15 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
         inBox: cleanInBox,
 
         warranty: {
-          duration: formData.warrantyDuration.trim() || '6 Months',
+          duration: formData.warrantyDuration.trim() || '',
           type: formData.warrantyType.trim() || 'Replacement Warranty',
-          description: formData.warrantyDescription.trim() || 'Your BURHAN product is covered for eligible internal product issues for 6 months from the date of purchase.',
+          description: formData.warrantyDescription.trim() || 'Contact us with your order details for after-sales support. See our Refund & Return Policy.',
           terms: cleanWarrantyTerms
         },
 
         deliveryInfo: {
           codAvailable: formData.codAvailable,
-          estimatedDays: formData.estimatedDays.trim() || '1-3 Business Days',
+          estimatedDays: formData.estimatedDays.trim() || '2-5 Business Days',
           shippingFee: 200,
           freeShippingThreshold: 5000,
           notes: formData.deliveryNotes.trim()
@@ -1304,7 +1304,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
                 type="text"
                 value={formData.warrantyDuration}
                 onChange={(e) => setFormData({ ...formData, warrantyDuration: e.target.value })}
-                placeholder="e.g. 6 Months"
+                placeholder="Leave blank if no warranty is offered"
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-xs font-bold bg-white"
               />
             </div>
@@ -1379,7 +1379,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
                 type="text"
                 value={formData.estimatedDays}
                 onChange={(e) => setFormData({ ...formData, estimatedDays: e.target.value })}
-                placeholder="e.g. 1-3 Business Days"
+                placeholder="e.g. 2-5 Business Days"
                 className="w-full px-4 py-2 rounded-xl border border-gray-300 text-xs bg-white"
               />
             </div>
@@ -1529,7 +1529,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
                 https://burhanstore.com/shop/{formData.slug || 'product-slug'}
               </div>
               <div className="text-xs text-gray-600 line-clamp-2 mt-0.5">
-                {formData.seoDescription || formData.shortDescription || 'Buy authentic electronics and mobile accessories with cash on delivery across Pakistan at BURHAN STORE.'}
+                {formData.seoDescription || formData.shortDescription || 'Buy electronics and mobile accessories with cash on delivery across Pakistan at BURHAN STORE.'}
               </div>
             </div>
           </div>

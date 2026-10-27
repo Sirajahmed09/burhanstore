@@ -39,7 +39,7 @@ export default function WhatsAppCTA() {
         </h2>
 
         <p className="text-white/70 text-base sm:text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
-          Chat directly with our support team on WhatsApp for order assistance, express delivery tracking, and technical inquiries.
+          Chat directly with our support team on WhatsApp for order assistance, delivery tracking, and technical inquiries.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -74,11 +74,11 @@ export default function WhatsAppCTA() {
         <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap justify-center items-center gap-6 text-xs text-white/60">
           <span className="flex items-center space-x-1.5">
             <Truck className="w-4 h-4 text-[#B9A47C]" />
-            <span>Express Delivery Across Pakistan</span>
+            <span>Delivery Across Pakistan</span>
           </span>
           <span className="flex items-center space-x-1.5">
             <ShieldCheck className="w-4 h-4 text-[#B9A47C]" />
-            <span>6-Month Replacement Warranty* (Terms Apply)</span>
+            <span>Direct Store Support</span>
           </span>
         </div>
       </div>

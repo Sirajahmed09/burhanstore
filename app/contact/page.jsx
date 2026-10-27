@@ -63,7 +63,7 @@ export default function ContactPage() {
                     >
                       0315-0693148
                     </a>
-                    <p className="text-xs text-slate-500 mt-0.5">24/7 Priority Support & Dispatch</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Product & Order Support</p>
                   </div>
                 </div>
 

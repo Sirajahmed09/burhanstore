@@ -286,7 +286,7 @@ async function runSettingsVerification() {
     if (userRole !== 'owner' && userRole !== 'superadmin') {
       return { status: 403, error: 'Forbidden: Only store owners can update settings' };
     }
-    const { _id, ...cleanSettings } = body;
+    const { _id, type, createdAt, updatedAt, ...cleanSettings } = body;
     const socialPlatforms = ['facebook', 'instagram', 'tiktok', 'twitter', 'youtube'];
     for (const plat of socialPlatforms) {
       if (cleanSettings[plat] && typeof cleanSettings[plat] === 'string' && cleanSettings[plat].trim()) {
@@ -338,7 +338,7 @@ async function runSettingsVerification() {
 
   // 9.1 Backend strips _id
   assert(
-    adminRoute.includes('const { _id, ...cleanSettings } = body;'),
+    adminRoute.includes('const { _id, type, createdAt, updatedAt, ...cleanSettings } = body;'),
     'Backend must strip _id via destructuring'
   );
   assert(

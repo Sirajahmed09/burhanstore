@@ -88,7 +88,7 @@ export default function Footer() {
               BURHAN
             </div>
             <p className="text-white/60 text-xs sm:text-sm leading-relaxed mb-6">
-              Sound that moves with you. Quiet luxury audio gear, verified wireless earbuds, and everyday mobile tech delivered across Pakistan.
+              Sound that moves with you. Quiet luxury audio gear, wireless earbuds, and everyday mobile tech delivered across Pakistan.
             </p>
             <div className="space-y-2.5 text-xs text-white/80">
               <div className="flex items-center space-x-2.5">
@@ -196,7 +196,7 @@ export default function Footer() {
             <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-md font-medium text-white">Cash on Delivery</span>
             <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-md font-medium text-white">Debit / Credit Card</span>
             <span className="px-2.5 py-1 bg-white/5 border border-[#B9A47C]/40 text-[#B9A47C] rounded-md font-semibold">
-              6-Month Replacement Warranty* (Terms Apply)
+              Direct Store Support
             </span>
           </div>
         </div>

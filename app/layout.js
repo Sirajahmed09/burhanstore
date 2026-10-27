@@ -11,7 +11,7 @@ export const metadata = {
     default: 'BURHAN STORE | Premium Mobile Accessories & Electronics in Pakistan',
     template: '%s | BURHAN STORE'
   },
-  description: 'Pakistan’s premier destination for high quality mobile accessories and electronics. Shop authentic wireless earbuds, smartwatches, power banks, and fast chargers with nationwide cash on delivery.',
+  description: 'Pakistan’s premier destination for high quality mobile accessories and electronics. Shop wireless earbuds, smartwatches, power banks, and fast chargers with nationwide cash on delivery.',
   keywords: [
     'BURHAN STORE',
     'mobile accessories pakistan',
@@ -35,7 +35,7 @@ export const metadata = {
     url: 'https://burhanstore.com',
     siteName: 'BURHAN STORE',
     title: 'BURHAN STORE | Premium Mobile Accessories & Electronics in Pakistan',
-    description: 'Pakistan’s premier destination for high quality mobile accessories and electronics with fast delivery and authentic warranty.',
+    description: 'Pakistan’s premier destination for high quality mobile accessories and electronics with delivery and direct store support.',
     images: [
       {
         url: '/og-image.jpg',
@@ -48,7 +48,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'BURHAN STORE | Premium Mobile Accessories & Electronics in Pakistan',
-    description: 'Authentic mobile accessories, wireless earbuds, smartwatches, and chargers delivered across Pakistan.',
+    description: 'Mobile accessories, wireless earbuds, smartwatches, and chargers delivered across Pakistan.',
     images: ['/og-image.jpg'],
   },
   robots: {

@@ -128,7 +128,7 @@ export default function ProductCard({ product }) {
           ) : (
             <div className="flex items-center space-x-1.5 mb-2.5 text-xs text-[#5A606A]">
               <span className="text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded text-[11px] border border-emerald-200">
-                Authentic Brand
+                BURHAN STORE
               </span>
             </div>
           )}

@@ -1,3 +1,4 @@
+import { validateShippingSettings } from '@/lib/commerce/shipping';
 import { NextResponse } from 'next/server';
 import { getCollection, getDatabaseStatus, buildIdQuery } from '@/lib/db/mongodb';
 import { v4 as uuidv4 } from 'uuid';
@@ -858,7 +859,7 @@ export async function POST(request) {
         features: Array.isArray(body.features) ? body.features : [],
         specifications: body.specifications || {},
         inBox: Array.isArray(body.inBox) ? body.inBox : [],
-        warranty: body.warranty || '6 Months Replacement Warranty*',
+        warranty: body.warranty || '',
         deliveryInfo: body.deliveryInfo || {},
         faqs: Array.isArray(body.faqs) ? body.faqs : [],
         seo: body.seo || {},
@@ -1049,7 +1050,9 @@ export async function POST(request) {
       const settingsCol = await getCollection('settings');
 
       // Strip immutable _id to prevent MongoServerError
-      const { _id, ...cleanSettings } = body;
+      const { _id, type, createdAt, updatedAt, ...cleanSettings } = body;
+      const shippingError = validateShippingSettings(cleanSettings);
+      if (shippingError) return errorResponse(shippingError, 400);
 
       // Validate optional social URLs if provided
       const socialPlatforms = ['facebook', 'instagram', 'tiktok', 'twitter', 'youtube'];

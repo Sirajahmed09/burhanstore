@@ -9,29 +9,10 @@ import { useCart } from '@/lib/contexts/CartContext';
 import { trackAddToCart as gaAddToCart } from '@/lib/analytics/gtag';
 import { calculateValidDiscount } from '@/lib/utils/pricing';
 
-const DEFAULT_FLAGSHIP = {
-  _id: 'burhan-pro-2-flagship',
-  name: 'BURHAN Pro 2',
-  slug: 'burhan-pro-2',
-  category: 'Wireless Earbuds',
-  price: 7499,
-  oldPrice: 9999,
-  discount: 25,
-  images: [
-    '/images/burhan_pro2_earbuds.jpg',
-    '/images/burhan_audio_flagship.jpg'
-  ],
-  thumbnail: '/images/burhan_pro2_earbuds.jpg',
-  stock: 50,
-  rating: 5,
-  reviewCount: 38,
-  isFeatured: true
-};
-
 export default function FeaturedProduct({ initialProduct = null }) {
   const router = useRouter();
   const { cart, addToCart } = useCart();
-  const [product, setProduct] = useState(initialProduct || DEFAULT_FLAGSHIP);
+  const [product, setProduct] = useState(initialProduct);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -73,7 +54,8 @@ export default function FeaturedProduct({ initialProduct = null }) {
     );
   }
 
-  const displayProduct = product || DEFAULT_FLAGSHIP;
+  if (!product) return null;
+  const displayProduct = product;
   const imageSrc = displayProduct.thumbnail || displayProduct.images?.[0] || '/images/burhan_pro2_earbuds.jpg';
   const discountPercent = calculateValidDiscount(displayProduct.price, displayProduct.oldPrice);
   const hasDiscount = discountPercent > 0;
@@ -91,12 +73,9 @@ export default function FeaturedProduct({ initialProduct = null }) {
   };
 
   const keyBenefits = [
-    { text: 'Active Noise Cancellation (Environmental Sound Reduction)' },
-    { text: 'Extended Playback Time with Compact Wireless Charging Case' },
-    { text: 'Low-Latency Audio Mode for Gaming and Video Synchronization' },
-    { text: 'Bluetooth 5.3 Wireless Connectivity with Noise-Cancelling Microphones' },
-    { text: 'Type-C Fast Charging Interface & Qi Wireless Charging Support' },
-    { text: '6-Month Store Replacement Warranty* (Hardware Defects; Terms Apply)' },
+    { text: 'Cash on Delivery available' },
+    { text: 'Clear delivery charges at checkout' },
+    { text: 'Direct WhatsApp support for product and order questions' },
   ];
 
   return (
@@ -113,7 +92,7 @@ export default function FeaturedProduct({ initialProduct = null }) {
             Meet the {displayProduct.name}
           </h2>
           <p className="text-[#5A606A] text-base sm:text-lg max-w-2xl mt-1 leading-relaxed">
-            Balanced acoustic performance, Active Noise Cancellation, clear voice calls and low-latency audio — engineered for music, mobile gaming, and daily travel across Pakistan.
+            Explore the product details, check the available options, and ask us anything before you order.
           </p>
         </div>
 
@@ -147,7 +126,7 @@ export default function FeaturedProduct({ initialProduct = null }) {
                   Official Store Device
                 </span>
                 <span className="text-[#A09D96]">·</span>
-                <span className="text-[#5A606A] font-medium">Verified Authenticity</span>
+                <span className="text-[#5A606A] font-medium">Direct Store Support</span>
               </div>
 
               <div className="text-xs uppercase tracking-wider font-bold text-[#8E7B56] mb-1">

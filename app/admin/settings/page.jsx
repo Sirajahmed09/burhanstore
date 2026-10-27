@@ -39,6 +39,7 @@ export default function AdminSettingsPage() {
     // Ecommerce
     currency: 'PKR',
     shippingFee: 200,
+    shippingRules: [],
     taxRate: 0,
     
     // Features
@@ -107,7 +108,7 @@ export default function AdminSettingsPage() {
         setNotification({ type: 'error', message: errData.error || 'Failed to save settings' });
       }
     } catch (error) {
-      setNotification({ type: 'error', message: 'Error saving settings. Please try again.' });
+      setNotification({ type: 'error', message: error instanceof SyntaxError ? 'Delivery rules contain invalid JSON. Use the example shown below.' : 'Error saving settings. Please try again.' });
     } finally {
       setSaving(false);
     }
@@ -276,7 +277,33 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
-          {/* Social Media */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm mb-6 space-y-4">
+          <h2 className="font-heading text-xl font-bold">Delivery Charges</h2>
+          <label className="block text-sm">Default charge (PKR)
+            <input type="number" min="0" step="0.01" value={settings.shippingFee} onChange={e => setSettings({ ...settings, shippingFee: Number(e.target.value) })} className="block w-full border rounded-xl p-3 mt-2" />
+          </label>
+          <p className="text-sm text-gray-600">Optional location rates. A city rate takes priority over its province rate. Leave city blank to cover the whole province.</p>
+          {(settings.shippingRules || []).map((rule, index) => (
+            <div key={index} className="grid sm:grid-cols-4 gap-3 border rounded-xl p-3">
+              <label className="text-sm">Province
+                <select aria-label={`Province for rate ${index + 1}`} value={rule.province} onChange={e => setSettings({ ...settings, shippingRules: settings.shippingRules.map((entry, i) => i === index ? { ...entry, province: e.target.value } : entry) })} className="block w-full border rounded-lg p-2 mt-1">
+                  <option value="">Select province</option>
+                  {['Sindh', 'Punjab', 'Khyber Pakhtunkhwa', 'Balochistan', 'Gilgit-Baltistan', 'Azad Kashmir', 'Islamabad Capital Territory'].map(province => <option key={province}>{province}</option>)}
+                </select>
+              </label>
+              <label className="text-sm">City (optional)
+                <input aria-label={`City for rate ${index + 1}`} value={rule.city || ''} onChange={e => setSettings({ ...settings, shippingRules: settings.shippingRules.map((entry, i) => i === index ? { ...entry, city: e.target.value } : entry) })} className="block w-full border rounded-lg p-2 mt-1" placeholder="All cities" />
+              </label>
+              <label className="text-sm">Charge (PKR)
+                <input aria-label={`Charge for rate ${index + 1}`} type="number" min="0" step="0.01" value={rule.fee} onChange={e => setSettings({ ...settings, shippingRules: settings.shippingRules.map((entry, i) => i === index ? { ...entry, fee: Number(e.target.value) } : entry) })} className="block w-full border rounded-lg p-2 mt-1" />
+              </label>
+              <button type="button" className="text-red-700 underline text-sm" onClick={() => setSettings({ ...settings, shippingRules: settings.shippingRules.filter((_, i) => i !== index) })}>Remove rate</button>
+            </div>
+          ))}
+          <button type="button" className="border rounded-xl px-4 py-2 text-sm font-semibold" onClick={() => setSettings({ ...settings, shippingRules: [...(settings.shippingRules || []), { province: '', city: '', fee: settings.shippingFee }] })}>Add location rate</button>
+        </div>
+
+        {/* Social Media */}
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <h2 className="font-heading text-xl font-bold text-burhan-primary mb-4">
               Social Media Links

@@ -14,23 +14,23 @@ export default function FAQPage() {
     },
     {
       question: 'What payment methods do you accept?',
-      answer: 'We accept Cash on Delivery (COD) nationwide and Debit/Credit Card payments (direct bank transfer / card terminal on delivery).'
+      answer: 'Cash on Delivery is currently available. Online payment will appear at checkout when available.'
     },
     {
       question: 'How long does delivery take?',
       answer: 'Standard delivery takes 2-5 business days depending on your location. We deliver across all major cities in Pakistan.'
     },
     {
-      question: 'Do you provide warranty on products?',
-      answer: 'Yes! Eligible electronic products come with a 6-Month Replacement Warranty* covering internal product and hardware faults. Please refer to our Terms & Conditions for full qualification criteria.'
+      question: 'How can I get help after purchase?',
+      answer: 'Contact us with your order number and details of the issue. Please read our Refund & Return Policy for eligibility and the next steps.'
     },
     {
       question: 'Can I return or exchange a product?',
       answer: 'Yes, we accept returns and exchanges within 7 days of delivery if the product is unused and in original packaging. Please refer to our Refund Policy for details.'
     },
     {
-      question: 'Are your products authentic?',
-      answer: 'Absolutely! We only sell 100% authentic, certified products from authorized distributors. All products come with official warranty.'
+      question: 'Where can I check product details?',
+      answer: 'Check the product description and selected variant before ordering. Message us if you need photos, package contents, or any details confirmed.'
     },
     {
       question: 'How can I track my order?',
@@ -46,7 +46,7 @@ export default function FAQPage() {
     },
     {
       question: 'How can I contact customer support?',
-      answer: 'You can reach us via WhatsApp at 03150693148, call us at 03013301830, or email us at infoburhancommunication@gmail.com. We are available 24/7 to assist you.'
+      answer: 'You can reach us via WhatsApp at 03150693148, call us at 03013301830, or email us at infoburhancommunication@gmail.com. We will respond as soon as possible during store hours.'
     }
   ];
 
