@@ -96,6 +96,7 @@ const APPROVAL_SAFE_PRODUCT_FIELDS = [
   'name', 'slug', 'sku', 'category', 'brand', 'badge', 'shortDescription', 'description',
   'oldPrice', 'costPrice', 'lowStockThreshold', 'images', 'thumbnail', 'highlights',
   'features', 'specifications', 'inBox', 'warranty', 'deliveryInfo', 'faqs', 'seo',
+  'specificationsVerified', 'compareAtPriceVerified',
   'isFeatured', 'isTrending', 'isNew'
 ];
 
@@ -872,7 +873,9 @@ export async function POST(request) {
         isFeatured: Boolean(body.isFeatured),
         isTrending: Boolean(body.isTrending),
         isNew: body.isNew !== undefined ? Boolean(body.isNew) : true,
-        rating: 5,
+        specificationsVerified: body.specificationsVerified === true,
+        compareAtPriceVerified: body.compareAtPriceVerified === true,
+        rating: 0,
         reviewCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -1473,16 +1476,22 @@ export async function PATCH(request) {
       return successResponse({ success: true, message: 'Order status updated', order: updated, notification });
     }
 
-    // Review moderation (Approve / Hide): PATCH /api/admin/reviews/:id
+    // Only owners publish customer feedback; unapproved submissions stay private.
     if (path.startsWith('reviews/') && path.split('/').length === 2) {
+      const ownerCheck = await requireOwner(request);
+      if (!ownerCheck.authorized) return errorResponse('Only store owners can moderate reviews', 403);
       const id = path.split('/')[1];
       const body = await request.json();
+      if (!['approved', 'hidden'].includes(body.status)) return errorResponse('Invalid review status', 400);
       const reviewsCol = await getCollection('reviews');
-      const updateFields = {};
-      if (body.status !== undefined) updateFields.status = body.status;
-      if (body.verified !== undefined) updateFields.verified = Boolean(body.verified);
-
-      await reviewsCol.updateOne(buildIdQuery(id), { $set: updateFields });
+      const review = await reviewsCol.findOne(buildIdQuery(id));
+      if (!review) return errorResponse('Review not found', 404);
+      await reviewsCol.updateOne(buildIdQuery(id), { $set: { status: body.status, updatedAt: new Date().toISOString() } });
+      const approved = await reviewsCol.find({ productId: review.productId, status: 'approved' }).toArray();
+      const rating = approved.length ? approved.reduce((sum, item) => sum + Number(item.rating), 0) / approved.length : 0;
+      const productsCol = await getCollection('products');
+      await productsCol.updateOne(buildIdQuery(review.productId), { $set: { rating: Number(rating.toFixed(1)), reviewCount: approved.length, reviewsVerified: approved.length > 0 } });
+      revalidateStorefront();
       return successResponse({ success: true, message: 'Review updated successfully' });
     }
 

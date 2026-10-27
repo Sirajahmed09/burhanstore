@@ -123,7 +123,7 @@ export default function FeaturedProduct({ initialProduct = null }) {
             <div className="md:col-span-6 lg:col-span-7 flex flex-col justify-center">
               <div className="flex items-center space-x-2 mb-2 text-xs">
                 <span className="font-bold text-[#8E7B56] bg-[#F4F2ED] border border-[#E2DDD5] px-2.5 py-0.5 rounded-full">
-                  Official Store Device
+                  BURHAN STORE
                 </span>
                 <span className="text-[#A09D96]">·</span>
                 <span className="text-[#5A606A] font-medium">Direct Store Support</span>
@@ -155,13 +155,13 @@ export default function FeaturedProduct({ initialProduct = null }) {
                   </span>
                 ) : (
                   <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    In Stock ({displayProduct.stock} units)
+                    Available to order
                   </span>
                 )}
               </div>
 
               <p className="text-[#5A606A] text-sm sm:text-base leading-relaxed mb-6">
-                {displayProduct.shortDescription || displayProduct.description || 'Dynamic acoustic drivers, Active Noise Cancellation, and extended playtime for your everyday digital audio experience.'}
+                {displayProduct.shortDescription || displayProduct.description || 'Message our store for product and package details before ordering.'}
               </p>
 
               {/* Key Benefits Grid */}

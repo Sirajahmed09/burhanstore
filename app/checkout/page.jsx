@@ -9,14 +9,16 @@ import { useCart } from '@/lib/contexts/CartContext';
 import { CheckCircle2, ShieldCheck, Truck, RotateCcw, AlertCircle, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { resolveShippingFee } from '@/lib/commerce/shipping';
+import { trackBeginCheckout } from '@/lib/analytics/gtag';
 import { normalizePakistaniPhone } from '@/lib/utils/phone';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, getCartTotal, clearCart } = useCart();
+  const { cart, getCartTotal, clearCart, replaceCart, isLoaded } = useCart();
   const [loading, setLoading] = useState(false);
   const submissionIdRef = useRef(null);
   const submittingRef = useRef(false);
+  const submissionFingerprintRef = useRef(null);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -37,23 +39,41 @@ export default function CheckoutPage() {
   const subtotal = getCartTotal();
   const total = subtotal + shippingCost;
 
-  // Validate cart items on mount to ensure all items are still active and available
+  const [cartChecking, setCartChecking] = useState(true);
+  const analyticsCheckoutRef = useRef(null);
+  const [cartError, setCartError] = useState('');
   useEffect(() => {
-    if (cart.length > 0) {
-      fetch('/api/cart/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cart })
+    if (!isLoaded) return;
+    if (!cart.length) { setCartChecking(false); return; }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    setCartChecking(true);
+    setCartError('');
+    fetch('/api/cart/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: cart }), signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error('Unable to check your cart. Please refresh and try again.');
+        const data = await response.json();
+        if (!Array.isArray(data.items)) throw new Error('Cart check is unavailable. Please refresh.');
+        const signature = items => JSON.stringify(items.map(item => [String(item._id), Number(item.quantity), Number(item.price)]));
+        if (signature(data.items) !== signature(cart)) {
+          replaceCart(data.items);
+          setValidationWarning('Your cart was updated with the latest price and availability. Please review the total before ordering.');
+        }
+        if (data.issues?.length) setValidationWarning(data.issues.map(issue => issue.message).join(' '));
       })
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.issues && data.issues.length > 0) {
-            setValidationWarning(data.issues.map(i => i.message).join(' '));
-          }
-        })
-        .catch(err => console.error('Cart validation check failed:', err));
+      .catch(error => { if (!controller.signal.aborted) setCartError(error.message); else setCartError('Cart check timed out. Please refresh and try again.'); })
+      .finally(() => { clearTimeout(timeout); if (!controller.signal.aborted) setCartChecking(false); });
+    return () => { clearTimeout(timeout); controller.abort(); };
+  }, [cart, isLoaded, replaceCart]);
+
+  useEffect(() => {
+    if (!isLoaded || !cart.length || cartChecking || cartError || settingsLoading || settingsError) return;
+    const key = JSON.stringify([cart.map(item => [item._id, item.quantity, item.price]), total]);
+    if (analyticsCheckoutRef.current !== key) {
+      trackBeginCheckout(cart, total);
+      analyticsCheckoutRef.current = key;
     }
-  }, [cart]);
+  }, [cart, total, isLoaded, cartChecking, cartError, settingsLoading, settingsError]);
 
   const provinces = [
     'Punjab',
@@ -98,7 +118,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (submittingRef.current || loading || settingsLoading) return;
+    if (submittingRef.current || loading || settingsLoading || cartChecking || cartError) return;
     if (settingsError) { setSubmitError(settingsError); return; }
     setSubmitError('');
     
@@ -109,7 +129,7 @@ export default function CheckoutPage() {
     }
 
     const cartFingerprint = JSON.stringify({ items: cart.map(i => `${i._id}:${i.quantity}`).sort(), customer: formData });
-    let submissionKey = null;
+    let submissionKey = submissionFingerprintRef.current === cartFingerprint ? submissionIdRef.current : null;
     if (!submissionKey && typeof window !== 'undefined') {
       try {
         const stored = sessionStorage.getItem('burhan_pending_checkout');
@@ -130,6 +150,7 @@ export default function CheckoutPage() {
       }
     }
     submissionIdRef.current = submissionKey;
+    submissionFingerprintRef.current = cartFingerprint;
 
     submittingRef.current = true;
     setLoading(true);
@@ -186,8 +207,8 @@ export default function CheckoutPage() {
         router.push(`/success?orderId=${data.order._id}`);
       } else {
         // If server indicated an inventory or validation error, clear the reference so fresh cart edits can proceed
-        submissionIdRef.current = null;
-        if (typeof window !== 'undefined') {
+        if (response.status < 500) submissionIdRef.current = null;
+        if (response.status < 500 && typeof window !== 'undefined') {
           sessionStorage.removeItem('burhan_pending_checkout');
         }
         setSubmitError(data.error || 'Failed to place order. Please try again.');
@@ -205,6 +226,8 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
+
+  if (!isLoaded) return <div className="pt-32 p-8 text-center" role="status">Loading your cart...</div>;
 
   if (cart.length === 0) {
     return (
@@ -234,7 +257,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F2ED] pt-20 md:pt-24 pb-20 text-[#171A20]">
+    <div className="min-h-screen bg-[#F4F2ED] pt-20 md:pt-24 pb-32 md:pb-20 text-[#171A20]">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Page Header */}
         <div className="py-6 border-b border-[#E2DDD5] mb-8">
@@ -269,7 +292,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form id="checkout-form" onSubmit={handleSubmit}>
           <div className="grid lg:grid-cols-12 gap-8 items-start">
             {/* Left Column: Customer & Delivery Details */}
             <div className="lg:col-span-7 space-y-6">
@@ -282,10 +305,10 @@ export default function CheckoutPage() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   {/* Full Name */}
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    <label htmlFor="checkout-fullName" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                       Full Name *
                     </label>
-                    <input
+                    <input id="checkout-fullName" name="fullName" autoComplete="name" inputMode="text"
                       type="text"
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
@@ -301,10 +324,10 @@ export default function CheckoutPage() {
 
                   {/* Primary Mobile */}
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    <label htmlFor="checkout-phone" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                       Mobile Number (WhatsApp) *
                     </label>
-                    <input
+                    <input id="checkout-phone" name="phone" autoComplete="tel" inputMode="tel"
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -320,10 +343,10 @@ export default function CheckoutPage() {
 
                   {/* Alternate Phone */}
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    <label htmlFor="checkout-alternatePhone" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                       Alternate Phone (Optional)
                     </label>
-                    <input
+                    <input id="checkout-alternatePhone" name="alternatePhone" autoComplete="tel" inputMode="tel"
                       type="tel"
                       value={formData.alternatePhone}
                       onChange={(e) => setFormData({ ...formData, alternatePhone: e.target.value })}
@@ -334,10 +357,10 @@ export default function CheckoutPage() {
 
                   {/* Email */}
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    <label htmlFor="checkout-email" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                       Email Address (Optional)
                     </label>
-                    <input
+                    <input id="checkout-email" name="email" autoComplete="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -346,12 +369,14 @@ export default function CheckoutPage() {
                     />
                   </div>
 
+                  {errors.email && <p role="alert" className="text-xs text-red-700 sm:col-span-2">{errors.email}</p>}
+
                   {/* Province */}
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    <label htmlFor="checkout-province" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                       Province *
                     </label>
-                    <select
+                    <select id="checkout-province" name="province" autoComplete="address-level1"
                       value={formData.province}
                       onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                       className={`w-full px-3.5 py-2.5 rounded-xl border text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all ${
@@ -372,10 +397,10 @@ export default function CheckoutPage() {
 
                   {/* City */}
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    <label htmlFor="checkout-city" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                       City *
                     </label>
-                    <input
+                    <input id="checkout-city" name="city" autoComplete="address-level2" inputMode="text"
                       type="text"
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
@@ -391,10 +416,10 @@ export default function CheckoutPage() {
 
                   {/* Complete Street Address */}
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    <label htmlFor="checkout-address" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                       Complete Street Address *
                     </label>
-                    <textarea
+                    <textarea id="checkout-address" name="address" autoComplete="street-address"
                       rows={2}
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -410,10 +435,10 @@ export default function CheckoutPage() {
 
                   {/* Order Notes */}
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    <label htmlFor="checkout-notes" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                       Delivery Instructions (Optional)
                     </label>
-                    <input
+                    <input id="checkout-notes" name="notes" autoComplete="off"
                       type="text"
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -467,6 +492,8 @@ export default function CheckoutPage() {
                   Order Summary
                 </h2>
 
+                {cartError && <p role="alert" className="text-sm text-red-700">{cartError}</p>}
+                {cartChecking && <p role="status" className="text-sm text-slate-600">Checking the latest price and availability...</p>}
                 {settingsError && <p role="alert" className="text-sm text-red-700">{settingsError}</p>}
                 {settingsLoading && <p role="status" className="text-sm text-slate-600">Loading delivery charges...</p>}
                 {/* Items Mini-list */}
@@ -518,8 +545,8 @@ export default function CheckoutPage() {
                 {/* Submit Order Button */}
                 <button
                   type="submit"
-                  disabled={loading || settingsLoading || !!settingsError}
-                  className="w-full bg-cyan-500 hover:bg-cyan-600 active:scale-98 text-slate-950 font-bold py-4 rounded-xl text-base shadow-sm hover:shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={loading || settingsLoading || !!settingsError || cartChecking || !!cartError}
+                  className="w-full bg-[#171A20] hover:bg-[#0B0D10] active:scale-98 text-white font-bold py-4 rounded-xl text-base shadow-sm hover:shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <span>Processing Order...</span>
@@ -550,6 +577,9 @@ export default function CheckoutPage() {
             </div>
           </div>
         </form>
+        <div className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white border-t border-[#E2DDD5] p-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-lg">
+          <button type="submit" form="checkout-form" disabled={loading || settingsLoading || !!settingsError || cartChecking || !!cartError} className="w-full bg-[#171A20] text-white font-bold rounded-xl py-3 disabled:opacity-50">{loading ? 'Confirming...' : `Place COD Order — PKR ${total.toLocaleString()}`}</button>
+        </div>
       </div>
     </div>
   );

@@ -123,6 +123,7 @@ export default function AdminLayout({ children }) {
     },
     { icon: Users, label: 'Team & Staff', href: '/admin/employees', show: isOwner },
     { icon: FileText, label: 'Audit Logs', href: '/admin/audit', show: isOwner || isManager },
+    { icon: CheckSquare, label: 'Reviews', href: '/admin/reviews', show: isOwner },
     { icon: Settings, label: 'Settings', href: '/admin/settings', show: isOwner },
   ].filter(item => item.show);
 

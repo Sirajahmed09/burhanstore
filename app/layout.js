@@ -1,3 +1,4 @@
+import OrderHelp from '@/components/layout/OrderHelp';
 import './globals.css'
 import { Providers } from './providers'
 import Navbar from '@/components/layout/Navbar'
@@ -6,6 +7,7 @@ import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
 import { OrganizationSchema, WebsiteSchema } from '@/components/seo/StructuredData'
 
 export const metadata = {
+  icons: { icon: '/brand/icon-192.png', apple: '/brand/icon-192.png' },
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://burhanstore.com'),
   title: {
     default: 'BURHAN STORE | Premium Mobile Accessories & Electronics in Pakistan',
@@ -79,6 +81,7 @@ export default function RootLayout({ children }) {
           <Navbar />
           <main>{children}</main>
           <Footer />
+          <OrderHelp />
         </Providers>
       </body>
     </html>

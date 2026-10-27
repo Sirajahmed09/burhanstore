@@ -1,5 +1,6 @@
 'use client';
 
+import BrandLogo from '@/components/layout/BrandLogo';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -10,9 +11,11 @@ export default function Footer() {
   const pathname = usePathname();
   const currentYear = new Date().getFullYear();
   const [settings, setSettings] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
+    fetch('/api/categories').then(res => res.ok ? res.json() : {}).then(data => { if (isMounted) setCategories((data.categories || []).filter(category => Number(category.productCount) > 0)); }).catch(() => {});
     fetch('/api/settings')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -49,14 +52,7 @@ export default function Footer() {
     { name: 'FAQ', href: '/faq' },
   ];
 
-  const categoryLinks = [
-    { name: 'Wireless Earbuds', href: '/category/wireless-earbuds' },
-    { name: 'Headphones', href: '/category/headphones' },
-    { name: 'Chargers', href: '/category/chargers' },
-    { name: 'Power Banks', href: '/category/power-banks' },
-    { name: 'Smart Watches', href: '/category/smart-watches' },
-    { name: 'Gaming Accessories', href: '/category/gaming-accessories' },
-  ];
+  const categoryLinks = categories.map(category => ({ name: category.name, href: `/category/${category.slug || category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` }));
 
   // Active verified social channels only
   const activeSocials = [];
@@ -84,9 +80,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand Column */}
           <div>
-            <div className="font-heading text-2xl font-black tracking-tight mb-3 text-white">
-              BURHAN
-            </div>
+            <Link href="/" aria-label="BURHAN STORE home" className="inline-block mb-4"><BrandLogo dark /></Link>
             <p className="text-white/60 text-xs sm:text-sm leading-relaxed mb-6">
               Sound that moves with you. Quiet luxury audio gear, wireless earbuds, and everyday mobile tech delivered across Pakistan.
             </p>
@@ -194,7 +188,6 @@ export default function Footer() {
           <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] text-white/70">
             <span className="text-white/40 mr-1">Payment & Assurance:</span>
             <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-md font-medium text-white">Cash on Delivery</span>
-            <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-md font-medium text-white">Debit / Credit Card</span>
             <span className="px-2.5 py-1 bg-white/5 border border-[#B9A47C]/40 text-[#B9A47C] rounded-md font-semibold">
               Direct Store Support
             </span>

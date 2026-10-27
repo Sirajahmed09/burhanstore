@@ -366,7 +366,7 @@ export async function GET(request) {
       const reviews = await reviewsCol
         .find({
           $or: [{ productId: productId }, { productSlug: productId }],
-          status: { $ne: 'hidden' }
+          status: 'approved'
         })
         .sort({ createdAt: -1 })
         .toArray();
@@ -844,7 +844,7 @@ export async function POST(request) {
         rating: numericRating,
         comment: String(comment).trim(),
         verified: isVerifiedBuyer,
-        status: 'approved',
+        status: 'pending',
         createdAt: new Date().toISOString()
       };
 
@@ -853,7 +853,7 @@ export async function POST(request) {
       // Recalculate product review count & average rating
       const allProdReviews = await reviewsCol.find({
         $or: [{ productId: String(productId) }, { productSlug: String(productId) }],
-        status: { $ne: 'hidden' }
+        status: 'approved'
       }).toArray();
 
       const avgRating = allProdReviews.length > 0

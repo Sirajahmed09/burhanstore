@@ -1,5 +1,6 @@
 'use client';
 
+import BrandLogo from '@/components/layout/BrandLogo';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
@@ -19,9 +20,6 @@ export default function Navbar() {
   const { wishlist } = useWishlist();
 
   // Do not render public storefront navbar inside Admin Panel
-  if (pathname?.startsWith('/admin')) {
-    return null;
-  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,13 +50,15 @@ export default function Navbar() {
     { name: 'Contact', href: '/contact' },
   ];
 
+  if (pathname?.startsWith('/admin')) return null;
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-200">
       {/* Top Announcement Bar - Quiet Luxury Obsidian */}
       <div className="bg-[#0B0D10] text-white text-[11px] sm:text-xs py-1.5 px-4 text-center font-medium flex items-center justify-center space-x-2 border-b border-white/5">
         <span className="flex items-center space-x-1.5 text-[#B9A47C]">
           <Truck className="w-3.5 h-3.5" />
-          <span>Nationwide Cash on Delivery Across Pakistan</span>
+          <span>Cash on Delivery · Delivery in 2–5 business days</span>
         </span>
         <span className="hidden sm:inline text-white/30">·</span>
         <span className="hidden sm:inline text-white/80">
@@ -81,14 +81,7 @@ export default function Navbar() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Brand Logo - Quiet Luxury Wordmark */}
-            <Link href="/" className="flex items-center space-x-2.5 group">
-              <span className="font-heading text-xl sm:text-2xl font-black tracking-tight text-[#171A20] group-hover:text-[#B9A47C] transition-colors">
-                BURHAN
-              </span>
-              <span className="hidden sm:inline-block text-[10px] font-semibold text-[#5A606A] border-l border-[#D6D1C7] pl-2 uppercase tracking-[0.2em]">
-                Store
-              </span>
-            </Link>
+            <Link href="/" aria-label="BURHAN STORE home" className="flex items-center group"><BrandLogo /></Link>
 
             {/* Desktop Navigation Links */}
             <nav className="hidden md:flex items-center space-x-1 lg:space-x-2" aria-label="Main Navigation">

@@ -62,3 +62,16 @@ assert.equal(products[0].stock, 0);
 assert.equal((await submit({ ...base, customer: { ...base.customer, address: 'Different address' } })).status, 409);
 assert.equal((await submit({ ...base, customer: { ...base.customer, province: 'Punjab' } })).status, 409);
 console.log('Launch readiness: shipping precedence/validation, public copy/privacy, and real order handler payment/quantity/phone/pricing/retry checks passed. No live services used.');
+
+const unconfirmed = { name: 'Test earbuds', shortDescription: 'ANC and 36 hours', oldPrice: 2000, price: 1000, rating: 5, reviewCount: 100, inBox: ['Cable'], specifications: { Battery: '36 hours' } };
+const unpublished = publicProduct(unconfirmed);
+assert.equal(unpublished.oldPrice, null);
+assert.equal(unpublished.rating, 0);
+assert.deepEqual(unpublished.inBox, []);
+assert.deepEqual(unpublished.specifications, {});
+assert.equal(unconfirmed.oldPrice, 2000, 'Public sanitization must not alter admin database data');
+const confirmed = publicProduct({ ...unconfirmed, specificationsVerified: true, compareAtPriceVerified: true });
+assert.equal(confirmed.oldPrice, 2000);
+assert.equal(confirmed.specifications.Battery, '36 hours');
+assert.deepEqual(publicProduct(unpublished), unpublished, 'Repeated public sanitization must preserve the same content');
+console.log('Unconfirmed performance, package, comparison-price and rating claims stay hidden; confirmed details remain editable.');

@@ -64,7 +64,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
     price: initialData?.price !== undefined ? initialData.price : '',
     oldPrice: initialData?.oldPrice || '',
     costPrice: initialData?.costPrice || '',
-    stock: initialData?.stock !== undefined ? initialData.stock : 15,
+    stock: initialData?.stock !== undefined ? initialData.stock : 0,
     lowStockThreshold: initialData?.lowStockThreshold || 5,
     status: initialData?.status || (initialData?.isActive === false ? 'inactive' : 'active'),
     isFeatured: Boolean(initialData?.isFeatured),
@@ -94,6 +94,9 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
 
     // What's in the Box (Array of strings)
     inBox: Array.isArray(initialData?.inBox) ? initialData.inBox : [],
+
+    specificationsVerified: initialData?.specificationsVerified === true,
+    compareAtPriceVerified: initialData?.compareAtPriceVerified === true,
 
     // Warranty
     warrantyDuration: initialData?.warranty?.duration || '',
@@ -171,7 +174,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
         price: initialData.price !== undefined ? initialData.price : '',
         oldPrice: initialData.oldPrice || '',
         costPrice: initialData.costPrice || '',
-        stock: initialData.stock !== undefined ? initialData.stock : 15,
+        stock: initialData.stock !== undefined ? initialData.stock : 0,
         lowStockThreshold: initialData.lowStockThreshold || 5,
         status: initialData.status || (initialData.isActive === false ? 'inactive' : 'active'),
         isFeatured: Boolean(initialData.isFeatured),
@@ -192,6 +195,8 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
           : [],
         inBox: Array.isArray(initialData.inBox) ? initialData.inBox : [],
 
+        specificationsVerified: initialData?.specificationsVerified === true,
+        compareAtPriceVerified: initialData?.compareAtPriceVerified === true,
         warrantyDuration: initialData?.warranty?.duration || '',
         warrantyType: initialData?.warranty?.type || 'Replacement Warranty',
         warrantyDescription: initialData?.warranty?.description || (typeof initialData?.warranty === 'string' ? initialData.warranty : 'Contact us with your order details for after-sales support. See our Refund & Return Policy.'),
@@ -477,6 +482,8 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
         sku: formData.sku.trim(),
         category: formData.category,
         brand: formData.brand.trim() || 'BURHAN',
+        specificationsVerified: formData.specificationsVerified === true,
+        compareAtPriceVerified: formData.compareAtPriceVerified === true,
         badge: formData.badge.trim(),
         shortDescription: formData.shortDescription.trim(),
         description: formData.description.trim(),
@@ -580,6 +587,12 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl pb-16">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 space-y-3 text-sm">
+          <p className="font-semibold">Product claim checks</p>
+          <label className="flex gap-2 items-start"><input type="checkbox" checked={!!formData.specificationsVerified} onChange={e => setFormData({ ...formData, specificationsVerified: e.target.checked })} />I have checked this product and confirmed its listed features, package contents, specifications and performance claims.</label>
+          <label className="flex gap-2 items-start"><input type="checkbox" checked={!!formData.compareAtPriceVerified} onChange={e => setFormData({ ...formData, compareAtPriceVerified: e.target.checked })} />The comparison price is a genuine previous selling price.</label>
+        </div>
+
       {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-gray-200">
         <div>

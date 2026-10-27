@@ -12,7 +12,7 @@ export function OrganizationSchema() {
     "name": "BURHAN STORE",
     "alternateName": "Burhan",
     "url": baseUrl,
-    "logo": `${baseUrl}/logo.png`,
+    "logo": `${baseUrl}/brand/icon-512.png`,
     "description": "Pakistan-focused online store for premium mobile accessories and electronics.",
     "email": "infoburhancommunication@gmail.com",
     "address": {

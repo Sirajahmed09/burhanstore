@@ -11,7 +11,7 @@ export default function FeaturedCategories() {
   useEffect(() => {
     fetch(`/api/categories?_t=${Date.now()}`, { cache: 'no-store' })
       .then(res => (res.ok ? res.json() : { categories: [] }))
-      .then(data => setCategories(data?.categories || []))
+      .then(data => setCategories((data?.categories || []).filter(category => Number(category.productCount) > 0)))
       .catch(err => console.error('Failed to load categories:', err));
   }, []);
 

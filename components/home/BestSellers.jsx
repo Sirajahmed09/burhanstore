@@ -58,13 +58,13 @@ export default function BestSellers({ products: initialProducts = null }) {
         <div className="flex flex-col sm:flex-row items-center justify-between mb-10 text-center sm:text-left gap-4">
           <div>
             <div className="inline-flex items-center space-x-2 text-[#8E7B56] text-xs font-bold uppercase tracking-wider mb-2 px-3 py-1 bg-[#F4F2ED] border border-[#E2DDD5] rounded-full">
-              <span>Customer Favorites</span>
+              <span>Explore More</span>
             </div>
             <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#171A20] tracking-tight">
               Featured Audio & Electronics
             </h2>
             <p className="text-[#5A606A] text-sm sm:text-base mt-1">
-              Top-rated devices with nationwide cash on delivery
+              Browse available products with clear prices and direct store support
             </p>
           </div>
           <Link

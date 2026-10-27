@@ -1,7 +1,7 @@
 'use client';
 
 import { publicProduct } from '@/lib/commerce/publicProduct';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -62,7 +62,7 @@ function getFeatureIcon(iconKey) {
 }
 
 export default function ProductDetailClient({ product: rawProduct, initialRelated = [] }) {
-  const product = publicProduct(rawProduct);
+  const product = useMemo(() => publicProduct(rawProduct), [rawProduct]);
   const router = useRouter();
   const [relatedProducts, setRelatedProducts] = useState(initialRelated);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -116,7 +116,7 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
           setReviewsLoading(false);
         });
     }
-  }, [product, initialRelated]);
+  }, [product, initialRelated.length]);
 
   const handleAddToCart = () => {
     if (product && product.stock > 0) {
@@ -364,12 +364,12 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
                       {(reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1)}
                     </span>
                     <span className="text-slate-500">·</span>
-                    <span className="text-slate-600 font-medium">({reviews.length} verified review{reviews.length !== 1 ? 's' : ''})</span>
+                    <span className="text-slate-600 font-medium">({reviews.length} customer review{reviews.length !== 1 ? 's' : ''})</span>
                     <span className="text-slate-500">·</span>
                   </>
                 ) : null}
                 <span className="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded text-xs">
-                  Official Stock
+                  Available from BURHAN STORE
                 </span>
                 <span className="text-slate-500">·</span>
                 <span className="text-cyan-800 font-medium text-xs">
@@ -395,7 +395,7 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
                   )}
                 </div>
                 <div className="text-xs text-slate-600 flex items-center space-x-2">
-                  <span>Price includes all taxes</span>
+                  <span>Delivery charge shown at checkout</span>
                   <span>·</span>
                   <span className="text-emerald-700 font-medium">Cash on Delivery across Pakistan</span>
                 </div>
@@ -424,7 +424,7 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
                 {product.stock > 0 ? (
                   <div className="flex items-center space-x-2 text-xs sm:text-sm text-emerald-700 font-semibold">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>In Stock — Ready to ship from Karachi warehouse ({product.stock} units available)</span>
+                    <span>Available to order — delivery estimate shown below</span>
                   </div>
                 ) : (
                   <div className="text-sm text-red-600 font-semibold">Currently Out of Stock</div>
@@ -463,10 +463,10 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
                 <button
                   onClick={handleBuyNow}
                   disabled={product.stock <= 0}
-                  className="w-full bg-cyan-500 hover:bg-cyan-600 active:scale-98 text-slate-950 font-bold py-3.5 px-6 rounded-xl text-base shadow-sm hover:shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-[#171A20] hover:bg-[#0B0D10] active:scale-98 text-white font-bold py-3.5 px-6 rounded-xl text-base shadow-sm hover:shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Sparkles className="w-4 h-4 fill-slate-950" />
-                  <span>{product.stock <= 0 ? 'Out of Stock' : 'Buy Now — COD'}</span>
+                  <span>{product.stock <= 0 ? 'Out of Stock' : 'Order with Cash on Delivery'}</span>
                 </button>
                 <button
                   onClick={handleAddToCart}
@@ -557,7 +557,7 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
                 Everything You Need. Nothing You Don't.
               </h2>
               <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                Carefully engineered features built for daily reliability, long battery timing, and premium audio performance.
+                Explore product details and contact us if you need help choosing.
               </p>
             </div>
 
@@ -811,7 +811,7 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
               <button
                 type="submit"
                 disabled={reviewSubmitting}
-                className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold px-5 py-2.5 rounded-lg text-xs sm:text-sm shadow-xs transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+                className="bg-[#171A20] hover:bg-[#0B0D10] text-white font-bold px-5 py-2.5 rounded-lg text-xs sm:text-sm shadow-xs transition-colors flex items-center space-x-1.5 disabled:opacity-50"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{reviewSubmitting ? 'Submitting...' : 'Submit Review'}</span>
@@ -863,7 +863,7 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
               </div>
               <h3 className="font-bold text-slate-900 text-sm mb-1">No reviews yet</h3>
               <p className="text-xs text-slate-500 mb-4">
-                Be the first verified customer to share feedback about {product.name}.
+                Be the first customer to share feedback about {product.name}.
               </p>
               <button
                 onClick={() => setShowReviewForm(true)}
