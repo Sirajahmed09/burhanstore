@@ -20,7 +20,7 @@ function SuccessContent() {
         sessionOrder = saved ? JSON.parse(saved) : null;
       } catch (err) {}
 
-      fetch(`/api/orders/${orderId}`)
+      fetch(`/api/orders/${orderId}`, { headers: sessionOrder?.receiptToken ? { 'x-order-token': sessionOrder.receiptToken } : {} })
         .then(res => (res.ok ? res.json() : { order: null }))
         .then(data => {
           const ord = sessionOrder
@@ -136,7 +136,7 @@ function SuccessContent() {
             </a>
             {order && (
               <Link
-                href={`/track?orderId=${encodeURIComponent(order.orderNumber || order._id)}${order.customer?.phone ? `&phone=${encodeURIComponent(order.customer.phone)}` : ''}`}
+                href={`/track?orderId=${encodeURIComponent(order.orderNumber || order._id)}`}
                 className="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold px-6 py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center space-x-2"
               >
                 <Package className="w-4 h-4" />

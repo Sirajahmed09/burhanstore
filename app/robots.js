@@ -7,6 +7,8 @@ export default function robots() {
         userAgent: '*',
         allow: '/',
         disallow: [
+          '/staff-entry',
+          '/track',
           '/admin',
           '/admin/',
           '/api',

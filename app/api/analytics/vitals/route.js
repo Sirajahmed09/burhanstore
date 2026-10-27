@@ -1,38 +1,11 @@
 import { NextResponse } from 'next/server';
-
-/**
- * Web Vitals Analytics Endpoint
- * Receives and logs Core Web Vitals metrics
- */
+import { readJsonBody, clientAddress } from '@/lib/security/requests';
+import { consumeRateLimit } from '@/lib/security/rate-limit';
 export async function POST(request) {
   try {
-    const metric = await request.json();
-    
-    // In production, send to analytics service (Google Analytics, Vercel Analytics, etc.)
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Web Vital:', {
-        name: metric.name,
-        value: metric.value,
-        rating: metric.rating,
-        delta: metric.delta,
-        id: metric.id,
-      });
-
-      // TODO: Send to analytics service
-      // Example: Google Analytics 4
-      // if (typeof gtag !== 'undefined') {
-      //   gtag('event', metric.name, {
-      //     value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
-      //     event_category: 'Web Vitals',
-      //     event_label: metric.id,
-      //     non_interaction: true,
-      //   });
-      // }
-    }
-
+    const metric = await readJsonBody(request, 4096);
+    await consumeRateLimit('vitals', clientAddress(request), 120, 15 * 60 * 1000);
+    if (!['CLS', 'LCP', 'INP', 'FCP', 'TTFB'].includes(metric.name) || !Number.isFinite(metric.value)) return NextResponse.json({ success: false }, { status: 400 });
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Analytics error:', error);
-    return NextResponse.json({ success: false }, { status: 500 });
-  }
+  } catch (error) { return NextResponse.json({ success: false }, { status: error.status || 500 }); }
 }

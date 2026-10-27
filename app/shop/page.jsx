@@ -5,7 +5,7 @@ import { BreadcrumbSchema } from '@/components/seo/StructuredData';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export const metadata = {
+const shopMetadata = {
   title: 'Shop All Electronics & Mobile Accessories',
   description: 'Browse our full collection of premium wireless earbuds, smartwatches, power banks, fast chargers, and gaming accessories at BURHAN STORE with nationwide cash on delivery across Pakistan.',
   alternates: {
@@ -25,6 +25,12 @@ export const metadata = {
     description: 'Browse premium wireless earbuds, smartwatches, power banks, and chargers with fast delivery in Pakistan.',
   },
 };
+
+export async function generateMetadata({ searchParams }) {
+  const params = await searchParams;
+  const filtered = Object.keys(params || {}).some(key => ['search', 'category', 'minPrice', 'maxPrice', 'sort', 'page'].includes(key));
+  return { ...shopMetadata, robots: { index: !filtered, follow: true } };
+}
 
 export default function ShopPage() {
   const breadcrumbs = [

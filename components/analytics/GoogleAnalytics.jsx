@@ -10,17 +10,16 @@ function AnalyticsTracker() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!pathname) return;
-    const url = searchParams?.toString()
-      ? `${pathname}?${searchParams.toString()}`
-      : pathname;
-    pageView(url);
+    if (!pathname || pathname.startsWith('/admin') || pathname.startsWith('/staff-entry')) return;
+    pageView(pathname);
   }, [pathname, searchParams]);
 
   return null;
 }
 
 export default function GoogleAnalytics() {
+  const pathname = usePathname();
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/staff-entry')) return null;
   return (
     <>
       {/* Global Site Tag (gtag.js) - Google Analytics 4 */}
@@ -38,7 +37,8 @@ export default function GoogleAnalytics() {
             gtag('js', new Date());
             gtag('config', '${GA_MEASUREMENT_ID}', {
               page_path: window.location.pathname,
-              send_page_view: true
+              page_location: window.location.origin + window.location.pathname,
+              send_page_view: false
             });
           `,
         }}

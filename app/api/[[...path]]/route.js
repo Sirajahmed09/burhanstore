@@ -1,3 +1,7 @@
+import { verifyHumanCheck } from '@/lib/security/human-check';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { readJsonBody, clientAddress, literalSearch } from '@/lib/security/requests';
+import { consumeRateLimit, validateOrderLimits } from '@/lib/security/rate-limit';
 import { publicProduct } from '@/lib/commerce/publicProduct';
 import { NextResponse } from 'next/server';
 import { connectToDatabase, getCollection, getDatabaseStatus, buildIdQuery } from '@/lib/db/mongodb';
@@ -75,7 +79,7 @@ function sanitizeTrackedOrder(order) {
     shipping: order.shipping || order.pricing?.shipping || 0,
     total: order.total || order.pricing?.total || 0,
     paymentMethod: order.paymentMethod || 'cod',
-    timeline: Array.isArray(order.timeline) ? order.timeline.map(({ status, timestamp, message }) => ({ status, timestamp, message })) : [],
+    timeline: Array.isArray(order.timeline) ? order.timeline.map(({ status, timestamp }) => ({ status, timestamp, message: ({ pending: 'Order received', confirmed: 'Order confirmed', processing: 'Preparing your order', shipped: 'Handed to courier', delivered: 'Delivered', cancelled: 'Order cancelled', returned: 'Returned', refunded: 'Refund processed' })[status] || 'Order status updated' })) : [],
     shipment: order.shipment ? {
       courier: order.shipment.courier,
       trackingNumber: order.shipment.trackingNumber,
@@ -148,7 +152,7 @@ export async function GET(request) {
       const minPrice = searchParams.get('minPrice');
       const maxPrice = searchParams.get('maxPrice');
       const sort = searchParams.get('sort') || 'newest';
-      const search = searchParams.get('search');
+      const search = literalSearch(searchParams.get('search'));
       const inStock = searchParams.get('inStock');
       const rating = searchParams.get('rating');
 
@@ -196,7 +200,7 @@ export async function GET(request) {
       }
 
       // Add pagination
-      const page = Math.max(1, parseInt(searchParams.get('page'), 10) || 1);
+      const page = Math.min(100, Math.max(1, parseInt(searchParams.get('page'), 10) || 1));
       const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit'), 10) || 100));
       const skip = (page - 1) * limit;
 
@@ -288,50 +292,14 @@ export async function GET(request) {
       }
 
       const updatedCategories = categories.map(cat => ({
-        ...cat,
+        _id: cat._id, name: cat.name, slug: cat.slug, image: cat.image, description: cat.description,
         productCount: counts[cat.name] || 0
       }));
 
       return NextResponse.json({ categories: updatedCategories }, { headers: NO_CACHE_HEADERS });
     }
 
-    // Order tracking endpoint (GET support with strict phone verification)
-    if (path === 'orders/track') {
-      const orderId = searchParams.get('orderId') || '';
-      const phone = searchParams.get('phone') || '';
-
-      if (!orderId || !phone) {
-        return errorResponse('Order ID and registered mobile number are required to track an order', 400);
-      }
-
-      const sanitizedOrderId = String(orderId).trim().toLowerCase();
-      const cleanInputPhone = String(phone).replace(/[^0-9]/g, '').slice(-10);
-
-      if (sanitizedOrderId.length === 0 || cleanInputPhone.length === 0) {
-        return errorResponse('Valid Order ID and mobile number are required', 400);
-      }
-
-      const ordersCol = await getCollection('orders');
-      const allOrders = await ordersCol.find({}).toArray();
-
-      const matchedOrder = allOrders.find(o => {
-        const idMatches = 
-          o._id.toLowerCase() === sanitizedOrderId ||
-          o._id.toLowerCase().startsWith(sanitizedOrderId) ||
-          sanitizedOrderId.startsWith(o._id.slice(0, 12).toLowerCase());
-
-        const oPhone = String(o.customer?.phone || '').replace(/[^0-9]/g, '').slice(-10);
-        const oAltPhone = String(o.customer?.alternatePhone || '').replace(/[^0-9]/g, '').slice(-10);
-
-        return idMatches && (oPhone === cleanInputPhone || oAltPhone === cleanInputPhone);
-      });
-
-      if (!matchedOrder) {
-        return errorResponse('Order not found. Please check your Order ID and phone number.', 404);
-      }
-
-      return NextResponse.json({ order: sanitizeTrackedOrder(matchedOrder) }, { headers: NO_CACHE_HEADERS });
-    }
+    if (path === 'orders/track') return errorResponse('Use the tracking form', 405);
 
     // Orders confirmation receipt endpoint (Public view sanitized)
     if (path.startsWith('orders/') && !path.includes('track')) {
@@ -343,6 +311,9 @@ export async function GET(request) {
         return errorResponse('Order not found', 404);
       }
       
+      const suppliedToken = request.headers.get('x-order-token') || '';
+      const storedToken = order.receiptToken || '';
+      if (!storedToken || Buffer.byteLength(suppliedToken) !== Buffer.byteLength(storedToken) || !timingSafeEqual(Buffer.from(suppliedToken), Buffer.from(storedToken))) return errorResponse('Order not found', 404);
       const safeOrder = {
         _id: order._id,
         orderNumber: order.orderNumber || order._id,
@@ -371,12 +342,12 @@ export async function GET(request) {
         .sort({ createdAt: -1 })
         .toArray();
       
-      return NextResponse.json({ reviews }, { headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ reviews: reviews.map(({ _id, name, rating, comment, verified, createdAt }) => ({ _id, name, rating, comment, verified: verified === true, createdAt })) }, { headers: NO_CACHE_HEADERS });
     }
 
     // Search endpoint with suggestions
     if (path === 'search') {
-      const query = searchParams.get('q') || '';
+      const query = literalSearch(searchParams.get('q'));
       if (!query) {
         return NextResponse.json({ suggestions: [], products: [] }, { headers: NO_CACHE_HEADERS });
       }
@@ -438,6 +409,7 @@ export async function GET(request) {
         shippingFee: resolveShippingFee(settings),
         shippingRules: Array.isArray(settings.shippingRules) ? settings.shippingRules : [],
         paymentMethods: ['cod'],
+        turnstileSiteKey: process.env.TURNSTILE_SECRET_KEY ? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '' : '',
       };
       return NextResponse.json({ settings: safeSettings }, { headers: NO_CACHE_HEADERS });
     }
@@ -445,7 +417,7 @@ export async function GET(request) {
     return errorResponse('Endpoint not found', 404);
   } catch (error) {
     console.error('API Error:', error);
-    return errorResponse(error.message);
+    return errorResponse(error.status ? error.message : 'Unable to process request', error.status || 500);
   }
 }
 
@@ -457,8 +429,10 @@ export async function POST(request) {
   try {
     // Validate cart items against real database stock, prices, and status
     if (path === 'cart/validate') {
-      const body = await request.json();
+      await consumeRateLimit('cart-validation', clientAddress(request), 120, 15 * 60 * 1000);
+      const body = await readJsonBody(request);
       const items = Array.isArray(body.items) ? body.items : [];
+      if (items.length > 50) return errorResponse('Too many cart lines', 400);
       const productsCol = await getCollection('products');
 
       const validated = [];
@@ -533,9 +507,12 @@ export async function POST(request) {
 
     // Create order - WITH SERVER-SIDE PRICE VALIDATION & ACTIVE CHECK
     if (path === 'orders') {
+      const body = await readJsonBody(request);
+      await consumeRateLimit('order-requests-ip', clientAddress(request), 60, 15 * 60 * 1000);
+      if (body.website) return errorResponse('Unable to place order', 400);
+      if (typeof body.clientReferenceId !== 'string' || !/^[A-Za-z0-9_-]{8,100}$/.test(body.clientReferenceId)) return errorResponse('Please refresh checkout and try again', 400);
       const ordersCol = await getCollection('orders');
       const productsCol = await getCollection('products');
-      const body = await request.json();
       
       // SECURITY: Validate and recalculate prices server-side
       if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
@@ -551,6 +528,10 @@ export async function POST(request) {
         return errorResponse('Please provide a valid Pakistani mobile number', 400);
       }
       
+      for (const [field, maximum] of [['name', 100], ['phone', 30], ['address', 500], ['city', 100], ['province', 100]]) {
+        if (typeof body.customer[field] !== 'string' || !body.customer[field].trim() || body.customer[field].length > maximum) return errorResponse('Please check your delivery details', 400);
+      }
+      if (body.customer.email && (typeof body.customer.email !== 'string' || body.customer.email.length > 254)) return errorResponse('Invalid email address', 400);
       if (body.paymentMethod !== 'cod') return errorResponse('This payment method is unavailable. Please select Cash on Delivery.', 400);
       if (!String(body.customer.name).trim() || !String(body.customer.address).trim() || !String(body.customer.city || '').trim() || !String(body.customer.province || '').trim()) return errorResponse('Name, province, city and complete delivery address are required', 400);
       if (body.customer.alternatePhone && !normalizePakistaniPhone(body.customer.alternatePhone)) return errorResponse('Invalid alternate phone number', 400);
@@ -581,9 +562,10 @@ export async function POST(request) {
       const productsById = new Map();
 
       for (const item of body.items) {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) return errorResponse('Invalid order item', 400);
         const prodId = item.productId || item._id;
         const requestedQty = Number(item.quantity);
-        if (!prodId || !Number.isSafeInteger(requestedQty) || requestedQty < 1 || requestedQty > 100) {
+        if (typeof prodId !== 'string' || prodId.length > 128 || !Number.isSafeInteger(requestedQty) || requestedQty < 1 || requestedQty > 100) {
           return errorResponse('Invalid item in order', 400);
         }
         
@@ -628,15 +610,20 @@ export async function POST(request) {
       const settings = await settingsCol.findOne({ type: 'general' }) || {};
       const shipping = resolveShippingFee(settings, body.customer);
       const calculatedTotal = calculatedSubtotal + shipping;
+      validateOrderLimits(validatedItems, calculatedTotal);
+      await verifyHumanCheck(body.humanToken);
+      await consumeRateLimit('new-order-phone', cleanPhone, 3, 15 * 60 * 1000);
+      await consumeRateLimit('new-order-ip', clientAddress(request), 8, 15 * 60 * 1000);
       
       const order = {
         _id: uuidv4(),
+        receiptToken: randomBytes(32).toString('hex'),
         items: validatedItems,
         customer: {
           name: String(body.customer.name).trim(),
           email: body.customer.email ? String(body.customer.email).trim() : '',
           phone: cleanPhone,
-          alternatePhone: body.customer.alternatePhone ? String(body.customer.alternatePhone).trim() : '',
+          alternatePhone: body.customer.alternatePhone ? normalizePakistaniPhone(body.customer.alternatePhone) : '',
           province: body.customer.province ? String(body.customer.province).trim() : '',
           city: body.customer.city ? String(body.customer.city).trim() : '',
           address: String(body.customer.address).trim(),
@@ -757,52 +744,26 @@ export async function POST(request) {
       return NextResponse.json({ order, success: true, notification }, { status: 201, headers: NO_CACHE_HEADERS });
     }
 
-    // Track order - WITH INPUT SANITIZATION & FLEXIBLE MATCHING
+    // Tracking reveals only a sanitized order after ID and complete phone verification.
     if (path === 'orders/track') {
-      const { orderId, phone } = await request.json();
-      
-      if (!orderId || !phone) {
-        return errorResponse('Order ID and phone number are required', 400);
-      }
-
-      // Sanitize inputs
-      const sanitizedOrderId = String(orderId).trim();
-      const cleanInputPhone = String(phone).replace(/[^0-9]/g, '').slice(-10);
-      
-      if (sanitizedOrderId.length === 0 || cleanInputPhone.length === 0) {
-        return errorResponse('Invalid Order ID or phone number', 400);
-      }
-
+      const { orderId, phone } = await readJsonBody(request);
+      await consumeRateLimit('order-tracking-ip', clientAddress(request), 30, 15 * 60 * 1000);
+      const normalized = normalizePakistaniPhone(phone);
+      const id = typeof orderId === 'string' ? orderId.trim() : '';
+      if (!normalized || id.length < 12 || id.length > 100 || !/^[A-Za-z0-9_-]+$/.test(id)) return errorResponse('Valid Order ID and complete mobile number are required', 400);
+      const variants = [normalized, '92' + normalized.slice(1), '+92' + normalized.slice(1)];
       const ordersCol = await getCollection('orders');
-      const allOrders = await ordersCol.find({}).toArray();
-
-      const matchedOrder = allOrders.find(o => {
-        const idMatches = 
-          o._id.toLowerCase() === sanitizedOrderId.toLowerCase() ||
-          o._id.toLowerCase().startsWith(sanitizedOrderId.toLowerCase()) ||
-          sanitizedOrderId.toLowerCase().startsWith(o._id.slice(0, 12).toLowerCase());
-
-        const oPhone = String(o.customer?.phone || '').replace(/[^0-9]/g, '').slice(-10);
-        const oAltPhone = String(o.customer?.alternatePhone || '').replace(/[^0-9]/g, '').slice(-10);
-
-        const phoneMatches = 
-          (oPhone && oPhone === cleanInputPhone) ||
-          (oAltPhone && oAltPhone === cleanInputPhone);
-
-        return idMatches && phoneMatches;
-      });
-      
-      if (!matchedOrder) {
-        return errorResponse('Order not found. Please check your Order ID and phone number.', 404);
-      }
-      
+      const matchedOrder = await ordersCol.findOne({ $and: [{ $or: [{ _id: { $regex: '^' + literalSearch(id), $options: 'i' } }, { orderNumber: id }] }, { $or: [{ 'customer.phone': { $in: variants } }, { 'customer.alternatePhone': { $in: variants } }] }] });
+      if (!matchedOrder) return errorResponse('Order not found. Check your Order ID and phone number.', 404);
       return NextResponse.json({ order: sanitizeTrackedOrder(matchedOrder) }, { headers: NO_CACHE_HEADERS });
     }
 
     // Customer review submission: POST /api/reviews
     if (path === 'reviews') {
-      const body = await request.json();
+      const body = await readJsonBody(request);
+      await consumeRateLimit('review-ip', clientAddress(request), 5, 60 * 60 * 1000);
       const { productId, name, rating, comment } = body || {};
+      if (typeof name !== 'string' || typeof comment !== 'string' || name.length > 100 || comment.length > 2000 || typeof productId !== 'string') return errorResponse('Invalid review', 400);
 
       if (!productId || !name?.trim() || !comment?.trim()) {
         return errorResponse('Product ID, your name, and a review comment are required', 400);
@@ -813,29 +774,8 @@ export async function POST(request) {
 
       const numericRating = Math.min(5, Math.max(1, parseInt(rating, 10) || 5));
 
-      // Check if this reviewer has a verified completed order for this product
-      let isVerifiedBuyer = false;
-      if (body.orderId || body.phone || body.email) {
-        try {
-          const ordersCol = await getCollection('orders');
-          const orderQuery = {
-            status: { $in: ['delivered', 'shipped', 'confirmed'] },
-            $or: []
-          };
-          if (body.orderId) orderQuery.$or.push({ orderNumber: String(body.orderId).trim() });
-          if (body.phone) orderQuery.$or.push({ 'customer.phone': String(body.phone).trim() });
-          if (body.email) orderQuery.$or.push({ 'customer.email': String(body.email).trim() });
-
-          if (orderQuery.$or.length > 0) {
-            const matched = await ordersCol.findOne(orderQuery);
-            if (matched && Array.isArray(matched.items)) {
-              isVerifiedBuyer = matched.items.some(it => it.id === productId || it.slug === productId || it.name?.toLowerCase().includes(productId.toLowerCase()));
-            }
-          }
-        } catch (e) {
-          // ignore lookup error
-        }
-      }
+      // Buyer identity must be verified by an authenticated order-specific flow.
+      const isVerifiedBuyer = false;
 
       const newReview = {
         _id: 'rev-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
@@ -877,7 +817,7 @@ export async function POST(request) {
     return errorResponse('Endpoint not found', 404);
   } catch (error) {
     console.error('API Error:', error);
-    return errorResponse(error.message);
+    return errorResponse(error.status ? error.message : 'Unable to process request', error.status || 500);
   }
 }
 

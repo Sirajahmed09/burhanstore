@@ -1,5 +1,6 @@
 'use client';
 
+import SecurityCheck from '@/components/checkout/SecurityCheck';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -28,10 +29,13 @@ export default function CheckoutPage() {
     city: '',
     address: '',
     notes: '',
-    paymentMethod: 'cod'
+    paymentMethod: 'cod',
+    website: ''
   });
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
+  const [humanToken, setHumanToken] = useState('');
+  const [challengeReset, setChallengeReset] = useState(0);
   const [validationWarning, setValidationWarning] = useState('');
 
   const { settings, error: settingsError, loading: settingsLoading } = useStoreSettings();
@@ -123,6 +127,7 @@ export default function CheckoutPage() {
     setSubmitError('');
     
     if (!validateForm()) return;
+    if (settings?.turnstileSiteKey && !humanToken) { setSubmitError('Please complete the security check.'); return; }
     if (cart.length === 0) {
       setSubmitError('Your cart is empty');
       return;
@@ -142,7 +147,7 @@ export default function CheckoutPage() {
       } catch (e) {}
     }
     if (!submissionKey) {
-      submissionKey = 'chk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+      submissionKey = 'chk_' + crypto.randomUUID();
       if (typeof window !== 'undefined') {
         try {
           sessionStorage.setItem('burhan_pending_checkout', JSON.stringify({ key: submissionKey, fingerprint: cartFingerprint, timestamp: Date.now() }));
@@ -162,6 +167,8 @@ export default function CheckoutPage() {
         : '';
 
       const orderData = {
+        website: formData.website,
+        humanToken,
         clientReferenceId: submissionIdRef.current,
         items: cart.map(item => ({
           productId: item._id,
@@ -211,6 +218,8 @@ export default function CheckoutPage() {
         if (response.status < 500 && typeof window !== 'undefined') {
           sessionStorage.removeItem('burhan_pending_checkout');
         }
+        setHumanToken('');
+        setChallengeReset(value => value + 1);
         setSubmitError(data.error || 'Failed to place order. Please try again.');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -293,6 +302,7 @@ export default function CheckoutPage() {
         )}
 
         <form id="checkout-form" onSubmit={handleSubmit}>
+          <div aria-hidden="true" className="absolute -left-[10000px] top-auto w-px h-px overflow-hidden"><label htmlFor="checkout-website">Leave this field empty</label><input id="checkout-website" name="website" autoComplete="off" tabIndex={-1} value={formData.website} onChange={e => setFormData({ ...formData, website: e.target.value })} /></div>
           <div className="grid lg:grid-cols-12 gap-8 items-start">
             {/* Left Column: Customer & Delivery Details */}
             <div className="lg:col-span-7 space-y-6">
@@ -542,6 +552,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
+                {settings?.turnstileSiteKey && <SecurityCheck key={challengeReset} siteKey={settings.turnstileSiteKey} onToken={setHumanToken} />}
                 {/* Submit Order Button */}
                 <button
                   type="submit"

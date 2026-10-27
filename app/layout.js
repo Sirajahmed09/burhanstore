@@ -7,6 +7,7 @@ import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
 import { OrganizationSchema, WebsiteSchema } from '@/components/seo/StructuredData'
 
 export const metadata = {
+  manifest: '/manifest.webmanifest',
   icons: { icon: '/brand/icon-192.png', apple: '/brand/icon-192.png' },
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://burhanstore.com'),
   title: {

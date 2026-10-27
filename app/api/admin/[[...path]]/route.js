@@ -1,3 +1,5 @@
+import { readJsonBody, clientAddress } from '@/lib/security/requests';
+import { consumeRateLimit } from '@/lib/security/rate-limit';
 import { validateShippingSettings } from '@/lib/commerce/shipping';
 import { NextResponse } from 'next/server';
 import { getCollection, getDatabaseStatus, buildIdQuery } from '@/lib/db/mongodb';
@@ -454,7 +456,7 @@ export async function GET(request) {
     return errorResponse('Endpoint not found', 404);
   } catch (error) {
     console.error('Admin API Error:', error);
-    return errorResponse(error.message);
+    return errorResponse(error.status ? error.message : 'Unable to process request', error.status || 500);
   }
 }
 
@@ -471,18 +473,20 @@ export async function POST(request) {
       let email, password;
 
       try {
-        const body = await request.json();
+        const body = await readJsonBody(request);
         email = body.email;
         password = body.password;
       } catch (parseError) {
         return errorResponse('Invalid request format', 400);
       }
 
-      if (!email || !password) {
+      if (typeof email !== 'string' || typeof password !== 'string' || !email || !password || email.length > 128 || password.length > 256) {
         return errorResponse('Email/Username and password are required', 400);
       }
 
       const cleanEmail = email.trim().toLowerCase();
+      await consumeRateLimit('admin-login-ip', clientAddress(request), 20, 15 * 60 * 1000);
+      await consumeRateLimit('admin-login-account', cleanEmail, 8, 15 * 60 * 1000);
 
       // SECURITY: Check brute force lockout (5+ failed attempts)
       const rateLimitStatus = isRateLimited(cleanEmail);
@@ -504,33 +508,13 @@ export async function POST(request) {
         ]
       });
 
-      // Optional bootstrap: never create a privileged account from a public/default password.
-      if (!admin && process.env.ADMIN_INITIAL_PASSWORD &&
-        (cleanEmail === 'siraj@mainadmin' || cleanEmail === 'burhan@store' || cleanEmail === 'admin@burhan.com')) {
-        const passwordHash = await hashPassword(process.env.ADMIN_INITIAL_PASSWORD);
-
-        const newAdmin = {
-          _id: cleanEmail === 'siraj@mainadmin' ? 'admin-owner-siraj' : (cleanEmail === 'burhan@store' ? 'admin-burhan-owner' : 'admin-superadmin'),
-          name: cleanEmail === 'siraj@mainadmin' ? 'Siraj Ahmed (Store Owner)' : (cleanEmail === 'burhan@store' ? 'Burhan Store Owner' : 'Super Admin'),
-          email: cleanEmail,
-          password: passwordHash,
-          role: ROLES.OWNER,
-          status: 'active',
-          permissions: ['*'],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        await adminsCol.insertOne(newAdmin);
-        admin = newAdmin;
-      }
-
       if (!admin) {
         recordFailedAttempt(cleanEmail);
         return errorResponse('Invalid credentials', 401);
       }
 
       if (admin.status === 'suspended' || admin.status === 'inactive' || admin.status === 'disabled') {
-        return errorResponse('Account is deactivated. Contact the Store Owner.', 403);
+        return errorResponse('Invalid credentials', 401);
       }
 
       const isValid = await verifyPassword(password, admin.password);
@@ -549,7 +533,8 @@ export async function POST(request) {
         email: admin.email,
         name: admin.name || 'Admin',
         role: assignedRole,
-        permissions: admin.permissions || []
+        permissions: admin.permissions || [],
+        sessionVersion: admin.sessionVersion || 0
       });
 
       // Log successful login audit
@@ -611,7 +596,7 @@ export async function POST(request) {
         return errorResponse('Forbidden: Only the store owner can create employee accounts', 403);
       }
 
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const { name, email, password, role = ROLES.EMPLOYEE, permissions } = body;
 
       if (!name || !email || !password) {
@@ -619,6 +604,8 @@ export async function POST(request) {
       }
 
       const cleanEmail = email.trim().toLowerCase();
+      await consumeRateLimit('admin-login-ip', clientAddress(request), 20, 15 * 60 * 1000);
+      await consumeRateLimit('admin-login-account', cleanEmail, 8, 15 * 60 * 1000);
       const adminsCol = await getCollection('admins');
 
       const existing = await adminsCol.findOne({ email: cleanEmail });
@@ -665,7 +652,7 @@ export async function POST(request) {
       const parts = path.split('/');
       const approvalId = parts[1];
       const isApprove = path.endsWith('/approve');
-      const body = await request.json().catch(() => ({}));
+      const body = await readJsonBody(request).catch(() => ({}));
       const reviewNote = body.reviewNote || (isApprove ? 'Approved by Owner' : 'Rejected by Owner');
 
       const approvalsCol = await getCollection('approvals');
@@ -813,7 +800,7 @@ export async function POST(request) {
         return errorResponse('Forbidden: You do not have permission to create products', 403);
       }
 
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const productsCol = await getCollection('products');
       const categoriesCol = await getCollection('categories');
 
@@ -853,7 +840,7 @@ export async function POST(request) {
           ? parseFloat(body.costPrice)
           : null,
         discount,
-        stock: parseInt(body.stock, 10) >= 0 ? parseInt(body.stock, 10) : 10,
+        stock: parseInt(body.stock, 10) >= 0 ? parseInt(body.stock, 10) : 0,
         lowStockThreshold: body.lowStockThreshold ? parseInt(body.lowStockThreshold, 10) : 5,
         description: body.description || '',
         highlights: Array.isArray(body.highlights) ? body.highlights : [],
@@ -912,7 +899,7 @@ export async function POST(request) {
         return errorResponse('Forbidden: You do not have permission to create categories', 403);
       }
 
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const categoriesCol = await getCollection('categories');
 
       if (!body.name) {
@@ -953,7 +940,7 @@ export async function POST(request) {
       }
 
       const orderId = path.split('/')[1];
-      const { status, message } = await request.json();
+      const { status, message } = await readJsonBody(request);
 
       const ordersCol = await getCollection('orders');
       const order = await ordersCol.findOne(buildIdQuery(orderId));
@@ -1007,7 +994,7 @@ export async function POST(request) {
       if (!permCheck.authorized) return errorResponse('Forbidden: You do not have permission to update shipment details', 403);
 
       const orderId = path.split('/')[1];
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const validation = validateShipmentDetails(body);
       if (!validation.valid) return errorResponse('Invalid shipment details', 400, validation.errors);
 
@@ -1049,7 +1036,7 @@ export async function POST(request) {
         return errorResponse('Forbidden: Only store owners can update settings', 403);
       }
 
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const settingsCol = await getCollection('settings');
 
       // Strip immutable _id to prevent MongoServerError
@@ -1089,7 +1076,7 @@ export async function POST(request) {
     return errorResponse('Endpoint not found', 404);
   } catch (error) {
     console.error('Admin API Error:', error);
-    return errorResponse(error.message);
+    return errorResponse(error.status ? error.message : 'Unable to process request', error.status || 500);
   }
 }
 
@@ -1114,7 +1101,7 @@ export async function PUT(request) {
       }
 
       const id = path.split('/')[1];
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const adminsCol = await getCollection('admins');
 
       const existing = await adminsCol.findOne(buildIdQuery(id));
@@ -1134,6 +1121,7 @@ export async function PUT(request) {
       if (Array.isArray(body.permissions)) updateData.permissions = body.permissions;
       if (body.password) {
         updateData.password = await hashPassword(body.password);
+        updateData.sessionVersion = (existing.sessionVersion || 0) + 1;
       }
 
       await adminsCol.updateOne({ _id: existing._id }, { $set: updateData });
@@ -1163,7 +1151,7 @@ export async function PUT(request) {
       }
 
       const orderId = path.split('/')[1];
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const status = body.status;
       const message = body.message;
 
@@ -1218,7 +1206,7 @@ export async function PUT(request) {
       }
 
       const id = path.split('/')[1];
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const productsCol = await getCollection('products');
       const categoriesCol = await getCollection('categories');
 
@@ -1374,7 +1362,7 @@ export async function PUT(request) {
       }
 
       const id = path.split('/')[1];
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const categoriesCol = await getCollection('categories');
 
       const existing = await categoriesCol.findOne(buildIdQuery(id));
@@ -1410,7 +1398,7 @@ export async function PUT(request) {
     return errorResponse('Endpoint not found', 404);
   } catch (error) {
     console.error('Admin API Error:', error);
-    return errorResponse(error.message);
+    return errorResponse(error.status ? error.message : 'Unable to process request', error.status || 500);
   }
 }
 
@@ -1435,7 +1423,7 @@ export async function PATCH(request) {
       }
 
       const orderId = path.split('/')[1];
-      const { status, message } = await request.json();
+      const { status, message } = await readJsonBody(request);
 
       const ordersCol = await getCollection('orders');
       const order = await ordersCol.findOne(buildIdQuery(orderId));
@@ -1481,7 +1469,7 @@ export async function PATCH(request) {
       const ownerCheck = await requireOwner(request);
       if (!ownerCheck.authorized) return errorResponse('Only store owners can moderate reviews', 403);
       const id = path.split('/')[1];
-      const body = await request.json();
+      const body = await readJsonBody(request);
       if (!['approved', 'hidden'].includes(body.status)) return errorResponse('Invalid review status', 400);
       const reviewsCol = await getCollection('reviews');
       const review = await reviewsCol.findOne(buildIdQuery(id));
@@ -1498,7 +1486,7 @@ export async function PATCH(request) {
     // 2. Quick product update (price, stock, status toggle)
     if (path.startsWith('products/')) {
       const id = path.split('/')[1];
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const productsCol = await getCollection('products');
 
       const existing = await productsCol.findOne(buildIdQuery(id));
@@ -1665,7 +1653,7 @@ export async function PATCH(request) {
     return errorResponse('Endpoint not found', 404);
   } catch (error) {
     console.error('Admin PATCH Error:', error);
-    return errorResponse(error.message);
+    return errorResponse(error.status ? error.message : 'Unable to process request', error.status || 500);
   }
 }
 
@@ -1930,6 +1918,6 @@ export async function DELETE(request) {
     return errorResponse('Endpoint not found', 404);
   } catch (error) {
     console.error('Admin API Error:', error);
-    return errorResponse(error.message);
+    return errorResponse(error.status ? error.message : 'Unable to process request', error.status || 500);
   }
 }

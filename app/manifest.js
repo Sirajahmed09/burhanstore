@@ -1,0 +1,1 @@
+export default function manifest() { return { name: 'BURHAN STORE', short_name: 'BURHAN', start_url: '/', display: 'standalone', background_color: '#F4F2ED', theme_color: '#0B0D10', icons: [{ src: '/brand/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/brand/icon-512.png', sizes: '512x512', type: 'image/png' }] }; }

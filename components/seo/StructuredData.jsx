@@ -12,6 +12,9 @@ export function OrganizationSchema() {
     "name": "BURHAN STORE",
     "alternateName": "Burhan",
     "url": baseUrl,
+    "@id": `${baseUrl}/#store`,
+    "paymentAccepted": "Cash",
+    "currenciesAccepted": "PKR",
     "logo": `${baseUrl}/brand/icon-512.png`,
     "description": "Pakistan-focused online store for premium mobile accessories and electronics.",
     "email": "infoburhancommunication@gmail.com",
@@ -125,7 +128,6 @@ export function ProductSchema({ product }) {
       "url": productUrl,
       "priceCurrency": "PKR",
       "price": price,
-      "priceValidUntil": new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       "itemCondition": "https://schema.org/NewCondition",
       "availability": inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       "seller": {

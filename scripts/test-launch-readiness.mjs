@@ -1,3 +1,7 @@
+import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { readJsonBody, clientAddress, literalSearch } from '../lib/security/requests.js';
+import { consumeRateLimit, validateOrderLimits } from '../lib/security/rate-limit.js';
+import { verifyHumanCheck } from '../lib/security/human-check.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { resolveShippingFee, validateShippingSettings } from '../lib/commerce/shipping.js';
@@ -41,8 +45,12 @@ const collections = {
   },
 };
 let source = fs.readFileSync('app/api/[[...path]]/route.js', 'utf8').replace(/^import .*;\n/gm, '').replace(/export /g, '');
-const factory = new Function('NextResponse', 'getCollection', 'getDatabaseStatus', 'buildIdQuery', 'uuidv4', 'revalidatePath', 'notifyOrderCustomer', 'areOrdersPayloadCompatible', 'resolveShippingFee', 'normalizePakistaniPhone', 'publicProduct', source + '\nreturn { POST };');
-const { POST } = factory({ json: (body, init) => Response.json(body, init) }, async name => collections[name], () => ({}), id => ({ _id: id }), () => 'test-order', () => {}, async () => ({ ok: true }), areOrdersPayloadCompatible, resolveShippingFee, normalizePakistaniPhone, publicProduct);
+const securityRecords = new Set();
+const securityCollection = { insertOne: async doc => { if (securityRecords.has(doc._id)) throw Object.assign(new Error('duplicate'), { code: 11000 }); securityRecords.add(doc._id); } };
+const limited = (scope, id, limit, windowMs) => consumeRateLimit(scope, id, limit, windowMs, { collection: securityCollection });
+const factory = new Function('NextResponse', 'getCollection', 'getDatabaseStatus', 'buildIdQuery', 'uuidv4', 'revalidatePath', 'notifyOrderCustomer', 'areOrdersPayloadCompatible', 'resolveShippingFee', 'normalizePakistaniPhone', 'publicProduct', 'randomBytes', 'timingSafeEqual', 'readJsonBody', 'clientAddress', 'literalSearch', 'consumeRateLimit', 'validateOrderLimits', 'verifyHumanCheck', source + '\nreturn { POST, GET };');
+const { POST, GET } = factory({ json: (body, init) => Response.json(body, init) }, async name => collections[name], () => ({}), id => ({ _id: id }), () => 'test-order', () => {}, async () => ({ ok: true }), areOrdersPayloadCompatible, resolveShippingFee, normalizePakistaniPhone, publicProduct, randomBytes, timingSafeEqual, readJsonBody, clientAddress, literalSearch, limited, validateOrderLimits, verifyHumanCheck);
+
 const base = { clientReferenceId: 'checkout-1', paymentMethod: 'cod', customer: { name: 'Test Customer', phone: '+92 300 1234567', province: 'Sindh', city: 'Karachi', address: 'Test street' }, items: [{ productId: 'p1', quantity: 1, price: 1 }] };
 async function submit(payload) { return POST(new Request('http://localhost/api/orders', { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } })); }
 for (const paymentMethod of ['card', 'online', 'bank', undefined]) assert.equal((await submit({ ...base, paymentMethod })).status, 400);
@@ -75,3 +83,8 @@ assert.equal(confirmed.oldPrice, 2000);
 assert.equal(confirmed.specifications.Battery, '36 hours');
 assert.deepEqual(publicProduct(unpublished), unpublished, 'Repeated public sanitization must preserve the same content');
 console.log('Unconfirmed performance, package, comparison-price and rating claims stay hidden; confirmed details remain editable.');
+
+assert.equal((await GET(new Request('http://localhost/api/orders/test-order'))).status, 404, 'Receipt must be private without its capability');
+assert.equal((await GET(new Request('http://localhost/api/orders/test-order', { headers: { 'x-order-token': result.order.receiptToken } }))).status, 200);
+assert.equal((await submit({ ...base, clientReferenceId: 'new-bot-key', website: 'spam.example' })).status, 400);
+console.log('Receipt privacy and bot honeypot verified against the actual route.');

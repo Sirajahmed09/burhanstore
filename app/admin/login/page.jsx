@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Lock, Mail, LogIn, ShieldAlert } from 'lucide-react';
-import { trackLogin } from '@/lib/analytics/gtag';
 
 function AdminLoginForm() {
   const router = useRouter();
@@ -51,7 +50,6 @@ function AdminLoginForm() {
       
       if (data.user) {
         // Track successful admin sign-in
-        trackLogin('admin_dashboard');
 
         const redirectParam = searchParams.get('redirect');
         const destination = (redirectParam && redirectParam.startsWith('/admin') && redirectParam !== '/admin/login')

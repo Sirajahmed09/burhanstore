@@ -38,11 +38,10 @@ const nextConfig = {
       {
         source: "/(.*)",
         headers: [
-          { key: "Access-Control-Allow-Origin", value: process.env.CORS_ORIGINS || process.env.NEXT_PUBLIC_BASE_URL || "https://burhanstore.com" },
-          { key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, DELETE, OPTIONS" },
-          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization, X-Requested-With" },
+          { key: "Content-Security-Policy", value: "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests" },
+          { key: "Strict-Transport-Security", value: "max-age=15552000" },
           // Additional security headers
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-XSS-Protection", value: "1; mode=block" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -51,6 +50,10 @@ const nextConfig = {
           // Permissions Policy
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
+      },
+      {
+        source: "/api/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }],
       },
       {
         // Admin routes headers

@@ -51,12 +51,7 @@ export default async function sitemap() {
         changeFrequency: 'monthly',
         priority: 0.6,
       },
-      {
-        url: `${baseUrl}/track`,
-        lastModified: new Date(),
-        changeFrequency: 'monthly',
-        priority: 0.5,
-      },
+
       {
         url: `${baseUrl}/privacy`,
         lastModified: new Date(),
@@ -78,10 +73,10 @@ export default async function sitemap() {
     ];
 
     // Clean Category Pages
-    const categoryPages = categories.map((category) => {
+    const categoryPages = categories.filter(category => products.some(product => product.category === category.name)).map((category) => {
       const slug = category.slug || category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       return {
-        url: `${baseUrl}/category/${slug}`,
+        url: `${baseUrl}/category/${encodeURIComponent(slug)}`,
         lastModified: new Date(),
         changeFrequency: 'weekly',
         priority: 0.8,
@@ -89,8 +84,8 @@ export default async function sitemap() {
     });
 
     // Public Product Pages
-    const productPages = products.map((product) => ({
-      url: `${baseUrl}/shop/${product.slug}`,
+    const productPages = products.filter(product => product.slug && Number(product.price) > 0).map((product) => ({
+      url: `${baseUrl}/shop/${encodeURIComponent(product.slug)}`,
       lastModified: product.updatedAt ? new Date(product.updatedAt) : (product.createdAt ? new Date(product.createdAt) : new Date()),
       changeFrequency: 'weekly',
       priority: 0.8,
