@@ -3,6 +3,8 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import OrderInvoice from '@/components/admin/OrderInvoice';
+import { invoicePrintIssue } from '@/lib/orders/invoice';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { 
   ArrowLeft, 
@@ -26,6 +28,8 @@ export default function OrderDetailsPage({ params }) {
   const orderId = unwrappedParams.id;
 
   const [order, setOrder] = useState(null);
+  const [invoiceSender, setInvoiceSender] = useState(null);
+  const [printing, setPrinting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -52,6 +56,7 @@ export default function OrderDetailsPage({ params }) {
       if (res.ok) {
         const data = await res.json();
         setOrder(data.order);
+        setInvoiceSender(data.invoiceSender || null);
         setNewStatus(data.order?.status || 'pending');
         setShipmentForm({
           courier: data.order?.shipment?.courier || '',
@@ -59,18 +64,33 @@ export default function OrderDetailsPage({ params }) {
           trackingUrl: data.order?.shipment?.trackingUrl || '',
         });
       } else {
-        // Fallback to public order endpoint
-        const fallbackRes = await fetch(`/api/orders/${orderId}`);
-        if (fallbackRes.ok) {
-          const fbData = await fallbackRes.json();
-          setOrder(fbData.order);
-          setNewStatus(fbData.order?.status || 'pending');
-        }
+        setOrder(null);
+        setInvoiceSender(null);
       }
     } catch (err) {
       console.error('Failed to load order details:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePrintInvoice = async () => {
+    const issue = invoicePrintIssue(order, invoiceSender);
+    if (issue) { setUpdateToast({ type: 'error', message: issue }); return; }
+    setPrinting(true);
+    const originalTitle = document.title;
+    try {
+      await document.fonts?.ready;
+      const logo = document.querySelector('#burhan-order-invoice img');
+      if (!logo) throw new Error('Invoice is still loading. Please try again.');
+      await logo.decode();
+      document.title = `BURHAN-Invoice-${String(order.orderNumber || order._id).replace(/[^a-zA-Z0-9-]/g, '')}`;
+      window.print();
+    } catch {
+      setUpdateToast({ type: 'error', message: 'Invoice or logo could not load. Please refresh and try again.' });
+    } finally {
+      document.title = originalTitle;
+      setPrinting(false);
     }
   };
 
@@ -201,7 +221,9 @@ export default function OrderDetailsPage({ params }) {
 
   return (
     <AdminLayout>
+      <OrderInvoice order={order} sender={invoiceSender} />
       <div className="pb-12 max-w-6xl mx-auto">
+        {invoicePrintIssue(order, invoiceSender) && <div className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">{invoicePrintIssue(order, invoiceSender)} <Link href="/admin/settings#parcel-sender" className="font-bold underline">Parcel sender settings</Link></div>}
         {/* Navigation & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <Link
@@ -214,11 +236,12 @@ export default function OrderDetailsPage({ params }) {
 
           <div className="flex items-center space-x-3">
             <button
-              onClick={() => window.print()}
+              onClick={handlePrintInvoice}
+              disabled={printing}
               className="inline-flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium shadow-sm"
             >
               <Printer className="w-4 h-4" />
-              <span>Print Invoice</span>
+              <span>{printing ? 'Preparing...' : 'Print Invoice'}</span>
             </button>
             <button
               onClick={fetchOrderDetails}

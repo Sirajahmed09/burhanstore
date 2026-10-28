@@ -18,6 +18,10 @@ export default function AdminSettingsPage() {
     email: 'infoburhancommunication@gmail.com',
     address: 'Karachi, Sindh, Pakistan',
     
+    invoiceSenderName: '',
+    invoiceSenderPhone: '',
+    invoiceSenderAddress: '',
+
     // Social Media
     facebook: '',
     instagram: '',
@@ -276,6 +280,17 @@ export default function AdminSettingsPage() {
               </div>
             </div>
           </div>
+
+          <section id="parcel-sender" className="bg-white rounded-2xl p-6 shadow-sm mb-6 space-y-4 scroll-mt-6">
+            <h2 className="font-heading text-xl font-bold">Parcel Invoice — Sender Details</h2>
+            <p className="text-sm text-gray-600">Printed on customer invoices. Enter the full pickup / return address, including shop or house number, street, area, city and province. These fields are kept out of the public settings API.</p>
+            <label className="block text-sm font-semibold" htmlFor="invoice-sender-name">Sender / business name</label>
+            <input id="invoice-sender-name" maxLength={120} value={settings.invoiceSenderName || ''} placeholder={settings.businessName || 'BURHAN STORE'} onChange={e => setSettings({ ...settings, invoiceSenderName: e.target.value })} className="w-full border rounded-xl p-3" />
+            <label className="block text-sm font-semibold" htmlFor="invoice-sender-phone">Sender phone</label>
+            <input id="invoice-sender-phone" type="tel" maxLength={40} value={settings.invoiceSenderPhone || ''} placeholder={settings.phone} onChange={e => setSettings({ ...settings, invoiceSenderPhone: e.target.value })} className="w-full border rounded-xl p-3" />
+            <label className="block text-sm font-semibold" htmlFor="invoice-sender-address">Full return address (required for printing)</label>
+            <textarea id="invoice-sender-address" rows={4} maxLength={600} value={settings.invoiceSenderAddress || ''} onChange={e => setSettings({ ...settings, invoiceSenderAddress: e.target.value })} className="w-full border rounded-xl p-3" />
+          </section>
 
           <div className="bg-white rounded-2xl p-6 shadow-sm mb-6 space-y-4">
           <h2 className="font-heading text-xl font-bold">Delivery Charges</h2>

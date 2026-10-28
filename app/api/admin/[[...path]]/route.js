@@ -1,3 +1,4 @@
+import { invoiceSenderFromSettings } from '@/lib/orders/invoice';
 import { readJsonBody, clientAddress } from '@/lib/security/requests';
 import { consumeRateLimit } from '@/lib/security/rate-limit';
 import { validateShippingSettings } from '@/lib/commerce/shipping';
@@ -443,7 +444,9 @@ export async function GET(request) {
         return errorResponse('Order not found', 404);
       }
 
-      return successResponse({ order });
+      const settingsCol = await getCollection('settings');
+      const settings = await settingsCol.findOne({ type: 'general' });
+      return successResponse({ order, invoiceSender: invoiceSenderFromSettings(settings || {}) });
     }
 
     // 12. Settings endpoint
@@ -1041,6 +1044,10 @@ export async function POST(request) {
 
       // Strip immutable _id to prevent MongoServerError
       const { _id, type, createdAt, updatedAt, ...cleanSettings } = body;
+      for (const [field, maxLength] of [['invoiceSenderName', 120], ['invoiceSenderPhone', 40], ['invoiceSenderAddress', 600]]) {
+        if (cleanSettings[field] !== undefined && (typeof cleanSettings[field] !== 'string' || cleanSettings[field].length > maxLength)) return errorResponse(`Invalid ${field}`, 400);
+        if (typeof cleanSettings[field] === 'string') cleanSettings[field] = cleanSettings[field].trim();
+      }
       const shippingError = validateShippingSettings(cleanSettings);
       if (shippingError) return errorResponse(shippingError, 400);
 
