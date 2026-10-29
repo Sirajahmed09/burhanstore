@@ -328,6 +328,12 @@ export default function AdminProductsPage() {
     return matchesSearch && matchesCategory && matchesStock;
   });
 
+  const duplicateGroups = Object.values(products.reduce((groups, product) => {
+    const name = String(product.name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    if (name) (groups[name] ||= []).push(product);
+    return groups;
+  }, {})).filter(group => group.length > 1);
+
   return (
     <AdminLayout>
       <div className="pb-12">
@@ -346,6 +352,12 @@ export default function AdminProductsPage() {
             <span className="text-sm font-semibold">{toastMessage.message}</span>
           </div>
         )}
+
+        {duplicateGroups.map(group => <div key={group[0]._id} className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-bold">Multiple products named {group[0].name}</p>
+          <p className="mt-1">Use Edit on the correct existing product. Prices, stock and orders have not been merged.</p>
+          <div className="mt-2 flex flex-wrap gap-3">{group.map(product => <Link key={product._id} className="font-semibold underline" href={`/admin/products/edit/${encodeURIComponent(product._id)}`}>Edit /{product.slug} — PKR {product.price}</Link>)}</div>
+        </div>)}
 
         {/* Header with Title & Add Product CTA */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -631,7 +643,7 @@ export default function AdminProductsPage() {
                               title="Edit full product details"
                               className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="w-4 h-4" /><span className="ml-1 text-xs font-semibold">Edit</span>
                             </Link>
 
                             <button

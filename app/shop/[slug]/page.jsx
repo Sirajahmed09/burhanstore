@@ -67,7 +67,7 @@ export async function generateMetadata({ params }) {
   }
 
   const title = product.seo?.title || `${product.name} | Buy Online Pakistan`;
-  const rawDescription = (product.specificationsVerified ? product.seo?.description || product.shortDescription || product.description : null) || `Order ${product.name} for PKR ${Number(product.price).toLocaleString()} at BURHAN STORE Pakistan. Cash on Delivery, clear delivery charges and direct store support.`;
+  const rawDescription = (product.specificationsPublished ? product.seo?.description || product.shortDescription || product.description : null) || `Order ${product.name} for PKR ${Number(product.price).toLocaleString()} at BURHAN STORE Pakistan. Cash on Delivery, clear delivery charges and direct store support.`;
   const description = rawDescription.length > 160 ? rawDescription.slice(0, 157).trim() + '...' : rawDescription;
   const canonicalUrl = `${BASE_URL}/shop/${product.slug}`;
 

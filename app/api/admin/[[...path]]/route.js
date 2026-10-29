@@ -1,3 +1,4 @@
+import { withProductEditorialDefaults } from '@/lib/commerce/productPublishing';
 import { invoiceSenderFromSettings } from '@/lib/orders/invoice';
 import { readJsonBody, clientAddress } from '@/lib/security/requests';
 import { consumeRateLimit } from '@/lib/security/rate-limit';
@@ -99,7 +100,7 @@ const APPROVAL_SAFE_PRODUCT_FIELDS = [
   'name', 'slug', 'sku', 'category', 'brand', 'badge', 'shortDescription', 'description',
   'oldPrice', 'costPrice', 'lowStockThreshold', 'images', 'thumbnail', 'highlights',
   'features', 'specifications', 'inBox', 'warranty', 'deliveryInfo', 'faqs', 'seo',
-  'specificationsVerified', 'compareAtPriceVerified',
+  'specificationsVerified', 'specificationsPublished', 'compareAtPriceVerified',
   'isFeatured', 'isTrending', 'isNew'
 ];
 
@@ -330,7 +331,7 @@ export async function GET(request) {
         return errorResponse('Product not found', 404);
       }
 
-      return successResponse({ product });
+      return successResponse({ product: withProductEditorialDefaults(product) });
     }
 
     // 8. Get all products with search, filtering and pagination
@@ -823,10 +824,12 @@ export async function POST(request) {
       const sku = (body.sku && body.sku.trim()) || `BUR-${Math.floor(100000 + Math.random() * 900000)}`;
       let desiredSlug = body.slug ? slugify(body.slug) : slugify(body.name);
       if (!desiredSlug) desiredSlug = `product-${Math.floor(1000 + Math.random() * 9000)}`;
-      const existingProduct = await productsCol.findOne({ slug: desiredSlug });
-      if (existingProduct) {
-        desiredSlug = `${desiredSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
-      }
+      const exact = value => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const duplicateName = body.name.trim().split(/\s+/).map(exact).join('\\s+');
+      const identities = [{ slug: desiredSlug }, { name: { $regex: '^' + duplicateName + '$', $options: 'i' } }];
+      if (body.sku?.trim()) identities.push({ sku: { $regex: '^' + exact(body.sku.trim()) + '$', $options: 'i' } });
+      const existingProduct = await productsCol.findOne({ $or: identities });
+      if (existingProduct) return successResponse({ error: 'This product already exists. Open Edit Product to update it instead of creating a copy.', existingProductId: String(existingProduct._id) }, 409);
 
       const newProduct = {
         _id: uuidv4(),
@@ -864,6 +867,7 @@ export async function POST(request) {
         isTrending: Boolean(body.isTrending),
         isNew: body.isNew !== undefined ? Boolean(body.isNew) : true,
         specificationsVerified: body.specificationsVerified === true,
+        specificationsPublished: body.specificationsPublished === true,
         compareAtPriceVerified: body.compareAtPriceVerified === true,
         rating: 0,
         reviewCount: 0,

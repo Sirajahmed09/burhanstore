@@ -650,7 +650,7 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
             <div>
               <h2 className="text-lg font-bold text-slate-950 mb-3">Product Overview</h2>
               <div className="space-y-4 text-sm text-slate-700 leading-relaxed mb-6">
-                <p>{product.description || product.shortDescription}</p>
+                {String(product.description || product.shortDescription || '').split(/\n\s*\n/).map((paragraph, index) => <p key={index} className="whitespace-pre-line">{paragraph}</p>)}
               </div>
 
               <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 text-sm text-slate-700">

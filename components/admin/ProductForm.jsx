@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { productDetailsPublished } from '@/lib/commerce/productPublishing';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   UploadCloud,
@@ -37,7 +39,9 @@ const AVAILABLE_ICONS = [
   { key: 'Sparkles', label: 'Special Feature' }
 ];
 
-export default function ProductForm({ initialData = null, isEdit = false }) {
+export default function ProductForm({ initialData = null, isEdit: requestedEdit = false }) {
+  const isEdit = requestedEdit || Boolean(initialData);
+  const saveInProgress = useRef(false);
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState('basic');
@@ -45,6 +49,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [existingProductId, setExistingProductId] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [imageUrlInput, setImageUrlInput] = useState('');
 
@@ -96,6 +101,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
     inBox: Array.isArray(initialData?.inBox) ? initialData.inBox : [],
 
     specificationsVerified: initialData?.specificationsVerified === true,
+    specificationsPublished: productDetailsPublished(initialData),
     compareAtPriceVerified: initialData?.compareAtPriceVerified === true,
 
     // Warranty
@@ -196,6 +202,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
         inBox: Array.isArray(initialData.inBox) ? initialData.inBox : [],
 
         specificationsVerified: initialData?.specificationsVerified === true,
+        specificationsPublished: productDetailsPublished(initialData),
         compareAtPriceVerified: initialData?.compareAtPriceVerified === true,
         warrantyDuration: initialData?.warranty?.duration || '',
         warrantyType: initialData?.warranty?.type || 'Replacement Warranty',
@@ -426,8 +433,14 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
   // Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saveInProgress.current) return;
     setError('');
+    setExistingProductId('');
     setSuccessMsg('');
+    if (isEdit && !initialData?._id && !initialData?.id) {
+      setError('The product ID is missing. Reopen the product from the product list.');
+      return;
+    }
 
     if (!formData.name.trim()) {
       setError('Product Name is required.');
@@ -453,6 +466,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
       activeImages = ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800'];
     }
 
+    saveInProgress.current = true;
     setLoading(true);
 
     try {
@@ -483,6 +497,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
         category: formData.category,
         brand: formData.brand.trim() || 'BURHAN',
         specificationsVerified: formData.specificationsVerified === true,
+        specificationsPublished: formData.specificationsPublished === true,
         compareAtPriceVerified: formData.compareAtPriceVerified === true,
         badge: formData.badge.trim(),
         shortDescription: formData.shortDescription.trim(),
@@ -533,7 +548,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
         }
       };
 
-      const productId = initialData?._id || initialData?.id || initialData?.slug;
+      const productId = initialData?._id || initialData?.id;
       const url = isEdit
         ? `/api/admin/products/${productId}`
         : '/api/admin/products';
@@ -552,6 +567,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
 
       const data = await res.json();
       if (!res.ok) {
+        if (data.existingProductId) setExistingProductId(data.existingProductId);
         throw new Error(data.error || 'Failed to save product');
       }
 
@@ -569,6 +585,7 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
       }
     } catch (err) {
       setError(err.message || 'An error occurred while saving.');
+      saveInProgress.current = false;
       setLoading(false);
     }
   };
@@ -587,8 +604,11 @@ export default function ProductForm({ initialData = null, isEdit = false }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl pb-16">
+        {existingProductId && <Link href={`/admin/products/edit/${encodeURIComponent(existingProductId)}`} className="block rounded-xl border border-cyan-300 bg-cyan-50 p-4 font-semibold underline">Open existing product to edit</Link>}
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 space-y-3 text-sm">
-          <p className="font-semibold">Product claim checks</p>
+          <p className="font-semibold">Product details visibility & claim checks</p>
+          <label className="flex gap-2 items-start"><input type="checkbox" checked={!!formData.specificationsPublished} onChange={e => setFormData({ ...formData, specificationsPublished: e.target.checked })} />Show the saved description, features, specifications and package contents on the customer page.</label>
+          <p className="text-xs text-amber-900">Publishing details does not mark the product as independently tested. Keep claims accurate and update the fields when your stock changes.</p>
           <label className="flex gap-2 items-start"><input type="checkbox" checked={!!formData.specificationsVerified} onChange={e => setFormData({ ...formData, specificationsVerified: e.target.checked })} />I have checked this product and confirmed its listed features, package contents, specifications and performance claims.</label>
           <label className="flex gap-2 items-start"><input type="checkbox" checked={!!formData.compareAtPriceVerified} onChange={e => setFormData({ ...formData, compareAtPriceVerified: e.target.checked })} />The comparison price is a genuine previous selling price.</label>
         </div>
