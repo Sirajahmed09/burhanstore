@@ -238,7 +238,7 @@ function TrackOrderContent() {
                 <div className="divide-y divide-slate-100 border border-slate-200/60 rounded-xl overflow-hidden">
                   {order.items.map((it, idx) => (
                     <div key={idx} className="p-3 bg-slate-50 flex items-center justify-between text-xs sm:text-sm">
-                      <span className="font-semibold text-slate-900">{it.name}</span>
+                      <span className="font-semibold text-slate-900">{it.name}{it.color ? ` · ${it.color}` : ''}</span>
                       <span className="text-slate-600">Qty: {it.quantity} × PKR {Number(it.price).toLocaleString()}</span>
                     </div>
                   ))}

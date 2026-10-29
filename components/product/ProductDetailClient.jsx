@@ -1,5 +1,6 @@
 'use client';
 
+import { getColourVariants, cartProduct, cartLineKey } from '@/lib/commerce/colourVariants';
 import { publicProduct } from '@/lib/commerce/publicProduct';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -67,6 +68,10 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
   const [relatedProducts, setRelatedProducts] = useState(initialRelated);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariantId, setSelectedVariantId] = useState('');
+  const colourOptions = useMemo(() => getColourVariants(product), [product]);
+  const selectedProduct = useMemo(() => { try { return cartProduct(product, selectedVariantId); } catch { return null; } }, [product, selectedVariantId]);
+  useEffect(() => { setSelectedVariantId(''); }, [product?._id]);
   const [activeTab, setActiveTab] = useState('specs');
   const [addedToast, setAddedToast] = useState(false);
   
@@ -119,22 +124,22 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
   }, [product, initialRelated.length]);
 
   const handleAddToCart = () => {
-    if (product && product.stock > 0) {
-      addToCart(product, quantity);
-      gaAddToCart(product, quantity);
+    if (selectedProduct && product.stock > 0) {
+      addToCart(selectedProduct, quantity);
+      gaAddToCart(selectedProduct, quantity);
       setAddedToast(true);
       setTimeout(() => setAddedToast(false), 2500);
     }
   };
 
   const handleBuyNow = () => {
-    if (product && product.stock > 0) {
-      const existing = cart && cart.find(item => item._id === product._id);
+    if (selectedProduct && product.stock > 0) {
+      const existing = cart && cart.find(item => cartLineKey(item) === selectedProduct.cartKey);
       if (!existing) {
-        addToCart(product, quantity);
-        gaAddToCart(product, quantity);
+        addToCart(selectedProduct, quantity);
+        gaAddToCart(selectedProduct, quantity);
       } else if (existing.quantity !== quantity) {
-        updateQuantity(product._id, quantity);
+        updateQuantity(selectedProduct.cartKey, quantity);
       }
       router.push('/checkout');
     }
@@ -186,8 +191,8 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
   const activeImage = productImages[selectedImage] || productImages[0];
 
   // Dynamic Pricing & Discount Calculation
-  const price = Number(product.price) || 0;
-  const oldPrice = Number(product.oldPrice) || 0;
+  const price = Number(selectedProduct?.price ?? product.price) || 0;
+  const oldPrice = colourOptions.length ? 0 : Number(product.oldPrice) || 0;
   const discountPercent = calculateValidDiscount(price, oldPrice);
 
   // Dynamic Badge
@@ -377,6 +382,13 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
                 </span>
               </div>
 
+              {colourOptions.length > 0 && <fieldset className="mb-5">
+                <legend className="mb-2 text-sm font-bold text-slate-900">Colour: {selectedProduct?.color || 'Choose an available colour'}</legend>
+                <div className="flex flex-wrap gap-2">{colourOptions.map(option => <button key={option.id} type="button" aria-label={`Select ${option.color}`} aria-pressed={selectedProduct?.variantId === option.id} disabled={!option.enabled} onClick={() => setSelectedVariantId(option.id)} className={`rounded-xl border px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${selectedProduct?.variantId === option.id ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-900'}`}>
+                  {option.color}{!option.enabled && ' — Unavailable'}
+                </button>)}</div>
+              </fieldset>}
+
               {/* Pricing Box */}
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 mb-5">
                 <div className="flex items-baseline space-x-3 mb-1">
@@ -421,13 +433,13 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
 
               {/* Stock Status Indicator */}
               <div className="mb-4">
-                {product.stock > 0 ? (
+                {product.stock > 0 && selectedProduct ? (
                   <div className="flex items-center space-x-2 text-xs sm:text-sm text-emerald-700 font-semibold">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span>Available to order — delivery estimate shown below</span>
                   </div>
                 ) : (
-                  <div className="text-sm text-red-600 font-semibold">Currently Out of Stock</div>
+                  <div className="text-sm text-red-600 font-semibold">{product.stock <= 0 ? 'Currently Out of Stock' : 'Selected colour is currently unavailable'}</div>
                 )}
               </div>
 
@@ -462,15 +474,15 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                 <button
                   onClick={handleBuyNow}
-                  disabled={product.stock <= 0}
+                  disabled={!selectedProduct || product.stock <= 0}
                   className="w-full bg-[#171A20] hover:bg-[#0B0D10] active:scale-98 text-white font-bold py-3.5 px-6 rounded-xl text-base shadow-sm hover:shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Sparkles className="w-4 h-4 fill-slate-950" />
-                  <span>{product.stock <= 0 ? 'Out of Stock' : 'Order with Cash on Delivery'}</span>
+                  <span>{!selectedProduct ? 'Unavailable' : product.stock <= 0 ? 'Out of Stock' : 'Order with Cash on Delivery'}</span>
                 </button>
                 <button
                   onClick={handleAddToCart}
-                  disabled={product.stock <= 0}
+                  disabled={!selectedProduct || product.stock <= 0}
                   className="w-full bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-semibold py-3.5 px-6 rounded-xl text-base shadow-sm hover:shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ShoppingCart className="w-4 h-4" />
@@ -928,7 +940,7 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
       <aside aria-label="Quick mobile checkout" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 shadow-xl flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-xs font-bold text-slate-900 truncate">
-            {product.name}
+            {product.name}{selectedProduct?.color ? ` · ${selectedProduct.color}` : ''}
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-sm font-extrabold text-slate-950">
@@ -944,7 +956,7 @@ export default function ProductDetailClient({ product: rawProduct, initialRelate
 
         <button
           onClick={handleBuyNow}
-          disabled={product.stock <= 0}
+          disabled={!selectedProduct || product.stock <= 0}
           className="bg-cyan-500 hover:bg-cyan-600 active:scale-95 text-slate-950 text-xs sm:text-sm font-extrabold px-5 py-2.5 rounded-xl shadow-xs transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {product.stock <= 0 ? 'OUT OF STOCK' : 'BUY NOW'}

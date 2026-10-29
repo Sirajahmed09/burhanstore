@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import ColourOptionsEditor from '@/components/admin/ColourOptionsEditor';
+import { getColourVariants, validateColourVariants } from '@/lib/commerce/colourVariants';
 import { productDetailsPublished } from '@/lib/commerce/productPublishing';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -64,6 +66,8 @@ export default function ProductForm({ initialData = null, isEdit: requestedEdit 
     badge: initialData?.badge || '',
     shortDescription: initialData?.shortDescription || '',
     description: initialData?.description || '',
+
+    variants: getColourVariants(initialData),
 
     // Pricing & Inventory
     price: initialData?.price !== undefined ? initialData.price : '',
@@ -201,6 +205,7 @@ export default function ProductForm({ initialData = null, isEdit: requestedEdit 
           : [],
         inBox: Array.isArray(initialData.inBox) ? initialData.inBox : [],
 
+        variants: getColourVariants(initialData),
         specificationsVerified: initialData?.specificationsVerified === true,
         specificationsPublished: productDetailsPublished(initialData),
         compareAtPriceVerified: initialData?.compareAtPriceVerified === true,
@@ -442,6 +447,8 @@ export default function ProductForm({ initialData = null, isEdit: requestedEdit 
       return;
     }
 
+    const colourError = validateColourVariants(formData.variants);
+    if (colourError) { setError(colourError); setActiveTab('pricing'); return; }
     if (!formData.name.trim()) {
       setError('Product Name is required.');
       setActiveTab('basic');
@@ -491,6 +498,7 @@ export default function ProductForm({ initialData = null, isEdit: requestedEdit 
       const cleanWarrantyTerms = formData.warrantyTerms.filter(t => typeof t === 'string' && t.trim());
 
       const payload = {
+        variants: formData.variants.map(variant => ({ ...variant, color: variant.color.trim() })),
         name: formData.name.trim(),
         slug: formData.slug ? formData.slug.trim() : '',
         sku: formData.sku.trim(),
@@ -661,6 +669,8 @@ export default function ProductForm({ initialData = null, isEdit: requestedEdit 
           </button>
         </div>
       </div>
+
+      {activeTab === 'pricing' && <ColourOptionsEditor variants={formData.variants} basePrice={formData.price} onChange={variants => setFormData({ ...formData, variants })} />}
 
       {/* Notifications */}
       {error && (

@@ -1,3 +1,4 @@
+import { getColourVariants, resolveColourSelection, colourPriceRange } from '@/lib/commerce/colourVariants';
 /**
  * Structured Data Component for SEO
  * Generates JSON-LD for Organization, Website, BreadcrumbList, and Product
@@ -104,7 +105,7 @@ export function ProductSchema({ product }) {
     : `${baseUrl}/og-image.jpg`;
 
   const productUrl = `${baseUrl}/shop/${product.slug}`;
-  const price = Number(product.price) || 0;
+  const price = colourPriceRange(product).low;
   const inStock = typeof product.stock === 'number' ? product.stock > 0 : true;
 
   const hasValidRatings = typeof product.rating === 'number' &&
@@ -135,6 +136,11 @@ export function ProductSchema({ product }) {
         "name": "BURHAN STORE"
       }
     },
+    ...(getColourVariants(product).filter(variant => variant.enabled).length > 1 ? { offers: {
+      '@type': 'AggregateOffer', url: productUrl, priceCurrency: 'PKR', lowPrice: colourPriceRange(product).low, highPrice: colourPriceRange(product).high,
+      offerCount: getColourVariants(product).filter(variant => variant.enabled).length,
+      offers: getColourVariants(product).filter(variant => variant.enabled).map(variant => ({ '@type': 'Offer', name: `${product.name} - ${variant.color}`, priceCurrency: 'PKR', price: resolveColourSelection(product, variant.id).price, availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock', url: productUrl }))
+    } } : {}),
     ...(hasValidRatings ? {
       "aggregateRating": {
         "@type": "AggregateRating",

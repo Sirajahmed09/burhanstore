@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { getColourVariants } from '@/lib/commerce/colourVariants';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ShoppingBag, Heart, Trash2 } from 'lucide-react';
@@ -8,10 +10,12 @@ import { useCart } from '@/lib/contexts/CartContext';
 import ProductCard from '@/components/product/ProductCard';
 
 export default function WishlistPage() {
+  const router = useRouter();
   const { wishlist, removeFromWishlist } = useWishlist();
   const { addToCart } = useCart();
 
   const handleMoveToCart = (product) => {
+    if (getColourVariants(product).length) { router.push(`/shop/${product.slug}`); return; }
     addToCart(product);
     removeFromWishlist(product._id);
   };

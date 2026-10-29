@@ -1,5 +1,7 @@
 'use client';
 
+import { cartLineKey } from '@/lib/commerce/colourVariants';
+
 import SecurityCheck from '@/components/checkout/SecurityCheck';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -58,7 +60,7 @@ export default function CheckoutPage() {
         if (!response.ok) throw new Error('Unable to check your cart. Please refresh and try again.');
         const data = await response.json();
         if (!Array.isArray(data.items)) throw new Error('Cart check is unavailable. Please refresh.');
-        const signature = items => JSON.stringify(items.map(item => [String(item._id), Number(item.quantity), Number(item.price)]));
+        const signature = items => JSON.stringify(items.map(item => [cartLineKey(item), item.color, Number(item.quantity), Number(item.price)]));
         if (signature(data.items) !== signature(cart)) {
           replaceCart(data.items);
           setValidationWarning('Your cart was updated with the latest price and availability. Please review the total before ordering.');
@@ -72,7 +74,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!isLoaded || !cart.length || cartChecking || cartError || settingsLoading || settingsError) return;
-    const key = JSON.stringify([cart.map(item => [item._id, item.quantity, item.price]), total]);
+    const key = JSON.stringify([cart.map(item => [cartLineKey(item), item.quantity, item.price]), total]);
     if (analyticsCheckoutRef.current !== key) {
       trackBeginCheckout(cart, total);
       analyticsCheckoutRef.current = key;
@@ -133,7 +135,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    const cartFingerprint = JSON.stringify({ items: cart.map(i => `${i._id}:${i.quantity}`).sort(), customer: formData });
+    const cartFingerprint = JSON.stringify({ items: cart.map(i => `${cartLineKey(i)}:${i.quantity}`).sort(), customer: formData });
     let submissionKey = submissionFingerprintRef.current === cartFingerprint ? submissionIdRef.current : null;
     if (!submissionKey && typeof window !== 'undefined') {
       try {
@@ -172,6 +174,7 @@ export default function CheckoutPage() {
         clientReferenceId: submissionIdRef.current,
         items: cart.map(item => ({
           productId: item._id,
+          variantId: item.variantId || '',
           name: item.name,
           image: item.thumbnail || item.image,
           price: item.price,
@@ -509,7 +512,7 @@ export default function CheckoutPage() {
                 {/* Items Mini-list */}
                 <div className="space-y-3 max-h-64 overflow-y-auto pr-1 divide-y divide-slate-100">
                   {cart.map((item) => (
-                    <div key={item._id} className="pt-2.5 first:pt-0 flex items-center space-x-3">
+                    <div key={cartLineKey(item)} className="pt-2.5 first:pt-0 flex items-center space-x-3">
                       <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-slate-50 border border-slate-200 flex-shrink-0">
                         <Image
                           src={item.thumbnail || item.images?.[0] || item.image || 'https://images.unsplash.com/photo-1606220838315-056192d5e927?w=800'}
@@ -521,7 +524,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                          {item.name}
+                          {item.name}{item.color ? ` · ${item.color}` : ''}
                         </h4>
                         <div className="text-xs text-slate-500">
                           Qty: {item.quantity} × PKR {Number(item.price).toLocaleString()}

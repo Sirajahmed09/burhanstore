@@ -1,3 +1,4 @@
+import { getColourVariants, validateColourVariants } from '@/lib/commerce/colourVariants';
 import { withProductEditorialDefaults } from '@/lib/commerce/productPublishing';
 import { invoiceSenderFromSettings } from '@/lib/orders/invoice';
 import { readJsonBody, clientAddress } from '@/lib/security/requests';
@@ -101,7 +102,7 @@ const APPROVAL_SAFE_PRODUCT_FIELDS = [
   'oldPrice', 'costPrice', 'lowStockThreshold', 'images', 'thumbnail', 'highlights',
   'features', 'specifications', 'inBox', 'warranty', 'deliveryInfo', 'faqs', 'seo',
   'specificationsVerified', 'specificationsPublished', 'compareAtPriceVerified',
-  'isFeatured', 'isTrending', 'isNew'
+  'isFeatured', 'isTrending', 'isNew', 'variants'
 ];
 
 function getSafeProductApprovalChanges(body) {
@@ -805,6 +806,7 @@ export async function POST(request) {
       }
 
       const body = await readJsonBody(request);
+      if (body.variants !== undefined) { const error = validateColourVariants(body.variants); if (error) return errorResponse(error, 400); }
       const productsCol = await getCollection('products');
       const categoriesCol = await getCollection('categories');
 
@@ -1218,6 +1220,7 @@ export async function PUT(request) {
 
       const id = path.split('/')[1];
       const body = await readJsonBody(request);
+      if (body.variants !== undefined) { const error = validateColourVariants(body.variants); if (error) return errorResponse(error, 400); }
       const productsCol = await getCollection('products');
       const categoriesCol = await getCollection('categories');
 
@@ -1227,7 +1230,7 @@ export async function PUT(request) {
       }
 
       // Check if price, stock, or visibility is being modified and whether approval is required
-      const isPriceChanged = body.price !== undefined && parseFloat(body.price) !== existing.price;
+      const isPriceChanged = (body.price !== undefined && parseFloat(body.price) !== existing.price) || (body.variants !== undefined && JSON.stringify(body.variants) !== JSON.stringify(getColourVariants(existing)));
       const isStockChanged = body.stock !== undefined && parseInt(body.stock, 10) !== existing.stock;
       const isStatusChanged = (body.status !== undefined && body.status !== existing.status) || 
                               (body.isActive !== undefined && Boolean(body.isActive) !== Boolean(existing.isActive));
@@ -1240,7 +1243,7 @@ export async function PUT(request) {
         // Intercept and create an Approval Request
         const approvalsCol = await getCollection('approvals');
         const proposedChanges = getSafeProductApprovalChanges(body);
-        if (isPriceChanged) proposedChanges.price = parseFloat(body.price);
+        if (isPriceChanged && body.price !== undefined) proposedChanges.price = parseFloat(body.price);
         if (body.oldPrice !== undefined) proposedChanges.oldPrice = parseFloat(body.oldPrice);
         if (isStockChanged) proposedChanges.stock = parseInt(body.stock, 10);
         if (isStatusChanged) {
@@ -1498,6 +1501,7 @@ export async function PATCH(request) {
     if (path.startsWith('products/')) {
       const id = path.split('/')[1];
       const body = await readJsonBody(request);
+      if (body.variants !== undefined) return errorResponse('Use the full product editor to change colour prices.', 400);
       const productsCol = await getCollection('products');
 
       const existing = await productsCol.findOne(buildIdQuery(id));

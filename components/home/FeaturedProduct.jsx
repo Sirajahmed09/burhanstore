@@ -1,5 +1,7 @@
 'use client';
 
+import { getColourVariants, colourPriceRange } from '@/lib/commerce/colourVariants';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -57,13 +59,16 @@ export default function FeaturedProduct({ initialProduct = null }) {
   if (!product) return null;
   const displayProduct = product;
   const imageSrc = displayProduct.thumbnail || displayProduct.images?.[0] || '/images/burhan_pro2_earbuds.jpg';
-  const discountPercent = calculateValidDiscount(displayProduct.price, displayProduct.oldPrice);
+  const hasColours = getColourVariants(displayProduct).length > 0;
+  const priceRange = colourPriceRange(displayProduct);
+  const discountPercent = hasColours ? 0 : calculateValidDiscount(displayProduct.price, displayProduct.oldPrice);
   const hasDiscount = discountPercent > 0;
 
   const isOutOfStock = (Number(displayProduct.stock) || 0) <= 0;
 
   const handleBuyNow = () => {
     if (isOutOfStock) return;
+    if (hasColours) { router.push(`/shop/${displayProduct.slug}`); return; }
     const alreadyInCart = cart && cart.some(item => item._id === displayProduct._id);
     if (!alreadyInCart) {
       addToCart(displayProduct, 1);
@@ -142,7 +147,7 @@ export default function FeaturedProduct({ initialProduct = null }) {
               {/* Price Row */}
               <div className="flex items-baseline space-x-3 mb-4">
                 <span className="text-3xl sm:text-4xl font-extrabold text-[#171A20] tracking-tight">
-                  PKR {Number(displayProduct.price).toLocaleString()}
+                  {priceRange.high > priceRange.low ? 'From ' : ''}PKR {priceRange.low.toLocaleString()}
                 </span>
                 {hasDiscount && (
                   <span className="text-lg text-[#A09D96] line-through">
@@ -188,7 +193,7 @@ export default function FeaturedProduct({ initialProduct = null }) {
                 >
                   <ShoppingBag className="w-4 h-4 text-[#B9A47C]" />
                   <span>
-                    {isOutOfStock ? 'Sold Out' : `Buy Now — PKR ${Number(displayProduct.price).toLocaleString()}`}
+                    {isOutOfStock ? 'Sold Out' : hasColours ? 'Choose Colour' : `Buy Now — PKR ${Number(displayProduct.price).toLocaleString()}`}
                   </span>
                 </button>
                 <Link

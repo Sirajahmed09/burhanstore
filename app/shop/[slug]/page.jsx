@@ -1,3 +1,4 @@
+import { colourPriceRange } from '@/lib/commerce/colourVariants';
 import { publicProduct, cleanStoreCopy } from '@/lib/commerce/publicProduct';
 import { notFound } from 'next/navigation';
 import { getCollection, buildIdQuery } from '@/lib/db/mongodb';
@@ -67,7 +68,7 @@ export async function generateMetadata({ params }) {
   }
 
   const title = product.seo?.title || `${product.name} | Buy Online Pakistan`;
-  const rawDescription = (product.specificationsPublished ? product.seo?.description || product.shortDescription || product.description : null) || `Order ${product.name} for PKR ${Number(product.price).toLocaleString()} at BURHAN STORE Pakistan. Cash on Delivery, clear delivery charges and direct store support.`;
+  const rawDescription = (product.specificationsPublished ? product.seo?.description || product.shortDescription || product.description : null) || `Order ${product.name} for PKR ${colourPriceRange(product).low.toLocaleString()} at BURHAN STORE Pakistan. Cash on Delivery, clear delivery charges and direct store support.`;
   const description = rawDescription.length > 160 ? rawDescription.slice(0, 157).trim() + '...' : rawDescription;
   const canonicalUrl = `${BASE_URL}/shop/${product.slug}`;
 
@@ -86,7 +87,7 @@ export async function generateMetadata({ params }) {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: `${product.name} - PKR ${Number(product.price).toLocaleString()} | BURHAN STORE`,
+      title: `${product.name} - PKR ${colourPriceRange(product).low.toLocaleString()} | BURHAN STORE`,
       description,
       url: canonicalUrl,
       siteName: 'BURHAN STORE',

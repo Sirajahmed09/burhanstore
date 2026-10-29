@@ -1,5 +1,6 @@
 'use client';
 
+import { cartLineKey } from '@/lib/commerce/colourVariants';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { resolveShippingFee } from '@/lib/commerce/shipping';
 import Image from 'next/image';
@@ -17,7 +18,7 @@ export default function CartPage() {
   const total = subtotal > 0 ? subtotal + shippingCost : 0;
 
   const handleRemove = (item) => {
-    removeFromCart(item._id);
+    removeFromCart(cartLineKey(item));
     trackRemoveFromCart(item, item.quantity);
   };
 
@@ -79,7 +80,7 @@ export default function CartPage() {
                 const itemTotal = Number(item.price) * Number(item.quantity);
 
                 return (
-                  <div key={item._id} className="p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center justify-between">
+                  <div key={cartLineKey(item)} className="p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center justify-between">
                     {/* Image & Title */}
                     <div className="flex items-center space-x-4 min-w-0 flex-1">
                       <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-[#F4F2ED] border border-[#E2DDD5] flex-shrink-0">
@@ -100,6 +101,7 @@ export default function CartPage() {
                           <h3 className="font-heading text-sm sm:text-base font-bold text-[#171A20] hover:text-[#8E7B56] transition-colors truncate">
                             {item.name}
                           </h3>
+                          {item.color && <p className="mt-1 text-sm font-semibold">Colour: {item.color}</p>}
                         </Link>
                         <div className="text-xs sm:text-sm font-semibold text-[#5A606A] mt-1">
                           PKR {Number(item.price).toLocaleString()} each
@@ -113,7 +115,7 @@ export default function CartPage() {
                       <div className="flex items-center border border-[#D6D1C7] rounded-lg overflow-hidden bg-white shadow-2xs">
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item._id, Math.max(1, item.quantity - 1))}
+                          onClick={() => updateQuantity(cartLineKey(item), Math.max(1, item.quantity - 1))}
                           aria-label="Decrease quantity"
                           className="w-8 h-8 flex items-center justify-center text-[#171A20] hover:bg-[#F4F2ED] active:bg-[#EAE6DF] transition-colors font-bold text-sm"
                         >
@@ -124,7 +126,7 @@ export default function CartPage() {
                         </span>
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item._id, Math.min(item.stock || 99, item.quantity + 1))}
+                          onClick={() => updateQuantity(cartLineKey(item), Math.min(item.stock || 99, item.quantity + 1))}
                           aria-label="Increase quantity"
                           className="w-8 h-8 flex items-center justify-center text-[#171A20] hover:bg-[#F4F2ED] active:bg-[#EAE6DF] transition-colors font-bold text-sm"
                         >
@@ -143,7 +145,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         onClick={() => handleRemove(item)}
-                        aria-label={`Remove ${item.name} from cart`}
+                        aria-label={`Remove ${item.name}${item.color ? ' ' + item.color : ''} from cart`}
                         className="text-[#A09D96] hover:text-red-600 transition-colors p-1.5 rounded-md hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />

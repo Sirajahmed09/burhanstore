@@ -1,3 +1,4 @@
+import { resolveColourSelection, cartLineKey } from '@/lib/commerce/colourVariants';
 import { verifyHumanCheck } from '@/lib/security/human-check';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { readJsonBody, clientAddress, literalSearch } from '@/lib/security/requests';
@@ -74,7 +75,7 @@ function sanitizeTrackedOrder(order) {
     status: order.status || 'pending',
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
-    items: Array.isArray(order.items) ? order.items.map(({ productId, name, price, quantity, image }) => ({ productId, name, price, quantity, image })) : [],
+    items: Array.isArray(order.items) ? order.items.map(({ productId, name, price, quantity, image, variantId, color }) => ({ productId, name, price, quantity, image, variantId, color })) : [],
     subtotal: order.subtotal || order.pricing?.subtotal || 0,
     shipping: order.shipping || order.pricing?.shipping || 0,
     total: order.total || order.pricing?.total || 0,
@@ -437,72 +438,30 @@ export async function POST(request) {
 
       const validated = [];
       const issues = [];
-
+      const usedStock = new Map();
+      const lines = new Map();
       for (const item of items) {
-        const prodId = item.productId || item._id;
+        const prodId = item?.productId || item?._id;
+        if (typeof prodId !== 'string' || prodId.length > 128 || !Number.isSafeInteger(Number(item.quantity)) || Number(item.quantity) < 1) return errorResponse('Invalid cart item', 400);
         const product = await productsCol.findOne(buildIdQuery(prodId));
-
-        if (!product) {
-          issues.push({
-            id: prodId,
-            name: item.name || 'Unknown item',
-            reason: 'not_found',
-            message: `"${item.name || 'Item'}" is no longer available in our store.`
-          });
-          continue;
-        }
-
-        if (!isProductActive(product)) {
-          issues.push({
-            id: prodId,
-            name: product.name,
-            reason: 'inactive',
-            message: `"${product.name}" is currently unavailable.`
-          });
-          continue;
-        }
-
-        const stock = Number(product.stock) || 0;
-        const requestedQty = Math.max(1, parseInt(item.quantity) || 1);
-
-        if (stock <= 0) {
-          issues.push({
-            id: prodId,
-            name: product.name,
-            reason: 'out_of_stock',
-            message: `"${product.name}" is out of stock.`
-          });
-          continue;
-        }
-
-        const allowedQty = Math.min(requestedQty, stock);
-        if (allowedQty < requestedQty) {
-          issues.push({
-            id: prodId,
-            name: product.name,
-            reason: 'stock_limited',
-            message: `Only ${stock} unit(s) of "${product.name}" are currently in stock.`
-          });
-        }
-
-        validated.push({
-          ...item,
-          _id: product._id,
-          productId: product._id,
-          name: product.name,
-          slug: product.slug,
-          price: product.price,
-          stock: product.stock,
-          thumbnail: product.thumbnail || product.images?.[0],
-          quantity: allowedQty
-        });
+        if (!product || !isProductActive(product)) { issues.push({ id: prodId, reason: 'unavailable', message: 'An item is no longer available. Please review your cart.' }); continue; }
+        let selection;
+        try { selection = resolveColourSelection(product, item.variantId ?? ''); }
+        catch (error) { issues.push({ id: prodId, reason: 'colour_unavailable', message: error.message }); continue; }
+        const stock = Math.max(0, Number(product.stock) || 0);
+        const productKey = String(product._id);
+        const requestedQty = Number(item.quantity);
+        const allowedQty = Math.min(requestedQty, Math.max(0, stock - (usedStock.get(productKey) || 0)));
+        if (allowedQty < requestedQty) issues.push({ id: prodId, reason: 'stock_limited', message: `Availability changed for "${product.name}". Please review the quantities in your cart.` });
+        if (!allowedQty) continue;
+        usedStock.set(productKey, (usedStock.get(productKey) || 0) + allowedQty);
+        const line = { ...publicProduct(product), productId: product._id, ...selection, basePrice: product.price, quantity: allowedQty, stock };
+        line.cartKey = cartLineKey(line);
+        const previous = lines.get(line.cartKey);
+        lines.set(line.cartKey, { ...line, quantity: (previous?.quantity || 0) + allowedQty });
       }
-
-      return NextResponse.json({
-        valid: issues.length === 0,
-        items: validated,
-        issues
-      }, { headers: NO_CACHE_HEADERS });
+      validated.push(...lines.values());
+      return NextResponse.json({ valid: issues.length === 0, items: validated, issues }, { headers: NO_CACHE_HEADERS });
     }
 
     // Create order - WITH SERVER-SIDE PRICE VALIDATION & ACTIVE CHECK
@@ -544,12 +503,18 @@ export async function POST(request) {
         if (accepted) {
           const quantities = new Map();
           for (const item of body.items) {
+            if (!item || typeof item !== 'object') return errorResponse('Invalid item in order', 400);
+            if (item.variantId != null && typeof item.variantId !== 'string') return errorResponse('Invalid colour in order', 400);
             const id = String(item.productId || item._id || '');
+            const variantId = item.variantId || (id === 'burhan-pro-2-flagship' ? 'white' : '');
+            if (typeof variantId !== 'string' || (variantId && !/^[a-z0-9][a-z0-9_-]{0,39}$/.test(variantId))) return errorResponse('Invalid colour in order', 400);
             const quantity = Number(item.quantity);
             if (!id || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100) return errorResponse('Invalid item in order', 400);
-            quantities.set(id, (quantities.get(id) || 0) + quantity);
+            const key = JSON.stringify([id, variantId]);
+            const previous = quantities.get(key);
+            quantities.set(key, { productId: id, variantId, quantity: (previous?.quantity || 0) + quantity });
           }
-          const retry = { customer: body.customer, paymentMethod: body.paymentMethod, items: [...quantities].map(([productId, quantity]) => ({ productId, quantity })), subtotal: accepted.subtotal, total: accepted.total };
+          const retry = { customer: body.customer, paymentMethod: body.paymentMethod, items: [...quantities.values()], subtotal: accepted.subtotal, total: accepted.total };
           if (!areOrdersPayloadCompatible(accepted, retry)) return errorResponse('This checkout reference was already processed with different order details.', 409);
           return NextResponse.json({ order: accepted, success: true, notification: { ok: true, status: 'already_processed', dedupeKey: accepted.clientReferenceId } }, { headers: NO_CACHE_HEADERS });
         }
@@ -560,6 +525,7 @@ export async function POST(request) {
       const validatedItems = [];
       const quantitiesByProduct = new Map();
       const productsById = new Map();
+      const linesBySelection = new Map();
 
       for (const item of body.items) {
         if (!item || typeof item !== 'object' || Array.isArray(item)) return errorResponse('Invalid order item', 400);
@@ -579,6 +545,10 @@ export async function POST(request) {
           return errorResponse(`Product "${product.name}" is currently unavailable for purchase.`, 400);
         }
         
+        const selection = resolveColourSelection(product, item.variantId ?? '');
+        const lineKey = cartLineKey({ productId: product._id, ...selection });
+        const previousLine = linesBySelection.get(lineKey);
+        linesBySelection.set(lineKey, { product, selection, quantity: (previousLine?.quantity || 0) + requestedQty });
         const productKey = String(product._id);
         const totalRequestedQty = (quantitiesByProduct.get(productKey) || 0) + requestedQty;
         quantitiesByProduct.set(productKey, totalRequestedQty);
@@ -594,16 +564,10 @@ export async function POST(request) {
           return errorResponse(`Insufficient stock for "${product.name}". Only ${availableStock} unit(s) remaining.`, 400);
         }
 
-        if (!Number.isFinite(Number(product.price)) || Number(product.price) <= 0) return errorResponse('Product price is unavailable. Please contact support.', 409);
-        const itemTotal = Number(product.price) * requestedQty;
-        calculatedSubtotal += itemTotal;
-        validatedItems.push({
-          productId: product._id,
-          name: product.name,
-          price: product.price,
-          quantity: requestedQty,
-          image: product.image || product.thumbnail || product.images?.[0] || ''
-        });
+      }
+      for (const { product, selection, quantity } of linesBySelection.values()) {
+        calculatedSubtotal = (Math.round(calculatedSubtotal * 100) + Math.round(selection.price * 100) * quantity) / 100;
+        validatedItems.push({ productId: product._id, name: product.name, ...selection, quantity, image: product.image || product.thumbnail || product.images?.[0] || '' });
       }
       
       const settingsCol = await getCollection('settings');

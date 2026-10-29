@@ -1,3 +1,4 @@
+import { getColourVariants, validateColourVariants } from '../lib/commerce/colourVariants.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { publicProduct } from '../lib/commerce/publicProduct.js';
@@ -23,7 +24,7 @@ const products = [structuredClone(original)]; let inserts = 0; let updates = 0;
 const match = (product, query) => query.$or ? query.$or.some(item => match(product, item)) : Object.entries(query).every(([key, value]) => value?.$regex ? new RegExp(value.$regex, value.$options).test(String(product[key] || '')) : product[key] === value);
 const productsCol = { findOne: async query => products.find(p => match(p, query)), insertOne: async p => { inserts++; products.push(p); }, updateOne: async (query, update) => { updates++; Object.assign(products.find(p => match(p, query)), update.$set); return { matchedCount: 1 }; } };
 const source = fs.readFileSync('app/api/admin/[[...path]]/route.js', 'utf8').replace(/^import[\s\S]*?from ['"][^'"]+['"];?\s*/gm, '').replace(/export /g, '');
-const deps = { NextResponse: { json: (body, init) => Response.json(body, init) }, requireAuth: async () => ({ authenticated: true, user: { id:'owner', email:'qa@example.invalid', role:'owner' } }), requirePermission: async () => ({ authorized:true }), readJsonBody, getCollection: async name => name === 'products' ? productsCol : { updateOne: async () => ({ matchedCount:1 }) }, uuidv4: () => 'new-product-id', logAuditEvent: async () => {}, revalidatePath: () => {}, buildIdQuery: id => ({ _id:id }), doesActionRequireApproval: () => false, withProductEditorialDefaults };
+const deps = { getColourVariants, validateColourVariants, NextResponse: { json: (body, init) => Response.json(body, init) }, requireAuth: async () => ({ authenticated: true, user: { id:'owner', email:'qa@example.invalid', role:'owner' } }), requirePermission: async () => ({ authorized:true }), readJsonBody, getCollection: async name => name === 'products' ? productsCol : { updateOne: async () => ({ matchedCount:1 }) }, uuidv4: () => 'new-product-id', logAuditEvent: async () => {}, revalidatePath: () => {}, buildIdQuery: id => ({ _id:id }), doesActionRequireApproval: () => false, withProductEditorialDefaults };
 const { POST, PUT } = new Function(...Object.keys(deps), source + '\nreturn { POST, PUT };')(...Object.values(deps));
 const submit = (method, path, body) => new Request('https://example.invalid/api/admin/'+path, { method, headers:{'content-type':'application/json'}, body:JSON.stringify(body) });
 for (const body of [

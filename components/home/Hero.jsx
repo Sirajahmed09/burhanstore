@@ -1,5 +1,7 @@
 'use client';
 
+import { getColourVariants, colourPriceRange } from '@/lib/commerce/colourVariants';
+
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -30,7 +32,9 @@ export default function Hero({ flagshipProduct, databaseUnavailable = false }) {
   const product = flagshipProduct;
 
   const imageSrc = product.thumbnail || product.images?.[0] || '/images/burhan_pro2_earbuds.jpg';
-  const hasDiscount = product.oldPrice && product.oldPrice > product.price;
+  const hasColours = getColourVariants(product).length > 0;
+  const priceRange = colourPriceRange(product);
+  const hasDiscount = !hasColours && product.oldPrice && product.oldPrice > product.price;
   const discountPercent = hasDiscount
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0;
@@ -40,6 +44,7 @@ export default function Hero({ flagshipProduct, databaseUnavailable = false }) {
   const handleInstantBuy = (e) => {
     e.preventDefault();
     if (product && !isOutOfStock) {
+      if (hasColours) { router.push(`/shop/${product.slug}`); return; }
       const alreadyInCart = cart && cart.some(item => item._id === product._id);
       if (!alreadyInCart) {
         addToCart(product, 1);
@@ -164,7 +169,7 @@ export default function Hero({ flagshipProduct, databaseUnavailable = false }) {
                       </div>
                     )}
                     <div className="text-base sm:text-lg font-extrabold text-[#F4F2ED]">
-                      PKR {Number(product.price).toLocaleString()}
+                      {priceRange.high > priceRange.low ? 'From ' : ''}PKR {priceRange.low.toLocaleString()}
                     </div>
                   </div>
                 </div>

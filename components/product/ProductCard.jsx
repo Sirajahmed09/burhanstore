@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { getColourVariants, colourPriceRange } from '@/lib/commerce/colourVariants';
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -10,6 +12,7 @@ import { trackAddToCart as gaAddToCart } from '@/lib/analytics/gtag';
 import { calculateValidDiscount } from '@/lib/utils/pricing';
 
 export default function ProductCard({ product }) {
+  const router = useRouter();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const [justAdded, setJustAdded] = useState(false);
@@ -19,12 +22,15 @@ export default function ProductCard({ product }) {
   const isOutOfStock = (Number(product?.stock) || 0) <= 0;
   const imageSrc = product?.thumbnail || product?.images?.[0] || product?.image || '/images/burhan_pro2_earbuds.jpg';
 
-  const discountPercent = calculateValidDiscount(product.price, product.oldPrice);
+  const hasColours = getColourVariants(product).length > 0;
+  const priceRange = colourPriceRange(product);
+  const discountPercent = hasColours ? 0 : calculateValidDiscount(product.price, product.oldPrice);
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (isOutOfStock) return;
+    if (hasColours) { router.push(`/shop/${product.slug}`); return; }
     addToCart(product, 1);
     gaAddToCart(product, 1);
     setJustAdded(true);
@@ -136,9 +142,9 @@ export default function ProductCard({ product }) {
           {/* Price Row */}
           <div className="flex items-baseline space-x-2 mb-3">
             <span className="text-lg sm:text-xl font-extrabold text-[#171A20] tracking-tight">
-              PKR {Number(product.price).toLocaleString()}
+              {priceRange.high > priceRange.low ? 'From ' : ''}PKR {priceRange.low.toLocaleString()}
             </span>
-            {product.oldPrice && product.oldPrice > product.price && (
+            {!hasColours && product.oldPrice && product.oldPrice > product.price && (
               <span className="text-xs text-[#A09D96] line-through">
                 PKR {Number(product.oldPrice).toLocaleString()}
               </span>
@@ -168,7 +174,7 @@ export default function ProductCard({ product }) {
             ) : (
               <>
                 <ShoppingBag className="w-4 h-4 text-[#B9A47C]" />
-                <span>{isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</span>
+                <span>{isOutOfStock ? 'Out of Stock' : hasColours ? 'Choose Colour' : 'Add to Cart'}</span>
               </>
             )}
           </button>

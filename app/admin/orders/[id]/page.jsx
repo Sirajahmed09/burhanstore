@@ -375,6 +375,7 @@ export default function OrderDetailsPage({ params }) {
 
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 text-sm truncate">{item.name}</h3>
+                      {item.color && <p className="text-sm font-bold text-gray-800">Colour: {item.color}</p>}
                       <p className="text-xs text-gray-500 mt-0.5">
                         PKR {Number(item.price || 0).toLocaleString()} × {item.quantity}
                       </p>
