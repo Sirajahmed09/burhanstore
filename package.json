@@ -20,7 +20,8 @@
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "test:security": "node scripts/test-security.mjs"
+    "test:security": "node scripts/test-security.mjs",
+    "test:audit": "node scripts/test-final-audit.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "5.1.1",

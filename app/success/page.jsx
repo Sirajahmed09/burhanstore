@@ -11,32 +11,45 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (orderId) {
-      let sessionOrder = null;
-      try {
-        const saved = sessionStorage.getItem(`burhan_order_${orderId}`);
-        sessionOrder = saved ? JSON.parse(saved) : null;
-      } catch (err) {}
+    let active = true;
+    setOrder(null);
+    setLoading(true);
+    if (!orderId || !/^[A-Za-z0-9_-]{8,100}$/.test(orderId)) {
+      setLoading(false);
+      return;
+    }
+    let sessionOrder = null;
+    try {
+      const saved = sessionStorage.getItem(`burhan_order_${orderId}`);
+      const parsed = saved ? JSON.parse(saved) : null;
+      if (parsed?._id === orderId) sessionOrder = parsed;
+    } catch {}
+    if (sessionOrder) setOrder(sessionOrder);
 
-      fetch(`/api/orders/${orderId}`, { headers: sessionOrder?.receiptToken ? { 'x-order-token': sessionOrder.receiptToken } : {} })
-        .then(res => (res.ok ? res.json() : { order: null }))
-        .then(data => {
-          const ord = sessionOrder
-            ? { ...data?.order, ...sessionOrder }
-            : data?.order || null;
-          setOrder(ord);
-          if (ord && ord._id && typeof window !== 'undefined') {
+    fetch(`/api/orders/${encodeURIComponent(orderId)}`, { headers: sessionOrder?.receiptToken ? { 'x-order-token': sessionOrder.receiptToken } : {} })
+      .then(res => (res.ok ? res.json() : { order: null }))
+      .then(data => {
+        if (!active) return;
+        const verified = data?.order?._id === orderId ? data.order : null;
+        const ord = verified ? { ...sessionOrder, ...verified } : sessionOrder;
+        setOrder(ord);
+        // Only a server-verified receipt may generate a purchase event.
+        if (verified && ord) {
+          try {
             const key = `burhan_ga_purchased_${ord._id}`;
             if (!sessionStorage.getItem(key)) {
               trackPurchase(ord);
               sessionStorage.setItem(key, 'true');
             }
-          }
-        })
-        .catch(err => console.error('Failed to load order:', err));
-    }
+          } catch {}
+        }
+      })
+      .catch(() => { if (active) setOrder(sessionOrder); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [orderId]);
 
   return (
@@ -49,21 +62,21 @@ function SuccessContent() {
           </div>
 
           <div className="text-xs uppercase tracking-wider font-bold text-cyan-700 mb-1">
-            Order Confirmed
+            {loading ? 'Checking Order' : order ? 'Order Received' : 'Order Lookup'}
           </div>
           <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-950 mb-3 tracking-tight">
-            Thank You for Your Order!
+            {order ? 'Thank You for Your Order!' : loading ? 'Checking Your Confirmation…' : 'Check Your Order Status'}
           </h1>
           <p className="text-slate-600 text-sm sm:text-base mb-8 max-w-lg mx-auto leading-relaxed">
-            Your order has been received and is being prepared for dispatch with cash on delivery across Pakistan.
+            {order ? 'Your order has been received. Our store will confirm the delivery details before dispatch.' : loading ? 'Please wait while we load your order.' : 'We could not load a receipt in this browser. Use your order reference and registered phone number to check tracking, or contact the store before ordering again.'}
           </p>
 
           {/* Order ID Badge */}
-          {order && (
+          {(order || orderId) && (
             <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 mb-8 max-w-md mx-auto">
               <div className="text-xs font-semibold text-slate-500 mb-1">Your Order Reference Number</div>
-              <div className="font-mono text-xl sm:text-2xl font-extrabold text-slate-950 tracking-wider">
-                {order._id ? order._id.toUpperCase().slice(0, 16) : 'BURHAN-ORD'}
+              <div className="font-mono text-sm sm:text-base font-extrabold text-slate-950 break-all">
+                {order?.orderNumber || order?._id || orderId}
               </div>
             </div>
           )}
@@ -92,7 +105,7 @@ function SuccessContent() {
                 </div>
                 <div className="text-xs text-slate-600 flex justify-between py-0.5">
                   <span>Delivery:</span>
-                  <span className="font-semibold text-slate-900">PKR {Number(order.shipping || 200).toLocaleString()}</span>
+                  <span className="font-semibold text-slate-900">PKR {Number(order.shipping ?? 200).toLocaleString()}</span>
                 </div>
                 <div className="text-sm font-extrabold text-slate-950 flex justify-between pt-1 border-t border-slate-200/60 mt-1">
                   <span>Total Payable:</span>
@@ -103,7 +116,7 @@ function SuccessContent() {
           )}
 
           {/* Next Steps Card */}
-          <div className="p-4 rounded-2xl bg-cyan-50/60 border border-cyan-100 text-xs sm:text-sm text-slate-700 mb-8 text-left space-y-2">
+          {order && <div className="p-4 rounded-2xl bg-cyan-50/60 border border-cyan-100 text-xs sm:text-sm text-slate-700 mb-8 text-left space-y-2">
             <div className="font-bold text-slate-900">What happens next?</div>
             <div className="flex items-start space-x-2">
               <span className="font-bold text-cyan-700">1.</span>
@@ -117,7 +130,7 @@ function SuccessContent() {
               <span className="font-bold text-cyan-700">3.</span>
               <span>Pay the courier in cash when your parcel is delivered. Parcel inspection follows the courier policy.</span>
             </div>
-          </div>
+          </div>}
 
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -134,9 +147,9 @@ function SuccessContent() {
               <MessageCircle className="w-4 h-4" />
               <span>WhatsApp Us for Fast Dispatch</span>
             </a>
-            {order && (
+            {(order || orderId) && (
               <Link
-                href={`/track?orderId=${encodeURIComponent(order.orderNumber || order._id)}`}
+                href={`/track?orderId=${encodeURIComponent(order?.orderNumber || order?._id || orderId)}`}
                 className="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold px-6 py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center space-x-2"
               >
                 <Package className="w-4 h-4" />

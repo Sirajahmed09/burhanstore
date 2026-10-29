@@ -61,7 +61,7 @@ function TrackOrderContent() {
     if (queryOrderId) {
       setOrderId(queryOrderId);
       if (queryPhone) setPhone(queryPhone);
-      executeTrack(queryOrderId, queryPhone || '');
+      if (queryPhone) executeTrack(queryOrderId, queryPhone);
     }
   }, [searchParams]);
 
@@ -79,9 +79,15 @@ function TrackOrderContent() {
           color: 'text-cyan-700 bg-cyan-50 border-cyan-200',
           icon: Package
         };
+      case 'packed':
+        return { label: 'Packed', color: 'text-cyan-700 bg-cyan-50 border-cyan-200', icon: Package };
+      case 'returned':
+        return { label: 'Returned', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: Package };
+      case 'refunded':
+        return { label: 'Refunded', color: 'text-slate-700 bg-slate-100 border-slate-200', icon: CheckCircle2 };
       case 'shipped':
         return {
-          label: 'Out for Delivery (Shipped)',
+          label: 'Handed to Courier',
           color: 'text-blue-700 bg-blue-50 border-blue-200',
           icon: Truck
         };
