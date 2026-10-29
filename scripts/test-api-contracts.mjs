@@ -16,7 +16,7 @@ const checks = [
   { name: 'Checkout posts to the public orders endpoint', passed: files.checkout.includes("fetch('/api/orders'") },
   { name: 'Public order API inserts into the orders collection', passed: files.publicRoute.includes("getCollection('orders')") && files.publicRoute.includes('ordersCol.insertOne(order)') },
   { name: 'Public order API validates customer and item fields', passed: files.publicRoute.includes('body.items') && files.publicRoute.includes('body.customer') },
-  { name: 'Public order API recalculates price from the product record', passed: files.publicRoute.includes('productsCol.findOne(buildIdQuery(prodId))') && files.publicRoute.includes('Number(product.price) * requestedQty') },
+  { name: 'Public order API recalculates price from the product record', passed: files.publicRoute.includes('productsCol.findOne(buildIdQuery(prodId))') && files.publicRoute.includes("resolveColourSelection(product, item.variantId ?? '')") && files.publicRoute.includes('Math.round(selection.price * 100) * quantity') },
   { name: 'Checkout coalesces duplicate products before stock validation', passed: files.publicRoute.includes('quantitiesByProduct') && files.publicRoute.includes('productsById') },
   { name: 'Checkout reserves stock with an atomic quantity predicate', passed: files.publicRoute.includes('stock: { $gte: item.quantity }') && files.publicRoute.includes('reservedItems') },
   { name: 'Receipt endpoint does not return customer PII', passed: files.publicRoute.includes('expose customer PII') && !files.publicRoute.includes('phone: order.customer?.phone') && !files.publicRoute.includes('address: order.customer?.address') },

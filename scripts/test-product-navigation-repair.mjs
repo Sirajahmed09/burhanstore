@@ -94,7 +94,7 @@ const productDetailBuyNowToCheckout = productDetailSrc.includes("router.push('/c
 assert(productDetailBuyNowToCheckout, '4b. ProductDetailClient Buy Now routes to /checkout (Direct COD)');
 
 // Verify ProductDetailClient respects quantity and avoids duplicate stack
-const detailRespectsQuantity = productDetailSrc.includes('updateQuantity(product._id, quantity)');
+const detailRespectsQuantity = productDetailSrc.includes('updateQuantity(selectedProduct.cartKey, quantity)');
 assert(detailRespectsQuantity, '4c. ProductDetailClient Buy Now sets selected quantity cleanly');
 
 // 5. Live Endpoint Verification (against local dev server)

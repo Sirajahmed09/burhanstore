@@ -59,7 +59,7 @@ export default async function Home() {
         product={flagship ? {
           name: flagship.name,
           price: Number(flagship.price),
-          oldPrice: Number(flagship.oldPrice),
+          oldPrice: flagship.oldPrice == null ? null : Number(flagship.oldPrice),
           // Use the existing local product asset so the intro is reliable on
           // the first frame and does not add another remote image dependency.
           image: '/images/burhan_pro2_earbuds.jpg',

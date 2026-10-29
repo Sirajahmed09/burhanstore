@@ -52,6 +52,7 @@ export default function CheckoutPage() {
     if (!isLoaded) return;
     if (!cart.length) { setCartChecking(false); return; }
     const controller = new AbortController();
+    let active = true;
     const timeout = setTimeout(() => controller.abort(), 12000);
     setCartChecking(true);
     setCartError('');
@@ -59,6 +60,7 @@ export default function CheckoutPage() {
       .then(async response => {
         if (!response.ok) throw new Error('Unable to check your cart. Please refresh and try again.');
         const data = await response.json();
+        if (!active) return;
         if (!Array.isArray(data.items)) throw new Error('Cart check is unavailable. Please refresh.');
         const signature = items => JSON.stringify(items.map(item => [cartLineKey(item), item.color, Number(item.quantity), Number(item.price)]));
         if (signature(data.items) !== signature(cart)) {
@@ -67,9 +69,9 @@ export default function CheckoutPage() {
         }
         if (data.issues?.length) setValidationWarning(data.issues.map(issue => issue.message).join(' '));
       })
-      .catch(error => { if (!controller.signal.aborted) setCartError(error.message); else setCartError('Cart check timed out. Please refresh and try again.'); })
-      .finally(() => { clearTimeout(timeout); if (!controller.signal.aborted) setCartChecking(false); });
-    return () => { clearTimeout(timeout); controller.abort(); };
+      .catch(error => { if (active) setCartError(controller.signal.aborted ? 'Cart check timed out. Please refresh and try again.' : error.message); })
+      .finally(() => { clearTimeout(timeout); if (active) setCartChecking(false); });
+    return () => { active = false; clearTimeout(timeout); controller.abort(); };
   }, [cart, isLoaded, replaceCart]);
 
   useEffect(() => {
@@ -209,12 +211,14 @@ export default function CheckoutPage() {
       }
 
       if (response.ok && data.success) {
-        clearCart();
-        if (typeof window !== 'undefined') {
-          sessionStorage.removeItem('burhan_pending_checkout');
+        try {
           sessionStorage.setItem(`burhan_order_${data.order._id}`, JSON.stringify(data.order));
+          sessionStorage.removeItem('burhan_pending_checkout');
+        } catch {
+          // A saved order remains successful when browser storage is blocked/full.
         }
-        router.push(`/success?orderId=${data.order._id}`);
+        clearCart();
+        router.push(`/success?orderId=${encodeURIComponent(data.order._id)}`);
       } else {
         // If server indicated an inventory or validation error, clear the reference so fresh cart edits can proceed
         if (response.status < 500) submissionIdRef.current = null;
@@ -228,6 +232,8 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error('Order error:', error);
+      setHumanToken('');
+      setChallengeReset(value => value + 1);
       // Notice: Do NOT clear submissionKey from sessionStorage or submissionIdRef.
       // This ensures if the order was created on the server before the connection dropped,
       // retrying will securely recover the existing order without creating a duplicate.

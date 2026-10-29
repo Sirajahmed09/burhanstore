@@ -77,7 +77,7 @@ function sanitizeTrackedOrder(order) {
     updatedAt: order.updatedAt,
     items: Array.isArray(order.items) ? order.items.map(({ productId, name, price, quantity, image, variantId, color }) => ({ productId, name, price, quantity, image, variantId, color })) : [],
     subtotal: order.subtotal || order.pricing?.subtotal || 0,
-    shipping: order.shipping || order.pricing?.shipping || 0,
+    shipping: order.shipping ?? order.pricing?.shipping ?? 0,
     total: order.total || order.pricing?.total || 0,
     paymentMethod: order.paymentMethod || 'cod',
     timeline: Array.isArray(order.timeline) ? order.timeline.map(({ status, timestamp }) => ({ status, timestamp, message: ({ pending: 'Order received', confirmed: 'Order confirmed', processing: 'Preparing your order', shipped: 'Handed to courier', delivered: 'Delivered', cancelled: 'Order cancelled', returned: 'Returned', refunded: 'Refund processed' })[status] || 'Order status updated' })) : [],
@@ -323,7 +323,7 @@ export async function GET(request) {
         // This endpoint is addressable by order ID from a browser URL. Do not
         // expose customer PII or line-item details without phone verification.
         subtotal: order.subtotal || order.pricing?.subtotal || 0,
-        shipping: order.shipping !== undefined ? order.shipping : (order.pricing?.shipping || 200),
+        shipping: order.shipping ?? order.pricing?.shipping ?? 200,
         total: order.total || order.pricing?.total || 0,
         paymentMethod: order.paymentMethod || 'cod'
       };
@@ -650,27 +650,24 @@ export async function POST(request) {
 
         // Ambiguous write handling: Verify if the order actually persisted despite an error
         let persistedOrder = null;
+        let persistenceVerified = false;
         if (order.clientReferenceId) {
           try {
             persistedOrder = await ordersCol.findOne({ clientReferenceId: order.clientReferenceId });
+            persistenceVerified = true;
           } catch (findErr) {
             console.error('[Order Creation] Could not verify order persistence after insert error:', findErr);
           }
         }
 
         if (persistedOrder) {
-          const isDuplicateKey = insertError.code === 11000 ||
-            String(insertError.message || '').includes('E11000') ||
-            String(insertError.message || '').includes('duplicate key');
-
-          if (isDuplicateKey) {
-            // Rollback redundant reservation from this second concurrent attempt
+          // Reservation ownership comes from the persisted order ID, not the
+          // driver's error type: a concurrent winner can also surface a timeout.
+          if (String(persistedOrder._id) !== String(order._id)) {
             for (const item of reservedItems) {
               await productsCol.updateOne(buildIdQuery(item.productId), { $inc: { stock: item.quantity } });
             }
           }
-          // Note: If NOT duplicate key (e.g. socket timeout on first write), the order was persisted with
-          // this attempt's reserved stock; do NOT restore stock to prevent inventory leakage.
 
           if (areOrdersPayloadCompatible(persistedOrder, order)) {
             return NextResponse.json(
@@ -682,7 +679,16 @@ export async function POST(request) {
           }
         }
 
-        // The order was confirmed NOT persisted. Rollback reserved inventory.
+        // A failed verification or lost acknowledgement cannot prove the write
+        // failed. Keep inventory held rather than making accepted units sellable.
+        // Operators can reconcile the IDs in private server logs after recovery.
+        const definitivelyRejected = [11000, 121].includes(insertError.code);
+        if (!persistenceVerified || !definitivelyRejected) {
+          console.error('[Order Creation] Inventory reconciliation required', { orderId: order._id, clientReferenceId: order.clientReferenceId });
+          return errorResponse('Order confirmation is temporarily unavailable. Please retry this checkout without changing your details, or contact the store.', 503);
+        }
+
+        // A verified definitive insert rejection permits reservation rollback.
         for (const item of reservedItems) {
           await productsCol.updateOne(buildIdQuery(item.productId), { $inc: { stock: item.quantity } });
         }
