@@ -164,7 +164,7 @@ console.log('  [PASS] getVerifiedSocialLinks correctly filters only valid, confi
 // Test 3.6: Admin route code audit - strip _id to protect MongoDB immutability
 const adminRouteSource = fs.readFileSync('app/api/admin/[[...path]]/route.js', 'utf8');
 assert(
-  adminRouteSource.includes('const { _id, ...cleanSettings } = body;'),
+  adminRouteSource.includes('const { _id, type, createdAt, updatedAt, ...cleanSettings } = body;'),
   'Admin route must strip _id before updating settings in MongoDB'
 );
 assert(
@@ -238,7 +238,7 @@ assert(
   'ProductDetailClient must have sticky mobile purchase bar'
 );
 assert(
-  productDetailSource.includes("product.stock <= 0 ? 'Out of Stock' : 'Buy Now — COD'"),
+  productDetailSource.includes("product.stock <= 0 ? 'Out of Stock' : 'Order with Cash on Delivery'"),
   'ProductDetailClient primary CTA must indicate Out of Stock when unavailable'
 );
 assert(

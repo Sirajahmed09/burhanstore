@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Phone, Mail, MapPin, MessageCircle, Send, CheckCircle2, Clock } from 'lucide-react';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { Phone, Mail, MapPin, MessageCircle, Send } from 'lucide-react';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -10,15 +11,15 @@ export default function ContactPage() {
     phone: '',
     message: ''
   });
-  const [submitted, setSubmitted] = useState(false);
-
+  const { settings } = useStoreSettings();
+  const phone = settings?.phone || '03013301830';
+  const email = settings?.email || 'infoburhancommunication@gmail.com';
+  const rawWhatsapp = String(settings?.whatsapp || '923150693148').replace(/\D/g, '');
+  const whatsapp = rawWhatsapp.startsWith('0') ? `92${rawWhatsapp.slice(1)}` : rawWhatsapp;
   const handleSubmit = (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({ name: '', email: '', phone: '', message: '' });
-    }, 4000);
+    const text = `BURHAN STORE inquiry\nName: ${formData.name}\nPhone: ${formData.phone}\nEmail: ${formData.email || 'Not provided'}\n\n${formData.message}`;
+    window.location.assign(`https://wa.me/${whatsapp}?text=${encodeURIComponent(text)}`);
   };
 
   return (
@@ -33,7 +34,7 @@ export default function ContactPage() {
             Contact BURHAN STORE
           </h1>
           <p className="text-slate-600 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-            We are here to help with your orders, technical queries, warranty claims, or product inquiries.
+            We are here to help with your orders, technical queries, replacement requests, or product inquiries.
           </p>
         </div>
 
@@ -56,12 +57,12 @@ export default function ContactPage() {
                       WhatsApp (Fastest)
                     </h3>
                     <a
-                      href="https://wa.me/923150693148"
+                      href={`https://wa.me/${whatsapp}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm font-bold text-emerald-700 hover:underline"
                     >
-                      0315-0693148
+                      {whatsapp}
                     </a>
                     <p className="text-xs text-slate-500 mt-0.5">Product & Order Support</p>
                   </div>
@@ -76,8 +77,8 @@ export default function ContactPage() {
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-0.5">
                       Phone Helpline
                     </h3>
-                    <a href="tel:03013301830" className="text-sm font-bold text-slate-900 hover:text-cyan-700">
-                      0301-3301830
+                    <a href={`tel:${phone}`} className="text-sm font-bold text-slate-900 hover:text-cyan-700">
+                      {phone}
                     </a>
                     <p className="text-xs text-slate-500 mt-0.5">Monday to Saturday: 10 AM - 8 PM</p>
                   </div>
@@ -92,8 +93,8 @@ export default function ContactPage() {
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-0.5">
                       Official Email
                     </h3>
-                    <a href="mailto:infoburhancommunication@gmail.com" className="text-sm font-semibold text-slate-900 hover:underline break-all">
-                      infoburhancommunication@gmail.com
+                    <a href={`mailto:${email}`} className="text-sm font-semibold text-slate-900 hover:underline break-all">
+                      {email}
                     </a>
                     <p className="text-xs text-slate-500 mt-0.5">Business & Wholesale Inquiries</p>
                   </div>
@@ -123,24 +124,18 @@ export default function ContactPage() {
                 Send a Message
               </h2>
 
-              {submitted ? (
-                <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
-                  <div className="font-bold text-emerald-950 text-base">Message Received!</div>
-                  <p className="text-xs sm:text-sm text-emerald-800">
-                    Thank you for reaching out. A BURHAN representative will respond within 24 hours.
-                  </p>
-                </div>
-              ) : (
+              <p className="text-sm text-slate-600 mb-4">Continue to WhatsApp to review and send your message. Nothing is sent until you press Send in WhatsApp.</p>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      <label htmlFor="contact-name" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                         Your Name *
                       </label>
                       <input
                         type="text"
                         required
+                        id="contact-name"
+                        maxLength={160}
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="Siraj Khan"
@@ -148,12 +143,14 @@ export default function ContactPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      <label htmlFor="contact-phone" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                         Mobile Number *
                       </label>
                       <input
                         type="tel"
                         required
+                        id="contact-phone"
+                        maxLength={160}
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         placeholder="0300 1234567"
@@ -163,12 +160,14 @@ export default function ContactPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    <label htmlFor="contact-email" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                       Email Address
                     </label>
                     <input
                       type="email"
-                      value={formData.email}
+                      id="contact-email"
+                        maxLength={160}
+                        value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="siraj@example.com"
                       className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
@@ -176,13 +175,15 @@ export default function ContactPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    <label htmlFor="contact-message" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                       Message / Inquiry *
                     </label>
                     <textarea
                       required
                       rows={4}
-                      value={formData.message}
+                      id="contact-message"
+                        maxLength={2000}
+                        value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       placeholder="How can we help with your order or product questions?"
                       className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
@@ -194,10 +195,9 @@ export default function ContactPage() {
                     className="w-full bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-bold py-3.5 px-6 rounded-xl text-sm shadow-xs transition-all flex items-center justify-center space-x-2"
                   >
                     <Send className="w-4 h-4" />
-                    <span>Send Message</span>
+                    <span>Continue to WhatsApp</span>
                   </button>
                 </form>
-              )}
             </div>
           </div>
         </div>

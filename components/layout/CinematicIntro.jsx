@@ -82,7 +82,7 @@ export default function CinematicIntro({ product }) {
   };
 
   const price = formatPrice(displayProduct.price);
-  const oldPrice = formatPrice(displayProduct.oldPrice);
+  const oldPrice = Number(displayProduct.oldPrice) > Number(displayProduct.price) ? formatPrice(displayProduct.oldPrice) : null;
 
   if (!hasMounted) return null;
 
@@ -125,9 +125,9 @@ export default function CinematicIntro({ product }) {
                 />
               </div>
 
-              <h1 id="cinematic-intro-title" className="font-heading text-4xl font-bold tracking-tight sm:text-6xl">
+              <h2 id="cinematic-intro-title" className="font-heading text-4xl font-bold tracking-tight sm:text-6xl">
                 BURHAN
-              </h1>
+              </h2>
               <p id="cinematic-intro-description" className="mt-4 max-w-md text-sm leading-6 text-slate-300 sm:text-base">
                 Meet {displayProduct.name}. Premium sound, thoughtfully made for your everyday.
               </p>
