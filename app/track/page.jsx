@@ -22,6 +22,8 @@ function TrackOrderContent() {
       return;
     }
 
+    if (!phoneToUse) { setError('Please enter your registered mobile number'); return; }
+    setOrder(null);
     setError('');
     setLoading(true);
 
@@ -61,7 +63,7 @@ function TrackOrderContent() {
     if (queryOrderId) {
       setOrderId(queryOrderId);
       if (queryPhone) setPhone(queryPhone);
-      executeTrack(queryOrderId, queryPhone || '');
+      if (queryPhone) executeTrack(queryOrderId, queryPhone);
     }
   }, [searchParams]);
 
@@ -81,10 +83,16 @@ function TrackOrderContent() {
         };
       case 'shipped':
         return {
-          label: 'Out for Delivery (Shipped)',
+          label: 'Shipped — in transit',
           color: 'text-blue-700 bg-blue-50 border-blue-200',
           icon: Truck
         };
+      case 'packed':
+        return { label: 'Packed — awaiting dispatch', color: 'text-blue-700 bg-blue-50 border-blue-200', icon: Package };
+      case 'returned':
+        return { label: 'Returned', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: Package };
+      case 'refunded':
+        return { label: 'Refunded', color: 'text-slate-700 bg-slate-50 border-slate-200', icon: CheckCircle2 };
       case 'delivered':
         return {
           label: 'Delivered',
@@ -127,25 +135,25 @@ function TrackOrderContent() {
           <form onSubmit={handleTrack} className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label htmlFor="track-orderId" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   Order ID *
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. ORD-1234 or ID"
-                  value={orderId}
+                  id="track-orderId" required value={orderId}
                   onChange={(e) => setOrderId(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label htmlFor="track-phone" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                    Registered Mobile Number *
                 </label>
                 <input
                   type="tel"
                   placeholder="0300 1234567"
-                  value={phone}
+                  id="track-phone" required value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
@@ -176,8 +184,8 @@ function TrackOrderContent() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
               <div>
                 <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Order Reference</div>
-                <div className="font-mono text-lg sm:text-xl font-extrabold text-slate-950">
-                  {order._id ? order._id.toUpperCase().slice(0, 16) : orderId}
+                <div className="font-mono break-all text-lg sm:text-xl font-extrabold text-slate-950">
+                  {order.orderNumber || order._id || orderId}
                 </div>
               </div>
 

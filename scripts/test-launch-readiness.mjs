@@ -89,3 +89,45 @@ assert.equal((await GET(new Request('http://localhost/api/orders/test-order'))).
 assert.equal((await GET(new Request('http://localhost/api/orders/test-order', { headers: { 'x-order-token': result.order.receiptToken } }))).status, 200);
 assert.equal((await submit({ ...base, clientReferenceId: 'new-bot-key', website: 'spam.example' })).status, 400);
 console.log('Receipt privacy and bot honeypot verified against the actual route.');
+
+// Regression scenarios execute the real handler above, with isolated fault injection.
+const originalInsert = collections.orders.insertOne;
+const originalFind = collections.orders.findOne;
+for (const scenario of ['own-commit-timeout', 'own-commit-duplicate-label', 'other-winner-timeout', 'lookup-down-after-commit', 'empty-read-after-timeout', 'definitive-rejection']) {
+  orders.length = 0;
+  products[0].stock = 2;
+  let attempted = false;
+  collections.orders.insertOne = async order => {
+    attempted = true;
+    if (!['empty-read-after-timeout', 'definitive-rejection'].includes(scenario)) {
+      orders.push(structuredClone({ ...order, _id: scenario === 'other-winner-timeout' ? 'other-order' : order._id }));
+    }
+    throw Object.assign(new Error('Simulated insertion failure'), { code: scenario === 'own-commit-duplicate-label' ? 11000 : scenario === 'definitive-rejection' ? 121 : undefined });
+  };
+  collections.orders.findOne = async query => {
+    if (attempted && scenario === 'lookup-down-after-commit') throw new Error('Simulated lookup unavailable');
+    return originalFind(query);
+  };
+  // Each isolated scenario gets its own rate-limit state.
+  securityRecords.clear();
+  const payload = { ...base, clientReferenceId: `regression-${scenario}` };
+  const actual = await submit(payload);
+  if (['lookup-down-after-commit', 'empty-read-after-timeout'].includes(scenario)) {
+    assert.equal(actual.status, 503, scenario);
+    assert.equal(products[0].stock, 1, 'Uncertain writes must retain stock until reconciled');
+  } else if (scenario === 'definitive-rejection') {
+    assert.equal(actual.status, 500);
+    assert.equal(products[0].stock, 2, 'Confirmed validation rejection restores reservation');
+  } else {
+    assert.equal(actual.status, 200, scenario);
+    assert.equal(products[0].stock, scenario === 'other-winner-timeout' ? 2 : 1, 'Only the redundant attempt restores stock');
+  }
+}
+collections.orders.insertOne = originalInsert;
+collections.orders.findOne = originalFind;
+orders.push({ _id: 'test-order', receiptToken: 'test-receipt', shipping: undefined });
+orders[0].shipping = undefined;
+orders[0].pricing = { shipping: 0 };
+const freeReceipt = await GET(new Request('http://localhost/api/orders/test-order', { headers: { 'x-order-token': orders[0].receiptToken } }));
+assert.equal((await freeReceipt.json()).order.shipping, 0, 'Zero shipping survives legacy receipt fallback');
+console.log('Actual handler regressions passed: ambiguous writes, lookup outages, reservation ownership and zero shipping.');

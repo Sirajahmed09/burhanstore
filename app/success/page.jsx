@@ -3,41 +3,60 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { CheckCircle2, Package, ArrowRight, MessageCircle, Truck, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Package, ArrowRight, MessageCircle } from 'lucide-react';
 import { trackPurchase } from '@/lib/analytics/gtag';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(Boolean(orderId));
 
   useEffect(() => {
-    if (orderId) {
-      let sessionOrder = null;
+    let active = true;
+    const controller = new AbortController();
+    setOrder(null);
+    setLoading(Boolean(orderId));
+    if (!orderId) return () => { active = false; };
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    let sessionOrder = null;
+    try {
+      sessionOrder = JSON.parse(sessionStorage.getItem(`burhan_order_${orderId}`) || 'null');
+    } catch {}
+    fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+      headers: sessionOrder?.receiptToken ? { 'x-order-token': sessionOrder.receiptToken } : {},
+      signal: controller.signal, cache: 'no-store'
+    }).then(async response => {
+      if (!response.ok) throw new Error('Receipt unavailable');
+      const data = await response.json();
+      if (!active || !data.order || String(data.order._id) !== orderId) return;
+      // The authenticated server receipt is authoritative; local data only supplies line items.
+      const ord = { ...(sessionOrder?._id === orderId ? sessionOrder : {}), ...data.order };
+      setOrder(ord);
+      // Storage/analytics errors must not hide a verified receipt.
       try {
-        const saved = sessionStorage.getItem(`burhan_order_${orderId}`);
-        sessionOrder = saved ? JSON.parse(saved) : null;
-      } catch (err) {}
-
-      fetch(`/api/orders/${orderId}`, { headers: sessionOrder?.receiptToken ? { 'x-order-token': sessionOrder.receiptToken } : {} })
-        .then(res => (res.ok ? res.json() : { order: null }))
-        .then(data => {
-          const ord = sessionOrder
-            ? { ...data?.order, ...sessionOrder }
-            : data?.order || null;
-          setOrder(ord);
-          if (ord && ord._id && typeof window !== 'undefined') {
-            const key = `burhan_ga_purchased_${ord._id}`;
-            if (!sessionStorage.getItem(key)) {
-              trackPurchase(ord);
-              sessionStorage.setItem(key, 'true');
-            }
-          }
-        })
-        .catch(err => console.error('Failed to load order:', err));
-    }
+        const key = `burhan_ga_purchased_${ord._id}`;
+        if (!sessionStorage.getItem(key)) {
+          trackPurchase(ord);
+          sessionStorage.setItem(key, 'true');
+        }
+      } catch {}
+    }).catch(() => {}).finally(() => {
+      clearTimeout(timeout);
+      if (active) setLoading(false);
+    });
+    return () => { active = false; clearTimeout(timeout); controller.abort(); };
   }, [orderId]);
+
+  if (!order) return (
+    <main className="min-h-screen bg-slate-50 pt-32 pb-24 px-6 text-center">
+      <h1 className="text-2xl font-bold">{loading ? 'Checking your order…' : 'Order confirmation unavailable'}</h1>
+      <p className="mt-4" role="status">{loading ? 'Please wait while we verify your receipt.' : 'This page cannot confirm an order. If you already submitted one, check its status before ordering again.'}</p>
+      {orderId && <p className="font-mono break-all mt-4">Reference: {orderId}</p>}
+      <Link href={orderId ? `/track?orderId=${encodeURIComponent(orderId)}` : '/track'} className="inline-block underline mt-6">Track an order with your mobile number</Link>
+      <Link href="/shop" className="block underline mt-4">Return to shop</Link>
+    </main>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20 md:pt-24 pb-20 flex items-center justify-center text-slate-900">
@@ -62,8 +81,8 @@ function SuccessContent() {
           {order && (
             <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 mb-8 max-w-md mx-auto">
               <div className="text-xs font-semibold text-slate-500 mb-1">Your Order Reference Number</div>
-              <div className="font-mono text-xl sm:text-2xl font-extrabold text-slate-950 tracking-wider">
-                {order._id ? order._id.toUpperCase().slice(0, 16) : 'BURHAN-ORD'}
+              <div className="font-mono break-all text-xl sm:text-2xl font-extrabold text-slate-950 tracking-wider">
+                {order.orderNumber || order._id}
               </div>
             </div>
           )}
@@ -92,7 +111,7 @@ function SuccessContent() {
                 </div>
                 <div className="text-xs text-slate-600 flex justify-between py-0.5">
                   <span>Delivery:</span>
-                  <span className="font-semibold text-slate-900">PKR {Number(order.shipping || 200).toLocaleString()}</span>
+                  <span className="font-semibold text-slate-900">PKR {Number(order.shipping ?? 200).toLocaleString()}</span>
                 </div>
                 <div className="text-sm font-extrabold text-slate-950 flex justify-between pt-1 border-t border-slate-200/60 mt-1">
                   <span>Total Payable:</span>
@@ -124,7 +143,7 @@ function SuccessContent() {
             <a
               href={`https://wa.me/923150693148?text=${encodeURIComponent(
                 order
-                  ? `Hello BURHAN STORE, I placed order #${(order.orderNumber || order._id).slice(0, 16)} and would like to confirm dispatch.`
+                  ? `Hello BURHAN STORE, I placed order #${(order.orderNumber || order._id)} and would like to confirm dispatch.`
                   : 'Hello BURHAN STORE, I just placed an order!'
               )}`}
               target="_blank"

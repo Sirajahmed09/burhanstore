@@ -19,6 +19,8 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { cart, getCartTotal, clearCart, replaceCart, isLoaded } = useCart();
   const [loading, setLoading] = useState(false);
+  const [acceptedOrder, setAcceptedOrder] = useState(null);
+  const [validationAttempt, setValidationAttempt] = useState(0);
   const submissionIdRef = useRef(null);
   const submittingRef = useRef(false);
   const submissionFingerprintRef = useRef(null);
@@ -51,6 +53,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!isLoaded) return;
     if (!cart.length) { setCartChecking(false); return; }
+    let active = true;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
     setCartChecking(true);
@@ -59,6 +62,7 @@ export default function CheckoutPage() {
       .then(async response => {
         if (!response.ok) throw new Error('Unable to check your cart. Please refresh and try again.');
         const data = await response.json();
+        if (!active) return;
         if (!Array.isArray(data.items)) throw new Error('Cart check is unavailable. Please refresh.');
         const signature = items => JSON.stringify(items.map(item => [cartLineKey(item), item.color, Number(item.quantity), Number(item.price)]));
         if (signature(data.items) !== signature(cart)) {
@@ -67,10 +71,10 @@ export default function CheckoutPage() {
         }
         if (data.issues?.length) setValidationWarning(data.issues.map(issue => issue.message).join(' '));
       })
-      .catch(error => { if (!controller.signal.aborted) setCartError(error.message); else setCartError('Cart check timed out. Please refresh and try again.'); })
-      .finally(() => { clearTimeout(timeout); if (!controller.signal.aborted) setCartChecking(false); });
-    return () => { clearTimeout(timeout); controller.abort(); };
-  }, [cart, isLoaded, replaceCart]);
+      .catch(error => { if (!active) return; if (!controller.signal.aborted) setCartError(error.message); else setCartError('Cart check timed out. Please refresh and try again.'); })
+      .finally(() => { clearTimeout(timeout); if (active) setCartChecking(false); });
+    return () => { active = false; clearTimeout(timeout); controller.abort(); };
+  }, [cart, isLoaded, replaceCart, validationAttempt]);
 
   useEffect(() => {
     if (!isLoaded || !cart.length || cartChecking || cartError || settingsLoading || settingsError) return;
@@ -209,17 +213,21 @@ export default function CheckoutPage() {
       }
 
       if (response.ok && data.success) {
+        // The server accepted the order. Browser storage must never turn it into a failure.
+        setAcceptedOrder(data.order);
         clearCart();
-        if (typeof window !== 'undefined') {
-          sessionStorage.removeItem('burhan_pending_checkout');
+        let receiptSaved = false;
+        try {
           sessionStorage.setItem(`burhan_order_${data.order._id}`, JSON.stringify(data.order));
-        }
-        router.push(`/success?orderId=${data.order._id}`);
+          receiptSaved = true;
+          sessionStorage.removeItem('burhan_pending_checkout');
+        } catch {}
+        if (receiptSaved) router.push(`/success?orderId=${encodeURIComponent(data.order._id)}`);
       } else {
         // If server indicated an inventory or validation error, clear the reference so fresh cart edits can proceed
         if (response.status < 500) submissionIdRef.current = null;
         if (response.status < 500 && typeof window !== 'undefined') {
-          sessionStorage.removeItem('burhan_pending_checkout');
+          try { sessionStorage.removeItem('burhan_pending_checkout'); } catch {}
         }
         setHumanToken('');
         setChallengeReset(value => value + 1);
@@ -240,6 +248,16 @@ export default function CheckoutPage() {
   };
 
   if (!isLoaded) return <div className="pt-32 p-8 text-center" role="status">Loading your cart...</div>;
+
+  if (acceptedOrder) return (
+    <main className="min-h-screen pt-32 pb-24 px-6 text-center bg-slate-50">
+      <h1 className="text-3xl font-bold">Order received</h1>
+      <p className="mt-4">Save your complete order reference:</p>
+      <p className="font-mono break-all my-4">{acceptedOrder.orderNumber || acceptedOrder._id}</p>
+      <p>Your order has been accepted. Please do not submit another order.</p>
+      <Link className="inline-block underline mt-6" href={`/track?orderId=${encodeURIComponent(acceptedOrder.orderNumber || acceptedOrder._id)}`}>Track with your mobile number</Link>
+    </main>
+  );
 
   if (cart.length === 0) {
     return (
@@ -505,7 +523,7 @@ export default function CheckoutPage() {
                   Order Summary
                 </h2>
 
-                {cartError && <p role="alert" className="text-sm text-red-700">{cartError}</p>}
+                {cartError && <div role="alert" className="text-sm text-red-700"><p>{cartError}</p><button type="button" onClick={() => setValidationAttempt(value => value + 1)} className="underline font-semibold mt-2">Retry cart check</button></div>}
                 {cartChecking && <p role="status" className="text-sm text-slate-600">Checking the latest price and availability...</p>}
                 {settingsError && <p role="alert" className="text-sm text-red-700">{settingsError}</p>}
                 {settingsLoading && <p role="status" className="text-sm text-slate-600">Loading delivery charges...</p>}

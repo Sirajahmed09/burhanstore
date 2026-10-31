@@ -323,7 +323,7 @@ export async function GET(request) {
         // This endpoint is addressable by order ID from a browser URL. Do not
         // expose customer PII or line-item details without phone verification.
         subtotal: order.subtotal || order.pricing?.subtotal || 0,
-        shipping: order.shipping !== undefined ? order.shipping : (order.pricing?.shipping || 200),
+        shipping: order.shipping !== undefined ? order.shipping : (order.pricing?.shipping ?? 200),
         total: order.total || order.pricing?.total || 0,
         paymentMethod: order.paymentMethod || 'cod'
       };
@@ -648,43 +648,47 @@ export async function POST(request) {
       } catch (insertError) {
         console.error('[Order Creation] Database insert error:', insertError?.message || insertError);
 
-        // Ambiguous write handling: Verify if the order actually persisted despite an error
+        // Ambiguous write handling: a failed lookup is not proof of a failed write.
         let persistedOrder = null;
-        if (order.clientReferenceId) {
-          try {
-            persistedOrder = await ordersCol.findOne({ clientReferenceId: order.clientReferenceId });
-          } catch (findErr) {
-            console.error('[Order Creation] Could not verify order persistence after insert error:', findErr);
-          }
+        let persistenceChecked = false;
+        try {
+          persistedOrder = await ordersCol.findOne(
+            order.clientReferenceId ? { clientReferenceId: order.clientReferenceId } : { _id: order._id }
+          );
+          persistenceChecked = true;
+        } catch (findErr) {
+          console.error('[Order Creation] Persistence lookup unavailable:', findErr?.message);
         }
 
         if (persistedOrder) {
-          const isDuplicateKey = insertError.code === 11000 ||
-            String(insertError.message || '').includes('E11000') ||
-            String(insertError.message || '').includes('duplicate key');
-
-          if (isDuplicateKey) {
-            // Rollback redundant reservation from this second concurrent attempt
+          // Ownership comes from the persisted ID, not the driver's error label.
+          if (String(persistedOrder._id) !== String(order._id)) {
             for (const item of reservedItems) {
               await productsCol.updateOne(buildIdQuery(item.productId), { $inc: { stock: item.quantity } });
             }
           }
-          // Note: If NOT duplicate key (e.g. socket timeout on first write), the order was persisted with
-          // this attempt's reserved stock; do NOT restore stock to prevent inventory leakage.
-
           if (areOrdersPayloadCompatible(persistedOrder, order)) {
             return NextResponse.json(
               { order: persistedOrder, success: true, notification: { ok: true, status: 'already_processed', dedupeKey: order.clientReferenceId } },
               { status: 200, headers: NO_CACHE_HEADERS }
             );
-          } else {
-            return errorResponse('This checkout reference was already processed with different order details.', 409);
           }
+          return errorResponse('This checkout reference was already processed with different order details.', 409);
         }
 
-        // The order was confirmed NOT persisted. Rollback reserved inventory.
-        for (const item of reservedItems) {
-          await productsCol.updateOne(buildIdQuery(item.productId), { $inc: { stock: item.quantity } });
+        // Only a definitive server rejection can release a reservation here.
+        // A socket/write-concern timeout may still commit even after an empty read.
+        const definitivelyRejected = [11000, 121].includes(insertError?.code);
+        if (persistenceChecked && definitivelyRejected) {
+          for (const item of reservedItems) {
+            await productsCol.updateOne(buildIdQuery(item.productId), { $inc: { stock: item.quantity } });
+          }
+        } else {
+          console.error('[ORDER_RECONCILIATION_REQUIRED]', JSON.stringify({
+            orderId: order._id, clientReferenceId: order.clientReferenceId,
+            reservedItems: reservedItems.map(item => ({ productId: item.productId, quantity: item.quantity }))
+          }));
+          return errorResponse('Order confirmation is temporarily unavailable. Retry with the same checkout details or contact support before placing another order.', 503);
         }
 
         return errorResponse('Failed to record order. Please try again.', 500);
