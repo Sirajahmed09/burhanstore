@@ -493,6 +493,16 @@ export default function CheckoutPage() {
                     </div>
                   </label>
 
+                  <div aria-disabled="true" className="flex items-start rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <input type="radio" name="paymentMethod" value="online" disabled aria-label="Online payment — coming soon" className="mt-1 h-4 w-4" />
+                    <div className="ml-3.5">
+                      <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-600">
+                        Online Payment
+                        <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium">Coming soon</span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-600">Not available yet. Please choose Cash on Delivery for this order.</p>
+                    </div>
+                  </div>
                 </div>
                 <p className="text-xs text-slate-600">Online payment is currently unavailable. You can complete your order with Cash on Delivery.</p>
               </div>
