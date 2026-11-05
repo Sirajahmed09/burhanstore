@@ -55,16 +55,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {flagship && <CinematicIntro
-        product={flagship ? {
-          name: flagship.name,
-          price: Number(flagship.price),
-          oldPrice: Number(flagship.oldPrice),
-          // Use the existing local product asset so the intro is reliable on
-          // the first frame and does not add another remote image dependency.
-          image: '/images/burhan_pro2_earbuds.jpg',
-        } : undefined}
-      />}
+      <CinematicIntro />
       {/* 1. Premium 3D-Style Headphone Hero with Dynamic Flagship Product Data */}
       <Hero flagshipProduct={flagship} databaseUnavailable={databaseError} />
 

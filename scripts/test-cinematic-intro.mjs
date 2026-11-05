@@ -7,10 +7,10 @@ const layout = await readFile(new URL('../app/layout.js', import.meta.url), 'utf
 
 assert.match(intro, /Skip Intro/);
 assert.match(intro, /sessionStorage/);
-assert.match(intro, /useReducedMotion/);
+assert.match(intro, /prefers-reduced-motion/);
 assert.match(intro, /clearTimeout/);
-assert.match(intro, /role="dialog"/);
-assert.match(intro, /\/images\/burhan_pro2_earbuds\.jpg/);
+assert.match(intro, /<dialog/);
+assert.match(intro, /\/brand\/burhan-symbol\.webp/);
 assert.match(home, /CinematicIntro/);
 assert.doesNotMatch(layout, /LoadingScreen/);
 
