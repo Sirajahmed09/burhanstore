@@ -29,8 +29,7 @@ A complete enterprise-grade production-ready eCommerce platform for consumer ele
 
 **Admin Access:**
 - URL: `/admin/login`
-- Default Email: `admin@burhan.com`
-- Default Password: `Admin@123`
+- Sign in with the owner account provisioned for this store.
 
 📖 **[Complete Admin Documentation →](./ADMIN_DOCUMENTATION.md)**
 

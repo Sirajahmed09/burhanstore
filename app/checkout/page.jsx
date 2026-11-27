@@ -15,6 +15,14 @@ import { resolveShippingFee } from '@/lib/commerce/shipping';
 import { trackBeginCheckout } from '@/lib/analytics/gtag';
 import { normalizePakistaniPhone } from '@/lib/utils/phone';
 
+function checkoutItems(cart) {
+  return cart.map(item => ({
+    productId: item.productId || item._id,
+    variantId: item.variantId || '',
+    quantity: item.quantity
+  }));
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, getCartTotal, clearCart, replaceCart, isLoaded } = useCart();
@@ -51,14 +59,16 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!isLoaded) return;
     if (!cart.length) { setCartChecking(false); return; }
+    let active = true;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
     setCartChecking(true);
     setCartError('');
-    fetch('/api/cart/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: cart }), signal: controller.signal })
+    fetch('/api/cart/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: checkoutItems(cart) }), signal: controller.signal })
       .then(async response => {
         if (!response.ok) throw new Error('Unable to check your cart. Please refresh and try again.');
         const data = await response.json();
+        if (!active) return;
         if (!Array.isArray(data.items)) throw new Error('Cart check is unavailable. Please refresh.');
         const signature = items => JSON.stringify(items.map(item => [cartLineKey(item), item.color, Number(item.quantity), Number(item.price)]));
         if (signature(data.items) !== signature(cart)) {
@@ -67,9 +77,9 @@ export default function CheckoutPage() {
         }
         if (data.issues?.length) setValidationWarning(data.issues.map(issue => issue.message).join(' '));
       })
-      .catch(error => { if (!controller.signal.aborted) setCartError(error.message); else setCartError('Cart check timed out. Please refresh and try again.'); })
-      .finally(() => { clearTimeout(timeout); if (!controller.signal.aborted) setCartChecking(false); });
-    return () => { clearTimeout(timeout); controller.abort(); };
+      .catch(error => { if (!active) return; if (!controller.signal.aborted) setCartError(error.message); else setCartError('Cart check timed out. Please refresh and try again.'); })
+      .finally(() => { clearTimeout(timeout); if (active) setCartChecking(false); });
+    return () => { active = false; clearTimeout(timeout); controller.abort(); };
   }, [cart, isLoaded, replaceCart]);
 
   useEffect(() => {
@@ -172,14 +182,7 @@ export default function CheckoutPage() {
         website: formData.website,
         humanToken,
         clientReferenceId: submissionIdRef.current,
-        items: cart.map(item => ({
-          productId: item._id,
-          variantId: item.variantId || '',
-          name: item.name,
-          image: item.thumbnail || item.image,
-          price: item.price,
-          quantity: item.quantity
-        })),
+        items: checkoutItems(cart),
         customer: {
           name: formData.fullName.trim(),
           phone: cleanPhone,

@@ -4,11 +4,7 @@
 
 **Admin Login URL:** `/admin/login`
 
-**Default Credentials:**
-- Email: `admin@burhan.com`
-- Password: `Admin@123`
-
-> ⚠️ **Important:** Change the default password immediately after first login in production.
+Use the owner account provisioned for your store. Set a unique password when creating an account.
 
 ## 📊 Admin Features
 
@@ -184,11 +180,7 @@ POST /api/admin/orders/:id/status   - Update order status
    Navigate to: /admin/login
    ```
 
-2. **Login with Default Credentials:**
-   ```
-   Email: admin@burhan.com
-   Password: Admin@123
-   ```
+2. **Sign in with your own provisioned admin account.**
 
 3. **Verify Dashboard Access:**
    - You should see the dashboard with statistics

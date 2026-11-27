@@ -24,7 +24,10 @@ export async function initializeAdmin() {
     }
 
     // Create new admin
-    const initialPassword = process.env.ADMIN_INITIAL_PASSWORD || 'Admin@123';
+    const initialPassword = process.env.ADMIN_INITIAL_PASSWORD;
+    if (!initialPassword || initialPassword.length < 12 || Buffer.byteLength(initialPassword) > 72) {
+      throw new Error('Set ADMIN_INITIAL_PASSWORD to a unique password of at least 12 characters and at most 72 bytes.');
+    }
     const hashedPassword = await bcrypt.hash(initialPassword, 10);
     
     const admin = {

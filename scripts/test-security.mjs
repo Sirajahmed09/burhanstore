@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { createHash } from 'node:crypto';
 import { SignJWT } from 'jose';
 import { verifyToken } from '../lib/admin/auth.js';
 import { readJsonBody, literalSearch } from '../lib/security/requests.js';
 import { consumeRateLimit, validateOrderLimits } from '../lib/security/rate-limit.js';
 import { verifyHumanCheck } from '../lib/security/human-check.js';
-import { validAdminSession, validEntryCookie, validEntryKey, createEntryCookie } from '../lib/security/admin-gate.js';
+import { validAdminSession } from '../lib/security/admin-gate.js';
 import { publicProduct } from '../lib/commerce/publicProduct.js';
 
 const json = body => new Request('https://burhanstore.com/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -31,15 +30,9 @@ await verifyHumanCheck('token', { env, fetchImpl: async () => Response.json({ su
 await assert.rejects(() => verifyHumanCheck('', { env }), error => error.status === 403);
 await assert.rejects(() => verifyHumanCheck('token', { env, fetchImpl: async () => Response.json({ success: true, hostname: 'attacker.example', action: 'checkout' }) }), error => error.status === 403);
 await assert.rejects(() => verifyHumanCheck('token', { env, fetchImpl: async () => { throw new Error('offline'); } }), error => error.status === 503);
-const previousSecret = process.env.JWT_SECRET; const previousAdminSecret = process.env.ADMIN_JWT_SECRET; const previousHash = process.env.ADMIN_ENTRY_KEY_HASH;
+const previousSecret = process.env.JWT_SECRET; const previousAdminSecret = process.env.ADMIN_JWT_SECRET;
 process.env.JWT_SECRET = 'isolated-tests-only-secret-not-production-123456789'; delete process.env.ADMIN_JWT_SECRET;
-const entry = 'x'.repeat(43); process.env.ADMIN_ENTRY_KEY_HASH = createHash('sha256').update(entry).digest('hex');
 try {
-  assert.equal(await validEntryKey(entry), true);
-  assert.equal(await validEntryKey('wrong'), false);
-  const gate = await createEntryCookie();
-  assert.equal(await validEntryCookie(gate), true);
-  assert.equal(await validAdminSession(gate), false, 'Entry gate must never grant admin authentication');
   assert.equal(await validAdminSession('forged.cookie.value'), false);
   const key = new TextEncoder().encode(process.env.JWT_SECRET);
   const admin = await new SignJWT({ id: 'test-owner', email: 'test@example.com' }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('1h').sign(key);
@@ -48,13 +41,13 @@ try {
   assert.equal(await validAdminSession(noExpiry), false);
   class NextResponse extends Response { static next() { return new Response(null, { status: 200 }); } static redirect(url) { return new Response(null, { status: 307, headers: { Location: String(url) } }); } }
   const source = fs.readFileSync('middleware.js', 'utf8').replace(/^import .*;\n/gm, '').replace(/export /g, '');
-  const middleware = new Function('NextResponse', 'validAdminSession', 'validEntryCookie', source + '\nreturn middleware;')(NextResponse, validAdminSession, validEntryCookie);
-  const request = (path, cookies = {}) => ({ nextUrl: new URL('https://burhanstore.com' + path), url: 'https://burhanstore.com' + path, headers: new Headers(), cookies: { get: name => cookies[name] ? { value: cookies[name] } : undefined } });
-  assert.equal((await middleware(request('/admin/login'))).status, 404);
-  assert.equal((await middleware(request('/admin/dashboard', { admin_token: 'forged' }))).status, 404);
-  assert.equal((await middleware(request('/api/admin/auth/login'))).status, 404);
-  assert.equal((await middleware(request('/admin/login', { burhan_staff_gate: gate }))).status, 200);
-  assert.equal((await middleware(request('/admin/dashboard', { burhan_staff_gate: gate }))).status, 307);
+  const middleware = new Function('NextResponse', 'validAdminSession', source + '\nreturn middleware;')(NextResponse, validAdminSession);
+  const request = (path, cookies = {}, method = 'GET') => ({ method, nextUrl: new URL('https://burhanstore.com' + path), url: 'https://burhanstore.com' + path, headers: new Headers(), cookies: { get: name => cookies[name] ? { value: cookies[name] } : undefined } });
+  assert.equal((await middleware(request('/admin/login'))).status, 200);
+  assert.equal((await middleware(request('/admin/dashboard', { admin_token: 'forged' }))).status, 307);
+  assert.equal((await middleware(request('/api/admin/orders'))).status, 401);
+  assert.equal((await middleware(request('/api/admin/auth/login'))).status, 401);
+  assert.equal((await middleware(request('/api/admin/auth/login', {}, 'POST'))).status, 200);
   assert.equal((await middleware(request('/admin/dashboard', { admin_token: admin }))).status, 200);
   const middlewareSource = fs.readFileSync('lib/admin/middleware.js', 'utf8').replace(/^import .*;\n/gm, '').replace(/export /g, '');
   const adminDoc = { _id: 'test-owner', email: 'test@example.com', role: 'employee', status: 'active', permissions: [], sessionVersion: 0 };
@@ -65,8 +58,7 @@ try {
   assert.equal((await requireAuth(authRequest)).authenticated, false, 'Password reset must revoke an older session');
   adminDoc.sessionVersion = 0; adminDoc.status = 'disabled';
   assert.equal((await requireAuth(authRequest)).authenticated, false, 'Disabled employee must lose API access');
-  process.env.ADMIN_ENTRY_KEY_HASH = 'rotated'; assert.equal(await validEntryCookie(gate), false);
-} finally { for (const [name, value] of [['JWT_SECRET', previousSecret], ['ADMIN_JWT_SECRET', previousAdminSecret], ['ADMIN_ENTRY_KEY_HASH', previousHash]]) { if (value === undefined) delete process.env[name]; else process.env[name] = value; } }
+} finally { for (const [name, value] of [['JWT_SECRET', previousSecret], ['ADMIN_JWT_SECRET', previousAdminSecret]]) { if (value === undefined) delete process.env[name]; else process.env[name] = value; } }
 const publicData = publicProduct({ _id: 'test', name: 'Test', costPrice: 10, supplierEmail: 'private@example.com', apiKey: 'secret', adminNotes: 'internal', stock: 5, price: 100 });
 assert.equal(publicData.supplierEmail, undefined); assert.equal(publicData.apiKey, undefined);
-console.log('Security tests passed: signed staff gate/session, outsider 404, expiry, atomic persistent throttling, bulk limits, payload/CSRF/NoSQL protection, CAPTCHA validation, public field allowlist. No live services used.');
+console.log('Security tests passed: direct login, protected dashboard and API, expiry, atomic persistent throttling, bulk limits, payload/CSRF/NoSQL protection, CAPTCHA validation, public field allowlist. No live services used.');

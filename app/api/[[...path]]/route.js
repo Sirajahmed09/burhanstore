@@ -734,16 +734,18 @@ export async function POST(request) {
       }
 
       const reviewsCol = await getCollection('reviews');
+      const numericRating = Number(rating);
+      if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) return errorResponse('Choose a rating from 1 to 5', 400);
       const productsCol = await getCollection('products');
-
-      const numericRating = Math.min(5, Math.max(1, parseInt(rating, 10) || 5));
+      const product = await productsCol.findOne(buildIdQuery(productId));
+      if (!isProductActive(product)) return errorResponse('Product unavailable', 404);
 
       // Buyer identity must be verified by an authenticated order-specific flow.
       const isVerifiedBuyer = false;
 
       const newReview = {
         _id: 'rev-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
-        productId: String(productId),
+        productId: String(product._id),
         name: String(name).trim(),
         rating: numericRating,
         comment: String(comment).trim(),
@@ -753,26 +755,6 @@ export async function POST(request) {
       };
 
       await reviewsCol.insertOne(newReview);
-
-      // Recalculate product review count & average rating
-      const allProdReviews = await reviewsCol.find({
-        $or: [{ productId: String(productId) }, { productSlug: String(productId) }],
-        status: 'approved'
-      }).toArray();
-
-      const avgRating = allProdReviews.length > 0
-        ? parseFloat((allProdReviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / allProdReviews.length).toFixed(1))
-        : numericRating;
-
-      await productsCol.updateOne(
-        { $or: [{ _id: productId }, { slug: productId }] },
-        {
-          $set: {
-            rating: avgRating,
-            reviewCount: allProdReviews.length
-          }
-        }
-      );
 
       return NextResponse.json({ success: true, review: newReview }, { status: 201, headers: NO_CACHE_HEADERS });
     }

@@ -52,6 +52,7 @@ export default function ShopContent() {
 
   // Fetch products with filters
   useEffect(() => {
+    const controller = new AbortController();
     const params = new URLSearchParams();
     if (filters.category) params.append('category', filters.category);
     if (filters.minPrice) params.append('minPrice', filters.minPrice);
@@ -64,7 +65,7 @@ export default function ShopContent() {
 
     setLoading(true);
     setCatalogueError('');
-    fetch(`/api/products?${params.toString()}`, { cache: 'no-store' })
+    fetch(`/api/products?${params.toString()}`, { cache: 'no-store', signal: controller.signal })
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(`Catalogue request failed (${res.status})`);
@@ -72,6 +73,7 @@ export default function ShopContent() {
         return res.json();
       })
       .then(data => {
+        if (controller.signal.aborted) return;
         const prods = data?.products || [];
         setProducts(prods);
         setLoading(false);
@@ -83,11 +85,13 @@ export default function ShopContent() {
         }
       })
       .catch(err => {
+        if (controller.signal.aborted) return;
         console.error('Failed to load products:', err);
         setProducts([]);
         setCatalogueError('The store catalogue is temporarily unavailable. Please try again shortly.');
         setLoading(false);
       });
+    return () => controller.abort();
   }, [filters]);
 
   const clearFilters = () => {
@@ -129,7 +133,7 @@ export default function ShopContent() {
               </p>
             </div>
             <div className="text-xs sm:text-sm font-semibold text-slate-500">
-              Showing <span className="font-bold text-slate-900">{products.length}</span> verified product{products.length !== 1 ? 's' : ''}
+              {loading ? 'Loading products…' : catalogueError ? '' : `Showing ${products.length} product${products.length === 1 ? '' : 's'}`}
             </div>
           </div>
         </div>

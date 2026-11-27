@@ -138,9 +138,7 @@ NODE_ENV=production
 ```
 
 ### 6.2. Administrative Access
-* **Default Admin Account:** `admin@burhan.com`
-* **Default Password:** `Admin@123`
-* **Security Recommendation:** Upon first login in production, navigate to the settings page and update the administrative password.
+- Sign in with the owner account provisioned for this store.
 
 ### 6.3. Monitoring & Maintenance
 * Monitor service health via `https://burhanstore.com/api/health`.
